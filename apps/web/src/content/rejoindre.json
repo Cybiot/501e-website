@@ -1,0 +1,41 @@
+{
+  "intro": "Tu veux sauter avec nous ? Voici le parcours d'une recrue, de la découverte à la première opération. Compte en général une à deux semaines. [Durée indicative à adapter.]",
+  "steps": [
+    {
+      "icon": "check",
+      "title": "Prérequis",
+      "text": "Être francophone, majeur [à confirmer], posséder un micro et avoir l'envie de jouer en équipe dans un cadre RP.",
+      "items": ["Micro fonctionnel", "Disponibilité pour les opérations", "Respect du règlement"]
+    },
+    {
+      "icon": "gamepad",
+      "title": "Installer Squad 44",
+      "text": "Procure-toi Squad 44 sur ta plateforme habituelle et fais quelques parties pour te familiariser avec les commandes.",
+      "items": ["Configurer la radio et le push-to-talk", "Tester son micro en jeu"]
+    },
+    {
+      "icon": "message",
+      "title": "Entrer sur le Discord",
+      "text": "Clique sur « Rejoindre la 501e » : tu arrives sur notre serveur Discord, dans le salon d'accueil.",
+      "items": ["Lire le règlement", "Se présenter dans le salon dédié"]
+    },
+    {
+      "icon": "headphones",
+      "title": "Entretien",
+      "text": "Un recruteur te propose un court entretien vocal pour faire connaissance et répondre à tes questions.",
+      "items": ["15 à 20 minutes", "Détendu et bienveillant"]
+    },
+    {
+      "icon": "graduation",
+      "title": "Formation initiale",
+      "text": "Un instructeur t'enseigne les bases : communication radio, déplacements en escouade, discipline RP. À l'issue, tu reçois ton grade de Private.",
+      "items": ["Une à deux sessions", "Validation par un instructeur"]
+    }
+  ],
+  "faq": [
+    { "q": "Combien de temps dure le recrutement ?", "a": "En général une à deux semaines, selon tes disponibilités et celles des recruteurs." },
+    { "q": "Puis-je d'abord venir voir ?", "a": "Bien sûr : rejoins le Discord et discute avec nous avant de te décider." },
+    { "q": "Je joue déjà dans une autre communauté, est-ce un problème ?", "a": "[À compléter] Précise ici votre politique concernant la double appartenance." },
+    { "q": "Mes données sont-elles protégées ?", "a": "Oui. Le site ne collecte que ton identifiant et ton pseudo Discord ; aucune adresse e-mail. Consulte la politique de confidentialité." }
+  ]
+}

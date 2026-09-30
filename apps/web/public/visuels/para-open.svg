@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 172" fill="#e8ebe3">
+  <!-- Parachutiste sous voile ouverte (T-5), silhouette pleine. -->
+  <path d="M4 44 C4 6 96 6 96 44 Q89 38 81 44 Q73 38 65 44 Q57.5 38.5 50 44 Q42.5 38.5 35 44 Q27 38 19 44 Q11 38 4 44Z"/>
+  <path d="M5 44 L45 100 M20 44 L45 100 M35 44 L45 100 M65 44 L55 100 M80 44 L55 100 M95 44 L55 100" stroke="#e8ebe3" stroke-width="1" fill="none"/>
+  <g transform="translate(50 108)">
+    <!-- Bras levés, mains sur les élévateurs -->
+    <path d="M-6 10 Q-10 2 -5 -8 M6 10 Q10 2 5 -8" stroke="#e8ebe3" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+    <!-- Casque et visage -->
+    <path d="M-5.5 2 a5.5 5.5 0 0 1 11 0 l1.2 1.4 h-13.4z"/>
+    <ellipse cx="0" cy="5.2" rx="3.4" ry="3"/>
+    <!-- Buste et harnais -->
+    <path d="M-7 9.5 Q0 7.6 7 9.5 L5.4 25 L-5.4 25Z"/>
+    <!-- Jambes, genoux légèrement fléchis -->
+    <path d="M-5.4 24 L-0.6 24 L-1 36 L-0.8 43 L-3.2 43.5 L-4.2 36Z M5.4 24 L0.6 24 L1 36 L0.8 43 L3.2 43.5 L4.2 36Z"/>
+    <path d="M-4.2 42.6 h4 l0.4 2.4 h-5.6z M4.2 42.6 h-4 l-0.4 2.4 h5.6z"/>
+    <!-- Gaine de jambe suspendue -->
+    <path d="M0 45 L0 55" stroke="#e8ebe3" stroke-width="0.9"/>
+    <rect x="-3.8" y="55" width="7.6" height="9" rx="1.6"/>
+  </g>
+</svg>

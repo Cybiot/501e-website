@@ -1,0 +1,52 @@
+{
+  "intro": "Le 501st Parachute Infantry Regiment est l'une des unités parachutistes de l'armée américaine ayant combattu en Europe au sein de la 101st Airborne Division pendant la Seconde Guerre mondiale. Cette page en propose un aperçu général ; elle n'a pas vocation à être une référence historique. [Texte à compléter et à sourcer par la communauté.]",
+  "timeline": [
+    {
+      "period": "1942",
+      "title": "Création et entraînement",
+      "place": "États-Unis",
+      "text": "Activation du régiment et entraînement intensif des volontaires parachutistes, réputé pour sa dureté physique. [Détails et dates à vérifier.]",
+      "icon": "flag"
+    },
+    {
+      "period": "1943 – début 1944",
+      "title": "Traversée et préparation en Angleterre",
+      "place": "Royaume-Uni",
+      "text": "Arrivée en Angleterre, intégration à la 101st Airborne Division et répétitions en vue de l'invasion du continent. [À compléter.]",
+      "icon": "compass"
+    },
+    {
+      "period": "Juin 1944",
+      "title": "Normandie",
+      "place": "France",
+      "text": "Largage dans la nuit précédant le débarquement, combats dans le Cotentin et autour de Carentan pour sécuriser les accès aux plages. [À compléter et sourcer.]",
+      "icon": "plane"
+    },
+    {
+      "period": "Septembre 1944",
+      "title": "Market Garden",
+      "place": "Pays-Bas",
+      "text": "Opération aéroportée visant à s'emparer d'une série de ponts ; le régiment combat dans le secteur attribué à la 101st. [À compléter et sourcer.]",
+      "icon": "crosshair"
+    },
+    {
+      "period": "Hiver 1944 – 1945",
+      "title": "Bastogne",
+      "place": "Belgique",
+      "text": "Défense de la ville encerclée pendant la bataille des Ardennes, dans des conditions hivernales extrêmes. [À compléter et sourcer.]",
+      "icon": "shield"
+    },
+    {
+      "period": "1945",
+      "title": "Fin de la guerre",
+      "place": "Europe",
+      "text": "Dernières opérations jusqu'à la fin du conflit en Europe. [À compléter.]",
+      "icon": "award"
+    }
+  ],
+  "sources": [
+    "[À compléter] Ouvrages de référence et archives consultées.",
+    "[À compléter] Sites de musées et d'associations de mémoire (liens).",
+    "Crédits visuels : illustrations originales générées pour ce site (aucun visuel protégé)."
+  ]
+}

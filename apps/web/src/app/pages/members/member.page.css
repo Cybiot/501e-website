@@ -1,0 +1,123 @@
+.profile {
+  display: grid;
+  gap: var(--space-6);
+  padding-top: var(--space-5);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 820px) {
+  .profile {
+    grid-template-columns: minmax(260px, 360px) 1fr;
+    align-items: start;
+  }
+}
+.profile__photo {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-2);
+  aspect-ratio: 3 / 4;
+  background: var(--surface-2);
+  max-width: 360px;
+}
+@media (max-width: 819px) {
+  .profile__photo {
+    max-width: 220px;
+  }
+}
+@media (min-width: 820px) {
+  .profile__photo {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+  }
+}
+.profile__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile__placeholder {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, var(--olive-soft), transparent 70%);
+}
+.profile__body h1 {
+  text-transform: none;
+  margin-bottom: var(--space-3);
+}
+.profile__quote {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  border-left: 3px solid var(--gold);
+  font-size: var(--fs-lg);
+  font-style: italic;
+  color: var(--text);
+  background: var(--surface-1);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.profile__h2 {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  color: var(--gold-text);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.ribbons {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.ribbon__btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.ribbon__btn:hover,
+.ribbon__btn[aria-expanded='true'] {
+  border-color: rgb(var(--gold-rgb) / 0.5);
+  background: var(--surface-2);
+}
+.ribbon__btn img {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+.ribbon__name {
+  flex: 1;
+  font-weight: 600;
+}
+.ribbon__detail {
+  padding: var(--space-3) var(--space-4) var(--space-2) calc(48px + var(--space-6));
+}
+.ribbon__award {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-sm);
+}
+.ribbon__award .mono {
+  color: var(--gold-text);
+}
+.resp {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.resp li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}

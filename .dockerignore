@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.angular
+**/coverage
+**/storage
+**/storage-test
+.git
+.env
+*.log

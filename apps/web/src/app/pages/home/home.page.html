@@ -1,0 +1,196 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div
+    class="hero__bg"
+    aria-hidden="true"
+    [style.transform]="'translate3d(0,' + parallax() + 'px,0)'"
+  ></div>
+  <div
+    #dropScene
+    class="drop"
+    aria-hidden="true"
+    [class.drop--ready]="dropReady()"
+    [style.transform]="'translate3d(0,' + parallax() * 0.35 + 'px,0)'"
+  >
+    @for (f of drop; track f.depth) {
+      <div [class]="'drop__flight drop__flight--' + f.depth">
+        <img
+          class="drop__plane"
+          src="/visuels/c47.png"
+          alt=""
+          draggable="false"
+          [style.left.%]="f.plane.left"
+          [style.top.%]="f.plane.top"
+          [style.width.%]="f.plane.width"
+        />
+        @for (j of f.stick; track $index) {
+          <img
+            class="drop__jumper"
+            [src]="j.src"
+            alt=""
+            draggable="false"
+            [style.left.%]="j.left"
+            [style.top.%]="j.top"
+            [style.width.%]="j.width"
+          />
+        }
+      </div>
+    }
+  </div>
+  <div class="container hero__content">
+    <app-insignia [size]="76" label="" />
+    <p class="eyebrow">{{ c.hero.eyebrow }}</p>
+    <h1 id="hero-title">{{ c.hero.title }}</h1>
+    <p class="hero__subtitle">{{ c.hero.subtitle }}</p>
+    <div class="row hero__ctas">
+      <a class="btn btn--primary btn--lg" href="/api/join" rel="nofollow">
+        <app-icon name="message" [size]="18" /> {{ 'cta.join' | t }}
+      </a>
+      <a class="btn btn--lg" routerLink="/communaute"
+        >{{ 'cta.discover' | t }} <app-icon name="arrow-right" [size]="18"
+      /></a>
+    </div>
+    <p class="hero__motto mono" aria-hidden="true">— {{ c.hero.motto }} —</p>
+  </div>
+  <a href="#chiffres" class="hero__scroll" aria-label="Défiler vers la suite"
+    ><app-icon name="chevron-down" [size]="22"
+  /></a>
+</section>
+
+<section id="chiffres" class="stats container" aria-label="Chiffres clés">
+  <div class="stat">
+    @if (stats(); as s) {
+      <strong><app-count-up [value]="s.members" /></strong>
+    } @else {
+      <strong class="skeleton stat__skel"></strong>
+    }
+    <span>membres actifs</span>
+  </div>
+  <div class="stat">
+    <strong><app-count-up [value]="c.stats.operations" /></strong>
+    <span>{{ c.stats.operationsLabel }}</span>
+  </div>
+  <div class="stat">
+    @if (stats(); as s) {
+      <strong><app-count-up [value]="s.medalsAwarded" /></strong>
+    } @else {
+      <strong class="skeleton stat__skel"></strong>
+    }
+    <span>décorations remises</span>
+  </div>
+  <div class="stat">
+    <strong><app-count-up [value]="years" /></strong>
+    <span>{{ years > 1 ? 'années' : 'année' }} d'existence</span>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="honor-title">
+  <div class="container">
+    <div class="row row--between section-head-row">
+      <div class="section-head" appReveal>
+        <p class="eyebrow">Membres à l'honneur</p>
+        <h2 id="honor-title">Dernières décorations</h2>
+      </div>
+      <a routerLink="/membres" class="btn btn--ghost"
+        >{{ 'cta.seeMembers' | t }} <app-icon name="arrow-right" [size]="16"
+      /></a>
+    </div>
+    @if (featured(); as list) {
+      @if (list.length) {
+        <div class="grid" style="--min: 250px">
+          @for (f of list; track f.member.id; let i = $index) {
+            <div class="honor" [appReveal]="i * 80">
+              <app-dog-tag [member]="f.member" />
+              <p class="honor__award">
+                <img [src]="f.award.medalImageUrl" alt="" width="22" height="22" />
+                <span
+                  ><strong>{{ f.award.medalName }}</strong> — {{ f.award.reason }}</span
+                >
+              </p>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty">
+          <app-icon name="award" [size]="32" />
+          <p>Aucune décoration récente.</p>
+        </div>
+      }
+    } @else {
+      <div class="grid" style="--min: 250px">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="skeleton" style="height: 230px"></div>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<section class="section section--alt" aria-labelledby="how-title">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <p class="eyebrow">{{ c.how.eyebrow }}</p>
+      <h2 id="how-title">{{ c.how.title }}</h2>
+      <p>{{ c.how.intro }}</p>
+    </div>
+    <ol class="steps">
+      @for (step of c.how.steps; track step.title; let i = $index) {
+        <li class="card step" [appReveal]="i * 80">
+          <span class="step__num mono">0{{ i + 1 }}</span>
+          <div class="card__icon"><app-icon [name]="step.icon" [size]="22" /></div>
+          <h3>{{ step.title }}</h3>
+          <p class="muted">{{ step.text }}</p>
+        </li>
+      }
+    </ol>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="values-title">
+  <div class="container values">
+    <div class="section-head" appReveal>
+      <p class="eyebrow">Nos valeurs</p>
+      <h2 id="values-title">Ce qui nous tient ensemble</h2>
+    </div>
+    <div class="grid" style="--min: 240px">
+      @for (v of c.values; track v.title; let i = $index) {
+        <div class="card card--interactive" [appReveal]="i * 80">
+          <div class="card__icon"><app-icon [name]="v.icon" [size]="22" /></div>
+          <h3>{{ v.title }}</h3>
+          <p class="muted">{{ v.text }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt" aria-labelledby="faq-title">
+  <div class="container container--narrow">
+    <div class="section-head" appReveal>
+      <p class="eyebrow">FAQ</p>
+      <h2 id="faq-title">Questions fréquentes</h2>
+    </div>
+    <div class="faq">
+      @for (item of c.faq; track item.q) {
+        <details>
+          <summary>{{ item.q }} <app-icon name="chevron-down" [size]="18" /></summary>
+          <p>{{ item.a }}</p>
+        </details>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="cta-band" appReveal>
+      <div>
+        <h2>Prêt pour le grand saut ?</h2>
+        <p class="muted">Rejoins le Discord, présente-toi et participe à ta première opération.</p>
+      </div>
+      <div class="row">
+        <a class="btn btn--gold btn--lg" href="/api/join" rel="nofollow">{{ 'cta.join' | t }}</a>
+        <a class="btn btn--lg" routerLink="/rejoindre">Comment ça se passe ?</a>
+      </div>
+    </div>
+  </div>
+</section>

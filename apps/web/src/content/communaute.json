@@ -1,0 +1,39 @@
+{
+  "intro": "La 501e est une communauté francophone qui fait vivre sur Squad 44 l'esprit des parachutistes du 501st PIR. Nous jouons ensemble, avec une organisation inspirée de celle d'un régiment aéroporté, dans le respect de l'histoire et de chacun. [Texte de présentation à compléter par l'état-major.]",
+  "values": [
+    { "icon": "target", "title": "Sérieux", "text": "En opération, on écoute le briefing, on respecte la chaîne de commandement et on joue l'objectif." },
+    { "icon": "heart", "title": "Camaraderie", "text": "Personne n'est laissé derrière : entraide, pédagogie et bonne humeur avant tout." },
+    { "icon": "scale", "title": "Fair-play", "text": "Respect des adversaires, des règles des serveurs et de la communauté Squad 44." }
+  ],
+  "session": {
+    "title": "Déroulement d'une session type",
+    "steps": [
+      { "time": "20:45", "title": "Rassemblement", "text": "Connexion au Discord, appel et répartition dans les escouades." },
+      { "time": "21:00", "title": "Briefing", "text": "Présentation de la situation, des objectifs et du plan par l'officier en charge." },
+      { "time": "21:15", "title": "Opération", "text": "Déploiement en jeu, communications radio, exécution du plan et adaptation." },
+      { "time": "23:00", "title": "Débriefing", "text": "Retour sur l'opération, points forts, axes d'amélioration et distinctions éventuelles." }
+    ],
+    "note": "[Horaires indicatifs à adapter.]"
+  },
+  "organisation": {
+    "title": "Organisation",
+    "text": "La communauté est structurée en sections et en escouades, encadrées par des sous-officiers et des officiers. Les grades reflètent l'expérience et l'implication ; ils sont attribués par l'état-major sur Discord et affichés automatiquement sur le site.",
+    "units": [
+      { "name": "État-major", "text": "Direction de la communauté, planification des opérations, arbitrage." },
+      { "name": "Sections", "text": "Chaque section regroupe plusieurs escouades sous l'autorité d'un chef de section." },
+      { "name": "Escouades", "text": "Unité de base en jeu : un chef d'escouade, un opérateur radio, des fusiliers et spécialistes." },
+      { "name": "Instruction", "text": "Les instructeurs forment les recrues et les spécialistes (radio, médecin, tireur…)." }
+    ]
+  },
+  "rules": {
+    "title": "Règlement (résumé)",
+    "items": [
+      "Respect de tous les membres, en jeu comme sur Discord. Aucune forme de discrimination ou de harcèlement n'est tolérée.",
+      "Aucune apologie d'idéologie ou de symbole extrémiste : nous rendons hommage à l'histoire, nous ne la glorifions pas.",
+      "Respect de la chaîne de commandement pendant les opérations.",
+      "Présence : prévenir en cas d'absence prolongée.",
+      "Fair-play : pas de triche, pas d'exploitation de bugs, respect des règles des serveurs.",
+      "[Règlement complet à compléter / lien vers le salon règlement du Discord.]"
+    ]
+  }
+}

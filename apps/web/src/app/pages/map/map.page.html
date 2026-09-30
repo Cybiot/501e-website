@@ -1,0 +1,170 @@
+<div class="map-page">
+  <h1 class="sr-only">Carte des membres</h1>
+
+  <div class="map-toolbar">
+    <div class="input-icon map-toolbar__search">
+      <app-icon name="search" [size]="16" />
+      <label for="map-search" class="sr-only">Rechercher un membre</label>
+      <input
+        id="map-search"
+        class="input"
+        list="map-members"
+        placeholder="Rechercher un membre…"
+        [(ngModel)]="memberQuery"
+        (change)="focusMember(memberQuery)"
+        autocomplete="off"
+      />
+      <datalist id="map-members">
+        @for (m of members(); track m.id) {
+          <option [value]="m.displayName"></option>
+        }
+      </datalist>
+    </div>
+    <div class="map-toolbar__actions">
+      <button type="button" class="btn btn--sm" [class.btn--primary]="panel() === 'cities'" (click)="panel.set(panel() === 'cities' ? null : 'cities')" [attr.aria-expanded]="panel() === 'cities'">
+        <app-icon name="map-pin" [size]="16" /> Mes villes ({{ myCities().length }}/{{ maxCities }})
+      </button>
+      <button type="button" class="btn btn--sm" [class.btn--primary]="panel() === 'list'" (click)="panel.set(panel() === 'list' ? null : 'list')" [attr.aria-expanded]="panel() === 'list'">
+        <app-icon name="list" [size]="16" /> Liste
+      </button>
+    </div>
+  </div>
+
+  <div class="map-wrap">
+    <!-- Filtre des tuiles OSM (classe .tiles--dark) : terres bleu nuit, traits et noms bleu clair, mer quasi noire. -->
+    <svg class="map-filter" width="0" height="0" aria-hidden="true" focusable="false">
+      <filter id="tiles-night" color-interpolation-filters="sRGB">
+        <!-- Luminance + « bleuité » (B − R) : la mer OSM ressort plus claire que les terres… -->
+        <feColorMatrix
+          type="matrix"
+          values="-1.201 0.587 1.614 0 0  -1.201 0.587 1.614 0 0  -1.201 0.587 1.614 0 0  0 0 0 1 0"
+        />
+        <!-- …puis rampe : traits/labels #8FA3E0 → terres #141D45 → mer #060916 -->
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="0.561 0.561 0.561 0.561 0.561 0.561 0.521 0.48 0.44 0.4 0.36 0.32 0.279 0.239 0.199 0.159 0.119 0.078 0.051 0.024 0.024" />
+          <feFuncG type="table" tableValues="0.639 0.639 0.639 0.639 0.639 0.639 0.595 0.552 0.508 0.464 0.42 0.376 0.333 0.289 0.245 0.201 0.158 0.114 0.075 0.035 0.035" />
+          <feFuncB type="table" tableValues="0.878 0.878 0.878 0.878 0.878 0.878 0.828 0.777 0.726 0.676 0.625 0.575 0.524 0.473 0.423 0.372 0.321 0.271 0.178 0.086 0.086" />
+        </feComponentTransfer>
+      </filter>
+      <!-- Thème « jour » : même principe, rampe traits/labels #B3AB94 → terres #26221B → mer #0C0A07 -->
+      <filter id="tiles-jour" color-interpolation-filters="sRGB">
+        <feColorMatrix
+          type="matrix"
+          values="-1.201 0.587 1.614 0 0  -1.201 0.587 1.614 0 0  -1.201 0.587 1.614 0 0  0 0 0 1 0"
+        />
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="0.702 0.702 0.702 0.702 0.702 0.702 0.656 0.61 0.564 0.518 0.472 0.425 0.379 0.333 0.287 0.241 0.195 0.149 0.098 0.047 0.047" />
+          <feFuncG type="table" tableValues="0.671 0.671 0.671 0.671 0.671 0.671 0.626 0.581 0.536 0.492 0.447 0.402 0.357 0.312 0.268 0.223 0.178 0.133 0.086 0.039 0.039" />
+          <feFuncB type="table" tableValues="0.58 0.58 0.58 0.58 0.58 0.58 0.541 0.501 0.462 0.422 0.383 0.343 0.304 0.264 0.225 0.185 0.145 0.106 0.067 0.027 0.027" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
+    <div #map class="map" role="application" aria-label="Carte interactive des membres"></div>
+    @if (loading()) {
+      <div class="map-loading"><app-icon name="loader" class="spin" [size]="28" /><span>Chargement de la carte…</span></div>
+    }
+
+    @if (panel() === 'cities') {
+      <aside class="map-panel" aria-labelledby="cities-title">
+        <div class="row row--between">
+          <h2 id="cities-title">Mes villes</h2>
+          <button type="button" class="btn btn--ghost btn--icon" (click)="panel.set(null)" aria-label="Fermer le panneau"><app-icon name="x" [size]="18" /></button>
+        </div>
+        <p class="small muted">Jusqu'à {{ maxCities }} villes, précision ville uniquement (position légèrement décalée). Visible seulement par les membres connectés.</p>
+
+        @if (myCities().length) {
+          <ul class="my-cities">
+            @for (c of myCities(); track c.id) {
+              <li>
+                <app-icon name="map-pin" [size]="16" />
+                <span>{{ c.cityLabel }} <small class="muted">· {{ c.country }}</small></span>
+                <button type="button" class="btn btn--danger btn--sm" (click)="removeCity(c)" [attr.aria-label]="'Supprimer ' + c.cityLabel">
+                  <app-icon name="trash" [size]="14" />
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="small muted">Tu n'as encore indiqué aucune ville.</p>
+        }
+
+        @if (canAddCity()) {
+          @if (!consentLocation()) {
+            <label class="check" style="margin-bottom: var(--space-3)">
+              <input type="checkbox" [(ngModel)]="consentChecked" name="consent" />
+              <div>
+                <strong>J'accepte d'afficher ma ville</strong>
+                <span>Visible uniquement par les membres connectés. Tu peux la supprimer à tout moment (effet immédiat).</span>
+              </div>
+            </label>
+          }
+          <div class="field city-field">
+            <label for="city">Ajouter une ville</label>
+            <input
+              id="city"
+              class="input"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="city-list"
+              [attr.aria-expanded]="suggestions().length > 0"
+              [attr.aria-activedescendant]="activeSuggestion() >= 0 ? 'city-' + activeSuggestion() : null"
+              placeholder="Ex. : Caen"
+              [(ngModel)]="cityQuery"
+              (ngModelChange)="onCityInput($event)"
+              (keydown)="onCityKey($event)"
+              autocomplete="off"
+              [disabled]="saving()"
+            />
+            @if (searching()) {
+              <span class="field__hint">Recherche…</span>
+            }
+            @if (suggestions().length) {
+              <ul class="suggestions" id="city-list" role="listbox">
+                @for (s of suggestions(); track s.label + s.country; let i = $index) {
+                  <li
+                    role="option"
+                    [id]="'city-' + i"
+                    [attr.aria-selected]="i === activeSuggestion()"
+                    [class.active]="i === activeSuggestion()"
+                    (mousedown)="$event.preventDefault(); addCity(s)"
+                  >
+                    <strong>{{ s.city }}</strong> <span class="muted small">{{ s.region }} · {{ s.country }}</span>
+                  </li>
+                }
+              </ul>
+            } @else if (cityQuery.length >= 2 && !searching()) {
+              <span class="field__hint">Aucune ville trouvée.</span>
+            }
+          </div>
+        } @else {
+          <div class="alert alert--info"><app-icon name="info" [size]="16" /><span>Maximum {{ maxCities }} villes atteint. Supprime-en une pour en ajouter une autre.</span></div>
+        }
+        <p class="small muted">Gère aussi ta visibilité depuis <a routerLink="/profil">Mon profil</a>.</p>
+      </aside>
+    }
+
+    @if (panel() === 'list') {
+      <aside class="map-panel" aria-labelledby="list-title">
+        <div class="row row--between">
+          <h2 id="list-title">Membres par pays</h2>
+          <button type="button" class="btn btn--ghost btn--icon" (click)="panel.set(null)" aria-label="Fermer le panneau"><app-icon name="x" [size]="18" /></button>
+        </div>
+        @for (g of byCountry(); track g.country) {
+          <h3 class="country">{{ g.country }} <span class="badge">{{ g.entries.length }}</span></h3>
+          <ul class="country-list">
+            @for (e of g.entries; track e.member.id + e.city) {
+              <li>
+                <button type="button" (click)="focusOn(e.member.id)">
+                  <app-avatar [src]="e.member.avatarUrl" [name]="e.member.displayName" [size]="28" [alt]="false" />
+                  <span>{{ e.member.displayName }}<small class="muted"> · {{ e.city }}</small></span>
+                </button>
+              </li>
+            }
+          </ul>
+        } @empty {
+          <p class="muted small">Aucun membre à afficher.</p>
+        }
+      </aside>
+    }
+  </div>
+</div>

@@ -1,0 +1,138 @@
+<div class="container">
+  <header class="page-header">
+    <app-breadcrumb [items]="[{ label: 'Membres' }]" />
+    <p class="eyebrow" style="margin-top: var(--space-5)">Annuaire</p>
+    <h1>{{ 'members.title' | t }}</h1>
+    <p>{{ 'members.intro' | t }}</p>
+  </header>
+
+  <form class="filters" role="search" (submit)="$event.preventDefault()">
+    <div class="input-icon">
+      <app-icon name="search" [size]="18" />
+      <label for="m-search" class="sr-only">{{ 'members.search' | t }}</label>
+      <input
+        id="m-search"
+        class="input"
+        type="search"
+        [placeholder]="'members.search' | t"
+        [(ngModel)]="search"
+        name="q"
+        (ngModelChange)="onSearch($event)"
+        autocomplete="off"
+      />
+    </div>
+    <div>
+      <label for="m-rank" class="sr-only">Grade</label>
+      <select id="m-rank" class="select" [value]="rank() ?? ''" (change)="setParam('rank', $any($event.target).value)">
+        <option value="">{{ 'members.allRanks' | t }}</option>
+        @for (r of filters()?.ranks ?? []; track r.id) {
+          <option [value]="r.id" [selected]="r.id === rank()">{{ r.name }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="m-resp" class="sr-only">Responsabilité</label>
+      <select id="m-resp" class="select" (change)="setParam('responsibility', $any($event.target).value)">
+        <option value="">{{ 'members.allResponsibilities' | t }}</option>
+        @for (r of filters()?.responsibilities ?? []; track r.id) {
+          <option [value]="r.id" [selected]="r.id === responsibility()">{{ r.name }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="m-medal" class="sr-only">Médaille</label>
+      <select id="m-medal" class="select" (change)="setParam('medal', $any($event.target).value)">
+        <option value="">{{ 'members.allMedals' | t }}</option>
+        @for (m of filters()?.medals ?? []; track m.id) {
+          <option [value]="m.id" [selected]="m.id === medal()">{{ m.name }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="m-sort" class="sr-only">Tri</label>
+      <select id="m-sort" class="select" (change)="setParam('sort', $any($event.target).value)">
+        <option value="rank" [selected]="currentSort() === 'rank'">{{ 'members.sortRank' | t }}</option>
+        <option value="seniority" [selected]="currentSort() === 'seniority'">{{ 'members.sortSeniority' | t }}</option>
+        <option value="alpha" [selected]="currentSort() === 'alpha'">{{ 'members.sortAlpha' | t }}</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="row row--between toolbar">
+    <p class="muted small" style="margin: 0" aria-live="polite">
+      @if (result(); as r) {
+        {{ 'members.count' | t: { n: r.total } }}
+      }
+    </p>
+    <div class="row">
+      @if (currentSort() === 'rank') {
+        <label class="switch small">
+          <input type="checkbox" role="switch" [checked]="grouped()" (change)="grouped.set(!grouped())" />
+          {{ 'members.groupByRank' | t }}
+        </label>
+      }
+      @if (hasFilters()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="reset()">
+          <app-icon name="x" [size]="14" /> {{ 'members.reset' | t }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--danger" role="alert">
+      <app-icon name="alert-triangle" [size]="18" />
+      <span>{{ error() }}</span>
+      <button type="button" class="btn btn--sm" (click)="retry()">{{ 'cta.retry' | t }}</button>
+    </div>
+  } @else if (loading() && !result()) {
+    <div class="grid" style="--min: 270px" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="skeleton" style="height: 220px"></div>
+      }
+    </div>
+  } @else if (result(); as r) {
+    @if (r.items.length === 0) {
+      <div class="empty">
+        <app-icon name="users" [size]="36" />
+        <h3>{{ 'members.empty' | t }}</h3>
+        @if (hasFilters()) {
+          <button type="button" class="btn" (click)="reset()">{{ 'members.reset' | t }}</button>
+        }
+      </div>
+    } @else {
+      <div class="grid" style="--min: 270px" [style.opacity]="loading() ? 0.6 : 1" [attr.aria-busy]="loading()">
+        @for (g of rows(); track $index) {
+          @if (g.title) {
+            <h2 class="group-title">{{ g.title }}</h2>
+          }
+          @for (m of g.members; track m.id) {
+            <app-dog-tag [member]="m" />
+          }
+        }
+      </div>
+      @if (r.totalPages > 1) {
+        <nav class="pagination" aria-label="Pagination">
+          <a
+            class="btn btn--sm"
+            [class.btn--ghost]="r.page <= 1"
+            [attr.aria-disabled]="r.page <= 1"
+            [routerLink]="[]"
+            [queryParams]="{ page: r.page - 1 }"
+            queryParamsHandling="merge"
+            ><app-icon name="chevron-left" [size]="16" /> {{ 'cta.previous' | t }}</a
+          >
+          <span class="small muted">Page {{ r.page }} / {{ r.totalPages }}</span>
+          <a
+            class="btn btn--sm"
+            [attr.aria-disabled]="r.page >= r.totalPages"
+            [routerLink]="[]"
+            [queryParams]="{ page: r.page + 1 }"
+            queryParamsHandling="merge"
+            >{{ 'cta.next' | t }} <app-icon name="chevron-right" [size]="16" /></a
+          >
+        </nav>
+      }
+    }
+  }
+</div>

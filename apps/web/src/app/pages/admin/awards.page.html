@@ -1,0 +1,209 @@
+<div class="row row--between">
+  <h1 class="admin-title">Attribution des médailles</h1>
+  <a routerLink="/admin/medailles/catalogue" class="btn btn--sm"><app-icon name="list" [size]="14" /> Catalogue</a>
+</div>
+
+<div class="admin-grid">
+  <section class="card" aria-labelledby="award-form">
+    <h2 id="award-form" class="card-title">Nouvelle attribution</h2>
+
+    <!-- 1. Membre -->
+    <div class="field combo">
+      <label for="award-member">1. Membre</label>
+      <div class="input-icon">
+        <app-icon name="search" [size]="16" />
+        <input
+          id="award-member"
+          class="input"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="member-results"
+          [attr.aria-expanded]="memberResults().length > 0"
+          placeholder="Rechercher par pseudo…"
+          [(ngModel)]="memberQuery"
+          (ngModelChange)="onMemberInput($event)"
+          (focus)="onMemberInput(memberQuery)"
+          autocomplete="off"
+        />
+      </div>
+      @if (memberResults().length && !selectedMember()) {
+        <ul class="combo__list" id="member-results" role="listbox">
+          @for (m of memberResults(); track m.id) {
+            <li role="option" [attr.aria-selected]="false" (mousedown)="$event.preventDefault(); pickMember(m)">
+              <app-avatar [src]="m.avatarUrl" [name]="m.displayName" [size]="28" [alt]="false" />
+              <span>{{ m.displayName }}</span>
+              <span class="small muted">{{ m.rank?.name }}</span>
+            </li>
+          }
+        </ul>
+      }
+      @if (selectedMember(); as m) {
+        <p class="field__hint"><app-icon name="check" [size]="12" /> {{ m.displayName }} · {{ m.medalIds.length }} décoration(s)</p>
+      }
+    </div>
+
+    <!-- 2. Médaille -->
+    <fieldset class="field">
+      <legend class="label">2. Médaille</legend>
+      <div class="medal-pick" role="radiogroup">
+        @for (m of activeMedals(); track m.id) {
+          <label class="medal-option" [class.selected]="selectedMedalId() === m.id">
+            <input type="radio" name="medal" class="sr-only" [value]="m.id" [checked]="selectedMedalId() === m.id" (change)="pickMedal(m.id)" />
+            <img [src]="m.imageUrl" alt="" width="40" height="40" />
+            <span>{{ m.name }}</span>
+          </label>
+        } @empty {
+          <p class="small muted">Aucune médaille active. <a routerLink="/admin/medailles/catalogue">Créer une médaille</a></p>
+        }
+      </div>
+      @if (selectedMedal(); as sm) {
+        <p class="field__hint">{{ sm.description }} · {{ sm.repeatable ? 'Cumulable' : 'Non cumulable' }}</p>
+      }
+      @if (alreadyHeld() > 0) {
+        <div class="alert alert--warning"><app-icon name="alert-triangle" [size]="16" /><span>Ce membre possède déjà cette médaille ({{ alreadyHeld() }}×).</span></div>
+      }
+    </fieldset>
+
+    <!-- 3. Motif -->
+    <div class="field">
+      <label for="award-reason">3. Circonstances (obligatoire)</label>
+      <textarea
+        id="award-reason"
+        class="textarea"
+        rows="3"
+        [maxLength]="reasonMax"
+        [ngModel]="reason()"
+        (ngModelChange)="reason.set($event); resetKey()"
+        placeholder="Ex. : A tenu le carrefour sous le feu ennemi lors de l'opération du 12/10."
+      ></textarea>
+      <span class="field__hint">{{ reason().length }} / {{ reasonMax }}</span>
+    </div>
+
+    @if (duplicate()) {
+      <div class="alert alert--warning" role="alert">
+        <app-icon name="alert-triangle" [size]="16" />
+        <div>
+          <p style="margin: 0 0 var(--space-2)">{{ duplicate() }}</p>
+          <div class="row">
+            <button type="button" class="btn btn--gold btn--sm" (click)="award(true)" [disabled]="submitting()">Confirmer la nouvelle attribution</button>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="duplicate.set(null)">Annuler</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <button type="button" class="btn btn--primary btn--block" (click)="award()" [disabled]="!canSubmit()">
+        @if (submitting()) {
+          <app-icon name="loader" class="spin" [size]="16" />
+        } @else {
+          <app-icon name="award" [size]="16" />
+        }
+        Attribuer
+      </button>
+    }
+  </section>
+
+  <section class="card" aria-labelledby="pending-title">
+    <div class="row row--between">
+      <h2 id="pending-title" class="card-title">À annoncer <span class="badge badge--gold">{{ pending()?.length ?? 0 }}</span></h2>
+      <button type="button" class="btn btn--gold btn--sm" (click)="openPreview()" [disabled]="!pending()?.length">
+        <app-icon name="send" [size]="14" /> Lancer l'annonce Discord
+      </button>
+    </div>
+    <p class="small muted">Attributions enregistrées depuis la dernière annonce.</p>
+    @if (pending() === null) {
+      <div class="skeleton" style="height: 120px"></div>
+    } @else {
+      <ul class="pending">
+        @for (a of pending(); track a.id) {
+          <li>
+            <img [src]="a.medal.imageUrl" alt="" width="32" height="32" />
+            <div class="pending__body">
+              <strong>{{ a.member.displayName }}</strong> <span class="muted small">· {{ a.medal.name }}</span>
+              <p class="small muted">{{ a.reason }}</p>
+              <span class="small muted mono">{{ a.awardedAt | date: 'dd/MM/yyyy HH:mm' }}{{ a.awardedBy ? ' · par ' + a.awardedBy.displayName : '' }}</span>
+            </div>
+            <button type="button" class="btn btn--danger btn--sm" (click)="revoke(a)" [attr.aria-label]="'Retirer l’attribution à ' + a.member.displayName">
+              <app-icon name="trash" [size]="14" /> Retirer
+            </button>
+          </li>
+        } @empty {
+          <li class="empty" style="padding: var(--space-5)"><span>Aucune attribution en attente d'annonce.</span></li>
+        }
+      </ul>
+    }
+  </section>
+</div>
+
+<section class="card" style="margin-top: var(--space-5)" aria-labelledby="history-title">
+  <h2 id="history-title" class="card-title">Historique des annonces</h2>
+  @if (history().length) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Date</th><th>Par</th><th>Décorations</th><th>Messages</th><th>Détail</th></tr>
+        </thead>
+        <tbody>
+          @for (h of history(); track h.id) {
+            <tr>
+              <td>{{ h.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ h.createdBy?.displayName ?? '—' }}</td>
+              <td>{{ h.awardsCount }}</td>
+              <td>{{ h.messagesCount }}</td>
+              <td>
+                <details>
+                  <summary class="small">Voir</summary>
+                  <ul class="small">
+                    @for (w of h.awards; track $index) {
+                      <li>{{ w.member }} — {{ w.medal }} : {{ w.reason }}</li>
+                    }
+                  </ul>
+                </details>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="small muted">Aucune annonce publiée pour l'instant.</p>
+  }
+</section>
+
+@if (preview(); as p) {
+  <div class="modal-backdrop" (click)="preview.set(null)">
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="preview-title" (click)="$event.stopPropagation()">
+      <h2 id="preview-title">Aperçu de l'annonce</h2>
+      <p class="small muted">
+        {{ p.awardsCount }} décoration(s) · {{ p.messages.length }} message(s) · salon <span class="mono">{{ p.channelId || 'non configuré' }}</span>
+      </p>
+      <div class="discord-preview">
+        @for (msg of p.messages; track $index) {
+          <div class="discord-msg">
+            <div class="discord-msg__author"><span class="discord-bot">BOT</span> 501st PIR</div>
+            @if (msg.content) {
+              <p class="discord-msg__content">{{ render(msg.content) }}</p>
+            }
+            @for (e of msg.embeds; track $index) {
+              <div class="discord-embed" [style.border-left-color]="color(e.color)">
+                <strong>{{ e.title }}</strong>
+                <p>{{ render(e.description) }}</p>
+                @if (e.footer) {
+                  <small>{{ e.footer.text }}</small>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="preview.set(null)">Annuler</button>
+        <button type="button" class="btn btn--gold" (click)="announce()" [disabled]="announcing() || !p.channelId">
+          @if (announcing()) {
+            <app-icon name="loader" class="spin" [size]="16" />
+          }
+          Publier sur Discord
+        </button>
+      </div>
+    </div>
+  </div>
+}

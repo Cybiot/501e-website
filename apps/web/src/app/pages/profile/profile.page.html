@@ -1,0 +1,242 @@
+<div class="container">
+  <header class="page-header">
+    <p class="eyebrow">Espace membre</p>
+    <h1>Mon profil</h1>
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--danger" role="alert">
+      <app-icon name="alert-triangle" [size]="18" /><span>{{ error() }}</span>
+      <button type="button" class="btn btn--sm" (click)="load()">Réessayer</button>
+    </div>
+  } @else if (!profile()) {
+    <div class="layout" aria-busy="true">
+      <div class="skeleton" style="height: 260px"></div>
+      <div class="stack">
+        <div class="skeleton" style="height: 160px"></div>
+        <div class="skeleton" style="height: 200px"></div>
+      </div>
+    </div>
+  } @else {
+    @let p = profile()!;
+    <div class="layout">
+      <!-- Colonne gauche : identité et aperçu -->
+      <aside class="side">
+        <div class="card identity">
+          <app-avatar [src]="p.discordAvatarUrl" [name]="p.displayName" [size]="56" />
+          <div>
+            <strong>{{ p.displayName }}</strong>
+            <div class="row" style="gap: var(--space-2); margin-top: var(--space-1)">
+              <span class="badge" [class.badge--gold]="auth.isAdmin()" [class.badge--olive]="!auth.isAdmin()">{{ auth.statusLabel() }}</span>
+              @if (p.rank) {
+                <span class="badge">{{ p.rank.name }}</span>
+              }
+            </div>
+            @if (p.joinedAt) {
+              <p class="small muted" style="margin: var(--space-2) 0 0">Dans la 501e depuis {{ p.joinedAt | date: 'MMMM yyyy' }}</p>
+            }
+          </div>
+        </div>
+        <p class="eyebrow" style="margin-top: var(--space-5)">Aperçu de ta carte</p>
+        @if (preview(); as card) {
+          <app-dog-tag [member]="card" [link]="false" [maxMedals]="5" />
+        }
+        <a class="btn btn--ghost btn--sm" [routerLink]="['/membres', p.id]" style="margin-top: var(--space-3)">
+          <app-icon name="eye" [size]="14" /> Voir ma fiche publique
+        </a>
+        <p class="small muted">Grade, médailles et responsabilités sont gérés par l'état-major via Discord.</p>
+      </aside>
+
+      <div class="main stack">
+        <!-- Phrase personnalisée -->
+        <section class="card" aria-labelledby="tagline-title">
+          <h2 id="tagline-title">Phrase personnalisée</h2>
+          <div class="field">
+            <label for="tagline" class="sr-only">Phrase personnalisée</label>
+            <textarea
+              id="tagline"
+              class="textarea"
+              rows="2"
+              [maxLength]="taglineMax"
+              [ngModel]="tagline()"
+              (ngModelChange)="tagline.set($event)"
+              placeholder="Une citation, une devise, un trait de ton personnage…"
+              aria-describedby="tagline-count"
+            ></textarea>
+            <span id="tagline-count" class="field__hint" [style.color]="tagline().length >= taglineMax ? 'var(--warning)' : null">
+              {{ tagline().length }} / {{ taglineMax }} caractères · pas de liens
+            </span>
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" (click)="saveTagline()" [disabled]="!taglineDirty() || savingTagline()">
+            Enregistrer la phrase
+          </button>
+        </section>
+
+        <!-- Image personnalisée -->
+        <section class="card" aria-labelledby="image-title">
+          <h2 id="image-title">Image personnalisée</h2>
+          @if (!p.consents.customImage) {
+            <p class="muted small">Active l'option « Image personnalisée » dans tes préférences ci-dessous pour envoyer une image.</p>
+          } @else {
+            <div class="images">
+              <figure>
+                @if (p.image.approvedUrl) {
+                  <img [src]="p.image.approvedUrl" alt="Image actuelle" width="120" height="160" />
+                } @else {
+                  <app-avatar [src]="p.discordAvatarUrl" [name]="p.displayName" [size]="120" shape="square" [alt]="false" />
+                }
+                <figcaption class="small muted">{{ p.image.approvedUrl ? 'Image affichée' : 'Avatar Discord' }}</figcaption>
+              </figure>
+              @if (p.image.pending) {
+                <figure>
+                  <img [src]="p.image.pending.url" alt="Image en attente" width="120" height="160" class="pending" />
+                  <figcaption><span class="badge badge--info"><app-icon name="clock" [size]="12" /> En attente de validation</span></figcaption>
+                </figure>
+              }
+            </div>
+            @if (p.image.rejected) {
+              <div class="alert alert--danger" role="status">
+                <app-icon name="x-circle" [size]="18" />
+                <span><strong>Image refusée</strong> — {{ p.image.rejected.reason }}. Tu peux en envoyer une nouvelle.</span>
+              </div>
+            }
+            @if (showCropper()) {
+              <app-image-cropper (cropped)="upload($event)" />
+              @if (uploading()) {
+                <p class="small muted"><app-icon name="loader" class="spin" [size]="14" /> Envoi en cours…</p>
+              }
+            } @else {
+              <div class="row">
+                <button type="button" class="btn btn--sm" (click)="showCropper.set(true)">
+                  <app-icon name="upload" [size]="14" /> {{ p.image.pending ? 'Remplacer l’image en attente' : 'Envoyer une image' }}
+                </button>
+                @if (p.image.approvedUrl || p.image.pending) {
+                  <button type="button" class="btn btn--danger btn--sm" (click)="removeImage()"><app-icon name="trash" [size]="14" /> Retirer</button>
+                }
+              </div>
+            }
+            <p class="small muted">Ton image actuelle reste affichée tant que la nouvelle n'est pas validée par un admin.</p>
+          }
+        </section>
+
+        <!-- Visibilité et consentements -->
+        <section class="card" aria-labelledby="privacy-title">
+          <h2 id="privacy-title">Visibilité et consentements</h2>
+          <ul class="toggles">
+            <li>
+              <label class="switch">
+                <input type="checkbox" role="switch" [checked]="p.publicProfileEnabled" (change)="setFlag('publicProfileEnabled', $any($event.target).checked)" />
+                <span><strong>Afficher mon profil sur le site public</strong><br /><span class="small muted">Sinon, seuls les membres connectés voient ta fiche.</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="switch">
+                <input type="checkbox" role="switch" [checked]="p.consents.customImage" (change)="setFlag('consentCustomImage', $any($event.target).checked)" />
+                <span><strong>Image personnalisée</strong><br /><span class="small muted">Le retrait supprime immédiatement tes images.</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="switch">
+                <input type="checkbox" role="switch" [checked]="p.consents.location" (change)="setFlag('consentLocation', $any($event.target).checked)" />
+                <span><strong>Localisation sur la carte</strong><br /><span class="small muted">Le retrait supprime immédiatement tes villes.</span></span>
+              </label>
+            </li>
+          </ul>
+          <h3 class="h3">Mes villes</h3>
+          @if (p.locations.length) {
+            <ul class="cities">
+              @for (l of p.locations; track l.id) {
+                <li>
+                  <app-icon name="map-pin" [size]="14" /> {{ l.cityLabel }} <span class="muted small">· {{ l.country }}</span>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="removeCity(l.id)" [attr.aria-label]="'Supprimer ' + l.cityLabel"><app-icon name="trash" [size]="14" /></button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="small muted">Aucune ville déclarée.</p>
+          }
+          <a routerLink="/carte" class="btn btn--sm"><app-icon name="map" [size]="14" /> Gérer mes villes sur la carte</a>
+        </section>
+
+        <!-- Décorations -->
+        <section class="card" aria-labelledby="awards-title">
+          <h2 id="awards-title">Mes décorations</h2>
+          @if (p.awards.length) {
+            <ul class="awards">
+              @for (a of p.awards; track a.id) {
+                <li>
+                  <img [src]="a.medal.imageUrl" alt="" width="36" height="36" />
+                  <div>
+                    <strong>{{ a.medal.name }}</strong> <span class="small muted">· {{ a.awardedAt | date: 'd MMM yyyy' }}</span>
+                    <p class="small muted" style="margin: 0">{{ a.reason }}</p>
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="muted small">Pas encore de décoration. Ça viendra, soldat !</p>
+          }
+          @if (p.responsibilities.length) {
+            <h3 class="h3">Responsabilités</h3>
+            <div class="row">
+              @for (r of p.responsibilities; track r.id) {
+                <span class="badge badge--olive" [title]="r.description ?? ''">{{ r.name }}</span>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="card card--muted" aria-labelledby="trainings-title">
+          <h2 id="trainings-title">Formations</h2>
+          <p class="muted small" style="margin: 0">Le suivi des formations arrive dans une prochaine version du site.</p>
+        </section>
+
+        <!-- RGPD -->
+        <section class="card" aria-labelledby="gdpr-title">
+          <h2 id="gdpr-title">Mes données (RGPD)</h2>
+          <div class="row">
+            <button type="button" class="btn btn--sm" (click)="exportData()"><app-icon name="download" [size]="14" /> Télécharger mes données</button>
+            <button type="button" class="btn btn--danger btn--sm" (click)="confirmDelete.set(true)"><app-icon name="trash" [size]="14" /> Supprimer mon compte et mes données</button>
+          </div>
+          <details style="margin-top: var(--space-4)">
+            <summary class="small">Historique de mes consentements</summary>
+            <div class="table-wrap" style="margin-top: var(--space-3)">
+              <table class="table">
+                <thead><tr><th>Date</th><th>Version</th><th>Profil public</th><th>Image</th><th>Carte</th></tr></thead>
+                <tbody>
+                  @for (c of p.consents.history; track c.createdAt) {
+                    <tr>
+                      <td>{{ c.createdAt | date: 'short' }}</td>
+                      <td class="mono">{{ c.version }}</td>
+                      <td>{{ c.publicProfile ? 'Oui' : 'Non' }}</td>
+                      <td>{{ c.customImage ? 'Oui' : 'Non' }}</td>
+                      <td>{{ c.location ? 'Oui' : 'Non' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </details>
+          <p class="small muted" style="margin-top: var(--space-3)">Voir la <a routerLink="/confidentialite">politique de confidentialité</a>.</p>
+        </section>
+      </div>
+    </div>
+  }
+</div>
+
+@if (confirmDelete()) {
+  <div class="modal-backdrop" (click)="confirmDelete.set(false)">
+    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="del-title" (click)="$event.stopPropagation()">
+      <h2 id="del-title">Supprimer ton compte ?</h2>
+      <p>Ton profil, ta phrase, tes images, tes villes et tes décorations seront <strong>définitivement supprimés</strong> du site. Le journal d'activité sera anonymisé. Tes rôles Discord ne sont pas modifiés.</p>
+      <div class="field">
+        <label for="del-confirm">Tape <strong class="mono">SUPPRIMER</strong> pour confirmer</label>
+        <input id="del-confirm" class="input" [(ngModel)]="deleteConfirmText" autocomplete="off" />
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmDelete.set(false)">Annuler</button>
+        <button type="button" class="btn btn--danger" [disabled]="deleteConfirmText !== 'SUPPRIMER' || deleting()" (click)="deleteAccount()">Supprimer définitivement</button>
+      </div>
+    </div>
+  </div>
+}

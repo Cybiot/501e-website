@@ -1,0 +1,317 @@
+/* Styles partagés des écrans d'administration */
+.admin-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1100px) {
+  .admin-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+}
+legend {
+  margin-bottom: var(--space-2);
+}
+.combo {
+  position: relative;
+}
+.combo__list {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: var(--space-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.combo__list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.combo__list li:hover {
+  background: var(--olive-soft);
+}
+.combo__list li span:nth-child(2) {
+  flex: 1;
+}
+.medal-pick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-2);
+}
+.medal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.medal-option:hover {
+  border-color: var(--border-strong);
+}
+.medal-option.selected {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.medal-option:focus-within {
+  box-shadow: var(--focus-ring);
+}
+.pending {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.pending li {
+  display: flex;
+  flex-wrap: wrap; /* le bouton « Retirer » passe sous le texte quand la place manque */
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.pending__body {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.pending__body p {
+  margin: var(--space-1) 0;
+}
+.discord-preview {
+  background: #313338;
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+  max-height: 55vh;
+  overflow-y: auto;
+  color: #dbdee1;
+  font-size: var(--fs-sm);
+}
+.discord-msg__author {
+  font-weight: 600;
+  color: #f2f3f5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+.discord-bot {
+  background: #5865f2;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.discord-msg__content {
+  margin: 0 0 var(--space-2);
+}
+.discord-embed {
+  background: #2b2d31;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  max-width: 520px;
+}
+.discord-embed p {
+  white-space: pre-line;
+  margin: var(--space-2) 0 0;
+}
+.discord-embed small {
+  color: #949ba4;
+}
+.thumb {
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-2);
+}
+.medal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.medal-card.inactive {
+  opacity: 0.6;
+}
+.medal-card img {
+  flex-shrink: 0;
+}
+.medal-form {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 760px) {
+  .medal-form {
+    grid-template-columns: 1fr 260px;
+  }
+}
+.check-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  padding: var(--space-1) 0;
+  cursor: pointer;
+}
+.check-inline input {
+  accent-color: var(--olive);
+}
+.checks {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.checks li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+.role-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  background: var(--bg);
+}
+.notifs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.notifs li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  flex-wrap: wrap;
+}
+.notifs li.unread {
+  border-left: 3px solid var(--gold);
+  background: var(--surface-2);
+}
+.notifs__icon {
+  color: var(--gold-text);
+  margin-top: 2px;
+}
+.notifs__body {
+  flex: 1;
+  min-width: 200px;
+}
+.notifs__body p {
+  margin: var(--space-1) 0;
+}
+.log-filters {
+  display: grid;
+  gap: 0 var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-bottom: var(--space-2);
+}
+.json {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: pre-wrap;
+  max-width: 360px;
+  background: var(--bg);
+  padding: var(--space-2);
+  border-radius: 4px;
+}
+
+.medal-form__preview {
+  align-self: start;
+}
+
+/* --- Tableaux éditables sur mobile ---------------------------------------
+   Sous 720px, chaque ligne devient une carte : champs pleine largeur, libellé
+   tiré de data-label (l'en-tête du tableau est masqué). */
+@media (max-width: 719px) {
+  .table--stack thead {
+    display: none;
+  }
+  .table--stack,
+  .table--stack tbody {
+    display: block;
+    width: 100%;
+  }
+  .table--stack tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row dense;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  .table--stack tr:last-child {
+    border-bottom: 0;
+  }
+  .table--stack td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .table--stack td:empty {
+    display: none;
+  }
+  .table--stack td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: var(--space-1);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+  }
+  .table--stack .table__wide {
+    grid-column: 1 / -1;
+  }
+  .table--stack .table__actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: var(--space-2);
+    grid-column: -2 / -1;
+  }
+  /* Les largeurs fixes en ligne (ordre, abréviation) ne valent que pour le tableau large. */
+  .table--stack .input,
+  .table--stack .select {
+    width: 100% !important;
+  }
+}

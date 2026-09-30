@@ -1,0 +1,5 @@
+/* Point d'entrée des styles globaux. Les tokens (couleurs, typographies…) sont dans styles/tokens.css. */
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/components.css';
+@import './styles/map.css';

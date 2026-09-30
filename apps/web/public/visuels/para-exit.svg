@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 64" fill="#e8ebe3">
+  <!-- Parachutiste juste sorti de la porte, groupé ; la sangle d'ouverture automatique file vers l'avion. -->
+  <path d="M40 22 L79 1" stroke="#e8ebe3" stroke-width="1" fill="none"/>
+  <g transform="translate(14 36) rotate(-22)">
+    <!-- Casque et visage (profil) -->
+    <path d="M-6 0 a6 6 0 0 1 12 0 l2 1.6 h-15z"/>
+    <ellipse cx="0.5" cy="3.4" rx="3.6" ry="3.2"/>
+    <!-- Buste, sac dorsal, ventral -->
+    <path d="M4 -4 Q14 -7 24 -4 L25 6 Q14 9 4 6Z"/>
+    <rect x="8" y="-10" width="15" height="7" rx="2.4"/>
+    <rect x="10" y="5" width="9" height="5" rx="1.6"/>
+    <!-- Jambes groupées -->
+    <path d="M22 -3 L35 3 L32 16 L28 16 L29.5 7 L21 5Z"/>
+    <path d="M27.5 15 h6 l2 2.6 h-8z"/>
+  </g>
+</svg>

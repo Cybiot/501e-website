@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 172" fill="#e8ebe3">
+  <!-- Voile en cours d'ouverture (« en torche »), silhouette pleine. -->
+  <path d="M30 2 C40 8 43 22 40 36 C44 44 38 52 41 60 C36 62 33 58 30 62 C27 58 24 62 19 60 C22 52 16 44 20 36 C17 22 20 8 30 2Z"/>
+  <path d="M20 60 L25 116 M25 61 L25 116 M35 61 L35 116 M40 60 L35 116" stroke="#e8ebe3" stroke-width="0.9" fill="none"/>
+  <g transform="translate(30 108)">
+    <!-- Bras serrés sur le parachute ventral -->
+    <path d="M-6.4 10.5 Q-9 17 -2 19 M6.4 10.5 Q9 17 2 19" stroke="#e8ebe3" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+    <!-- Casque et visage -->
+    <path d="M-5.5 2 a5.5 5.5 0 0 1 11 0 l1.2 1.4 h-13.4z"/>
+    <ellipse cx="0" cy="5.2" rx="3.4" ry="3"/>
+    <!-- Buste -->
+    <path d="M-7 9.5 Q0 7.6 7 9.5 L5.4 25 L-5.4 25Z"/>
+    <!-- Jambes jointes, tendues -->
+    <path d="M-5.2 24 L-0.4 24 L-0.6 43 L-3.2 43.5 L-4 36Z M5.2 24 L0.4 24 L0.6 43 L3.2 43.5 L4 36Z"/>
+    <path d="M-4 42.6 h3.8 l0.4 2.4 h-5.4z M4 42.6 h-3.8 l-0.4 2.4 h5.4z"/>
+    <path d="M0 45 L0 53" stroke="#e8ebe3" stroke-width="0.9"/>
+    <rect x="-3.8" y="53" width="7.6" height="9" rx="1.6"/>
+  </g>
+</svg>

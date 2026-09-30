@@ -1,0 +1,273 @@
+// Schéma de données du site 501st PIR (périmètre V1).
+// Les modules V2 (batailles, formations) viendront s'ajouter ici via de nouvelles migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Statut calculé à partir des rôles Discord : none = visiteur (connecté non-membre inclus).
+enum UserStatus {
+  none
+  member
+  admin
+}
+
+enum ImageStatus {
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id                   String     @id @default(cuid())
+  discordId            String     @unique
+  displayName          String
+  discordAvatarUrl     String?
+  status               UserStatus @default(none)
+  /// Copie des rôles Discord lors de la dernière synchronisation (lecture seule).
+  discordRoleIds       String[]   @default([])
+  rankId               String?
+  /// Date d'arrivée sur le serveur Discord de la communauté.
+  joinedAt             DateTime?
+  lastLoginAt          DateTime?
+  lastSeenAt           DateTime?
+  rolesSyncedAt        DateTime?
+  /// Date à laquelle le membre a perdu son rôle (profil masqué, purge différée).
+  leftAt               DateTime?
+  inactivityNotifiedAt DateTime?
+  // Consentements RGPD (voir ConsentRecord pour l'historique)
+  consentAcceptedAt    DateTime?
+  consentVersion       String?
+  publicProfileEnabled Boolean    @default(true)
+  consentCustomImage   Boolean    @default(false)
+  consentLocation      Boolean    @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  rank              Rank?                @relation(fields: [rankId], references: [id], onDelete: SetNull)
+  profile           Profile?
+  responsibilities  UserResponsibility[]
+  images            CustomImage[]        @relation("ImageOwner")
+  reviewedImages    CustomImage[]        @relation("ImageReviewer")
+  awards            MedalAward[]         @relation("AwardRecipient")
+  awardsGiven       MedalAward[]         @relation("AwardGiver")
+  awardsRevoked     MedalAward[]         @relation("AwardRevoker")
+  announcements     Announcement[]
+  locations         MemberLocation[]
+  sessions          Session[]
+  consents          ConsentRecord[]
+  auditLogs         AuditLog[]
+  notificationsRead Notification[]
+
+  @@index([status])
+  @@index([rankId])
+}
+
+model Session {
+  /// Empreinte SHA-256 du jeton de session (le jeton en clair n'est jamais stocké).
+  id         String   @id
+  userId     String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Rank {
+  id            String  @id @default(cuid())
+  name          String  @unique
+  abbreviation  String
+  /// Plus la valeur est grande, plus le grade est élevé.
+  order         Int     @unique
+  discordRoleId String? @unique
+  iconUrl       String?
+
+  users User[]
+}
+
+model Responsibility {
+  id            String  @id @default(cuid())
+  name          String  @unique
+  description   String
+  discordRoleId String? @unique
+  order         Int     @default(0)
+
+  users UserResponsibility[]
+}
+
+model UserResponsibility {
+  userId           String
+  responsibilityId String
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responsibility Responsibility @relation(fields: [responsibilityId], references: [id], onDelete: Cascade)
+
+  @@id([userId, responsibilityId])
+  @@index([responsibilityId])
+}
+
+model Profile {
+  userId         String  @id
+  tagline        String? @db.VarChar(140)
+  customImageId  String? @unique
+  pendingImageId String? @unique
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customImage  CustomImage? @relation("ApprovedImage", fields: [customImageId], references: [id], onDelete: SetNull)
+  pendingImage CustomImage? @relation("PendingImage", fields: [pendingImageId], references: [id], onDelete: SetNull)
+}
+
+model CustomImage {
+  id              String      @id @default(cuid())
+  userId          String
+  storageKey      String      @unique
+  status          ImageStatus @default(pending)
+  rejectionReason String?
+  submittedAt     DateTime    @default(now())
+  reviewedAt      DateTime?
+  reviewedById    String?
+
+  user        User     @relation("ImageOwner", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy  User?    @relation("ImageReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approvedFor Profile? @relation("ApprovedImage")
+  pendingFor  Profile? @relation("PendingImage")
+
+  @@index([status, submittedAt])
+  @@index([userId])
+}
+
+model Medal {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String
+  imageUrl      String
+  category      String
+  discordRoleId String?
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+  /// Un membre peut-il recevoir plusieurs fois cette médaille ?
+  repeatable    Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  awards MedalAward[]
+
+  @@index([isActive, order])
+}
+
+model MedalAward {
+  id             String    @id @default(cuid())
+  userId         String
+  medalId        String
+  reason         String    @db.VarChar(200)
+  awardedById    String?
+  awardedAt      DateTime  @default(now())
+  announcedAt    DateTime?
+  announcementId String?
+  revokedAt      DateTime?
+  revokedById    String?
+  /// Clé fournie par le formulaire pour rendre l'attribution idempotente (double-clic).
+  idempotencyKey String?   @unique
+
+  user         User          @relation("AwardRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  medal        Medal         @relation(fields: [medalId], references: [id], onDelete: Restrict)
+  awardedBy    User?         @relation("AwardGiver", fields: [awardedById], references: [id], onDelete: SetNull)
+  revokedBy    User?         @relation("AwardRevoker", fields: [revokedById], references: [id], onDelete: SetNull)
+  announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([medalId])
+  @@index([announcedAt, revokedAt])
+}
+
+model Announcement {
+  id                String   @id @default(cuid())
+  createdById       String?
+  createdAt         DateTime @default(now())
+  /// Un message Discord par bloc (découpage automatique selon les limites Discord).
+  discordMessageIds String[]
+  channelId         String
+  awardsCount       Int
+
+  createdBy User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  awards    MedalAward[]
+}
+
+model MemberLocation {
+  id        String   @id @default(cuid())
+  userId    String
+  cityLabel String
+  country   String
+  /// Coordonnées arrondies et légèrement décalées : précision « ville » uniquement.
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  type      String
+  payload   Json
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  readById  String?
+
+  readBy User? @relation(fields: [readById], references: [id], onDelete: SetNull)
+
+  @@index([readAt, createdAt])
+  @@index([type])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  /// Empreinte de l'acteur conservée après suppression de son compte (anonymisation).
+  actorHash  String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  /// Empreinte salée de l'IP : jamais d'adresse en clair.
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+model ConsentRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  version       String
+  publicProfile Boolean
+  customImage   Boolean
+  location      Boolean
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

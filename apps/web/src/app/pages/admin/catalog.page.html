@@ -1,0 +1,135 @@
+<div class="row row--between">
+  <h1 class="admin-title">Catalogue des médailles</h1>
+  <div class="row">
+    <a routerLink="/admin/medailles" class="btn btn--sm"><app-icon name="award" [size]="14" /> Attribuer</a>
+    <button type="button" class="btn btn--primary btn--sm" (click)="create()"><app-icon name="plus" [size]="14" /> Nouvelle médaille</button>
+  </div>
+</div>
+
+@if (medals() === null) {
+  <div class="grid" style="--min: 260px">
+    @for (i of [1, 2, 3]; track i) {
+      <div class="skeleton" style="height: 180px"></div>
+    }
+  </div>
+} @else {
+  <div class="grid" style="--min: 260px">
+    @for (m of medals(); track m.id) {
+      <article class="card medal-card" [class.inactive]="!m.isActive">
+        <div class="row" style="flex-wrap: nowrap">
+          <img [src]="m.imageUrl" alt="" width="56" height="56" />
+          <div style="min-width: 0">
+            <h2 class="card-title" style="margin: 0">{{ m.name }}</h2>
+            <div class="row" style="gap: var(--space-1); margin-top: var(--space-1)">
+              <span class="badge">{{ m.category }}</span>
+              @if (!m.isActive) {
+                <span class="badge badge--danger">Désactivée</span>
+              }
+              @if (!m.repeatable) {
+                <span class="badge">Unique</span>
+              }
+            </div>
+          </div>
+        </div>
+        <p class="small muted">{{ m.description }}</p>
+        <p class="small muted" style="margin: 0">
+          Ordre {{ m.order }} · {{ m.awardsCount }} attribution(s) · rôle
+          <span class="mono">{{ m.discordRoleId ?? 'aucun' }}</span>
+        </p>
+        <div class="row" style="margin-top: auto; padding-top: var(--space-3)">
+          <button type="button" class="btn btn--sm" (click)="edit(m)"><app-icon name="pencil" [size]="14" /> Modifier</button>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="toggleActive(m)">{{ m.isActive ? 'Désactiver' : 'Réactiver' }}</button>
+          @if (m.awardsCount === 0) {
+            <button type="button" class="btn btn--danger btn--sm" (click)="remove(m)" aria-label="Supprimer"><app-icon name="trash" [size]="14" /></button>
+          }
+        </div>
+      </article>
+    } @empty {
+      <div class="empty"><app-icon name="award" [size]="32" /><p>Aucune médaille. Crée la première !</p></div>
+    }
+  </div>
+}
+
+@if (editing(); as f) {
+  <div class="modal-backdrop" (click)="editing.set(null)">
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="medal-form-title" (click)="$event.stopPropagation()">
+      <h2 id="medal-form-title">{{ f.id ? 'Modifier la médaille' : 'Nouvelle médaille' }}</h2>
+      <form (submit)="$event.preventDefault(); save()" class="medal-form">
+        <div>
+          <div class="field">
+            <label for="mf-name">Nom</label>
+            <input id="mf-name" class="input" required maxlength="80" [ngModel]="f.name" (ngModelChange)="patch({ name: $event })" name="name" />
+          </div>
+          <div class="field">
+            <label for="mf-desc">Conditions d'obtention</label>
+            <textarea id="mf-desc" class="textarea" rows="3" maxlength="500" [ngModel]="f.description" (ngModelChange)="patch({ description: $event })" name="description"></textarea>
+          </div>
+          <div class="row" style="align-items: flex-start">
+            <div class="field" style="flex: 1">
+              <label for="mf-cat">Catégorie</label>
+              <input id="mf-cat" class="input" list="mf-cats" [ngModel]="f.category" (ngModelChange)="patch({ category: $event })" name="category" />
+              <datalist id="mf-cats">
+                @for (c of categories(); track c) {
+                  <option [value]="c"></option>
+                }
+              </datalist>
+            </div>
+            <div class="field" style="width: 110px">
+              <label for="mf-order">Ordre</label>
+              <input id="mf-order" class="input" type="number" min="0" [ngModel]="f.order" (ngModelChange)="patch({ order: +$event })" name="order" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="mf-img">Image / ruban (PNG, WebP ou SVG · 1 Mo max)</label>
+            <input id="mf-img" class="input" type="file" accept="image/png,image/webp,image/svg+xml" (change)="onImage($event)" />
+          </div>
+          <div class="stack" style="margin-bottom: var(--space-4)">
+            <label class="switch"><input type="checkbox" role="switch" [checked]="f.repeatable" (change)="patch({ repeatable: $any($event.target).checked })" /> Cumulable (plusieurs fois par membre)</label>
+            <label class="switch"><input type="checkbox" role="switch" [checked]="f.isActive" (change)="patch({ isActive: $any($event.target).checked })" /> Active</label>
+          </div>
+
+          <fieldset class="field">
+            <legend class="label">Rôle Discord associé</legend>
+            @if (f.id) {
+              <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'keep'" (change)="patch({ roleMode: 'keep' })" /> Conserver ({{ roleName(f.discordRoleId) }})</label>
+            }
+            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'create'" (change)="patch({ roleMode: 'create' })" /> Créer automatiquement le rôle via le bot</label>
+            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'existing'" (change)="patch({ roleMode: 'existing' })" /> Associer un rôle existant</label>
+            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'none'" (change)="patch({ roleMode: 'none' })" /> Aucun rôle</label>
+            @if (f.roleMode === 'existing') {
+              <select class="select" [ngModel]="f.discordRoleId" (ngModelChange)="patch({ discordRoleId: $event })" name="discordRoleId" aria-label="Rôle Discord existant">
+                <option value="">— Choisir un rôle —</option>
+                @for (r of roles(); track r.id) {
+                  <option [value]="r.id" [disabled]="r.managed">{{ r.name }}</option>
+                }
+              </select>
+            }
+            @if (f.roleMode === 'create') {
+              <label class="row small">Couleur du rôle <input type="color" [ngModel]="f.roleColor" (ngModelChange)="patch({ roleColor: $event })" name="roleColor" /></label>
+            }
+          </fieldset>
+        </div>
+
+        <div class="medal-form__preview">
+          <p class="eyebrow">Aperçu</p>
+          @if (previewCard(); as card) {
+            <app-dog-tag [member]="card" [link]="false" />
+          }
+          @if (imagePreview() ?? f.currentImageUrl; as img) {
+            <img [src]="img" alt="Aperçu de l'image" width="96" height="96" style="margin-top: var(--space-4)" />
+          }
+        </div>
+
+        <div class="modal__actions" style="grid-column: 1 / -1">
+          <button type="button" class="btn btn--ghost" (click)="editing.set(null)">Annuler</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving() || !f.name || !f.description">
+            @if (saving()) {
+              <app-icon name="loader" class="spin" [size]="16" />
+            }
+            Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

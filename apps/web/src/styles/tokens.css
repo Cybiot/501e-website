@@ -1,0 +1,215 @@
+/* ==========================================================================
+   Design tokens — 501st PIR
+   Deux thèmes, choisis par l'attribut data-theme de <html> (voir index.html et ThemeService) :
+   - « nuit » (défaut, :root) : charte « Saut de nuit », bleu nuit, orange balise, cyan glacé ;
+   - « jour » : esprit des spécifications techniques (§ 3.1) réchauffé — brun-kaki, parchemin,
+     vert olive, or terni, rouille.
+   Typographie commune (spécifications) : Oswald, Inter, IBM Plex Mono.
+   Palettes modifiables ici uniquement. Contrastes vérifiés WCAG AA.
+   --olive* = accent d'action, --gold* = accent de repère (orange / cyan en nuit).
+   Les variantes *-rgb servent aux transparences : rgb(var(--gold-rgb) / 0.3).
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* Fonds et surfaces (bleu nuit) */
+  --bg: #070b1a;
+  --surface-1: #0e1530;
+  --surface-2: #172048;
+  --surface-3: #1e2a5c;
+  --border: #27316b;
+  --border-strong: #36428a;
+
+  /* Accent principal (actions, CTA) : orange balise */
+  --olive: #ff6b2c;
+  --olive-strong: #ff6b2c; /* fond des boutons, texte --on-accent foncé (6.9:1) */
+  --olive-hover: #ff8a57;
+  --olive-text: #ff8a57; /* orange utilisé comme texte sur fond sombre (8.4:1) */
+  --olive-soft: rgba(255, 107, 44, 0.14);
+  --olive-rgb: 255 107 44;
+
+  /* Accent secondaire (repères, chiffres, focus) : cyan glacé */
+  --gold: #5ce1e6;
+  --gold-soft: rgba(92, 225, 230, 0.12);
+  --gold-text: #5ce1e6;
+  --gold-hover: #8ae9ed;
+  --gold-rgb: 92 225 230;
+  --on-gold: #070b1a;
+
+  /* Texte */
+  --text: #e8ecff;
+  --text-muted: #8e97bd;
+  --text-faint: #7580aa;
+  --on-accent: #070b1a;
+
+  /* Transparences des fonds (en-tête, panneaux) */
+  --bg-rgb: 7 11 26;
+  --surface-1-rgb: 14 21 48;
+
+  /* Hero et carte */
+  --hero-base: #0a1026;
+  --map-sea: #060916; /* couleur de la mer une fois les tuiles filtrées */
+  --map-tiles-filter: url(#tiles-night);
+
+  /* États */
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --warning: #f2b84b;
+  --warning-soft: rgba(242, 184, 75, 0.14);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.14);
+  --info: #7fb2ff;
+  --info-soft: rgba(127, 178, 255, 0.14);
+  --stamp: #c8322b;
+  --success-rgb: 74 222 128;
+  --warning-rgb: 242 184 75;
+  --danger-rgb: 255 107 107;
+  --info-rgb: 127 178 255;
+
+  /* Ambiance : sur-titres de section, lueurs chaude / froide des fonds */
+  --eyebrow: #5ce1e6;
+  --glow-warm-rgb: 255 107 44;
+  --glow-cool-rgb: 92 225 230;
+
+  /* Plaques d'identité (dog tags) : acier bleui */
+  --tag-top: #1a2352;
+  --tag-bottom: #121a3c;
+  --tag-border: #2c3876;
+  --tag-border-hover: #46549e;
+
+  /* Fin du dégradé des avatars sans photo (initiales en --on-accent, ≥ 4.7:1) */
+  --avatar-end: #d4531f;
+  /* Rayures des panneaux verrouillés (alternent avec --surface-1) */
+  --stripe: #0a1026;
+
+  /* Typographie (spécifications § 3.1) */
+  --font-display: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.25rem);
+  --fs-3xl: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --fs-hero: clamp(2.25rem, 1.2rem + 4vw, 4.5rem);
+
+  /* Espacements */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 6rem;
+
+  /* Formes et effets */
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 24px;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 20px 48px rgba(0, 0, 0, 0.6);
+  --focus-ring: 0 0 0 3px rgba(92, 225, 230, 0.6);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --dur-slow: 600ms;
+
+  --container: 1200px;
+  --header-h: 64px;
+  --gutter: 16px;
+}
+
+/* Thème « jour » : esprit des spécifications techniques (§ 3.1), réchauffé et plus varié. */
+:root[data-theme='jour'] {
+  color-scheme: dark;
+
+  /* Fonds et surfaces : brun-kaki (toile de parachute, cuir, bois de caisse) */
+  --bg: #13110d;
+  --surface-1: #1c1914;
+  --surface-2: #26221b;
+  --surface-3: #312b22;
+  --border: #3d3629;
+  --border-strong: #54493a;
+
+  /* Vert olive « OD ». #6b7f3a n'atteint 4.5:1 ni comme texte ni sous un libellé :
+     fond de bouton légèrement plus foncé (4.9:1 avec --on-accent), texte plus clair (8:1). */
+  --olive: #6b7f3a;
+  --olive-strong: #5a6b30;
+  --olive-hover: #52622c;
+  --olive-text: #a5b863;
+  --olive-soft: rgba(107, 127, 58, 0.2);
+  --olive-rgb: 107 127 58;
+
+  /* Or terni : médailles, éléments d'honneur, chiffres (7.6:1 sur les surfaces) */
+  --gold: #d0a54c;
+  --gold-soft: rgba(208, 165, 76, 0.14);
+  --gold-text: #d0a54c;
+  --gold-hover: #ddb862;
+  --gold-rgb: 208 165 76;
+  --on-gold: #13110d;
+
+  /* Texte : parchemin */
+  --text: #f0eadb;
+  --text-muted: #b3ab94;
+  --text-faint: #9c947e;
+  --on-accent: #f0eadb;
+
+  /* États, dans des teintes chaudes */
+  --success: #9dbb5e;
+  --success-soft: rgba(157, 187, 94, 0.14);
+  --success-rgb: 157 187 94;
+  --warning: #e3a840;
+  --warning-soft: rgba(227, 168, 64, 0.14);
+  --warning-rgb: 227 168 64;
+  --danger: #e8735a;
+  --danger-soft: rgba(232, 115, 90, 0.14);
+  --danger-rgb: 232 115 90;
+  --info: #9fb8c4;
+  --info-soft: rgba(159, 184, 196, 0.14);
+  --info-rgb: 159 184 196;
+  --stamp: #b23a2c;
+
+  /* Rouille : sur-titres et lueur chaude des fonds (6.4:1 sur les surfaces) */
+  --eyebrow: #d98a52;
+  --glow-warm-rgb: 181 101 46;
+  --glow-cool-rgb: 208 165 76;
+
+  /* Plaques d'identité : laiton patiné */
+  --tag-top: #2c261c;
+  --tag-bottom: #201c15;
+  --tag-border: #4a4031;
+  --tag-border-hover: #6e5f43;
+
+  --avatar-end: #2f3a1c;
+  --stripe: #17140f;
+
+  --bg-rgb: 19 17 13;
+  --surface-1-rgb: 28 25 20;
+
+  --hero-base: #15120d;
+  --map-sea: #0c0a07;
+  --map-tiles-filter: url(#tiles-jour);
+
+  --focus-ring: 0 0 0 3px rgba(208, 165, 76, 0.6);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+}

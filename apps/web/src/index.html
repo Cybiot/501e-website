@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>501st PIR · Communauté RP Squad 44</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Communauté francophone de jeu de rôle sur Squad 44 incarnant le 501st Parachute Infantry Regiment de la 101st Airborne."
+    />
+    <meta name="theme-color" content="#070b1a" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Thème posé avant le premier rendu (évite un flash) : choix mémorisé, sinon réglage de l'appareil. Voir ThemeService. -->
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem('theme');
+        } catch (e) {}
+        if (t !== 'jour' && t !== 'nuit')
+          t = matchMedia('(prefers-color-scheme: light)').matches ? 'jour' : 'nuit';
+        document.documentElement.setAttribute('data-theme', t);
+        if (t === 'jour')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#13110d');
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="preload" href="/visuels/hero-topo.svg" as="image" />
+  </head>
+  <body>
+    <app-root></app-root>
+    <noscript>
+      <p style="padding: 16px; text-align: center">
+        Le site est lisible sans JavaScript. L'espace membre, la carte et l'administration
+        nécessitent JavaScript.
+      </p>
+    </noscript>
+  </body>
+</html>

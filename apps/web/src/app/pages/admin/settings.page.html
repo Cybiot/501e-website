@@ -1,0 +1,193 @@
+<h1 class="admin-title">Paramètres</h1>
+
+@if (!data() || !form) {
+  <div class="skeleton" style="height: 400px"></div>
+} @else {
+  @let d = data()!;
+  @let f = form!;
+
+  <section class="card" aria-labelledby="integration-title">
+    <div class="row row--between">
+      <h2 id="integration-title" class="card-title">Intégration Discord</h2>
+      <span class="badge" [class.badge--info]="d.discordMode === 'mock'" [class.badge--success]="d.discordMode === 'live'">
+        {{ d.discordMode === 'mock' ? 'Mode démo (Discord simulé)' : 'Discord connecté' }}
+      </span>
+    </div>
+    <p class="small muted">Serveur : <span class="mono">{{ d.guildId ?? 'non configuré (DISCORD_GUILD_ID)' }}</span>. Les identifiants secrets (jetons, client secret) restent dans les variables d'environnement.</p>
+    <div class="row">
+      <button type="button" class="btn btn--sm" (click)="check()" [disabled]="checking()">
+        <app-icon [name]="checking() ? 'loader' : 'check-circle'" [class.spin]="checking()" [size]="14" /> Vérifier l'intégration
+      </button>
+      <button type="button" class="btn btn--sm" (click)="syncRoles()" [disabled]="syncing()">
+        <app-icon name="refresh" [class.spin]="syncing()" [size]="14" /> Resynchroniser les rôles
+      </button>
+    </div>
+    @if (checks(); as c) {
+      <ul class="checks">
+        @for (item of c.checks; track item.label) {
+          <li>
+            <app-icon [name]="item.ok ? 'check-circle' : 'x-circle'" [size]="16" [style.color]="item.ok ? 'var(--success)' : 'var(--danger)'" />
+            <span>{{ item.label }}</span>
+            @if (item.detail) {
+              <span class="small muted">— {{ item.detail }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <form class="card" style="margin-top: var(--space-5)" (submit)="$event.preventDefault(); save()" aria-labelledby="roles-title">
+    <h2 id="roles-title" class="card-title">Statuts, annonces et invitation</h2>
+    <div class="admin-grid">
+      @for (key of roleLists; track key) {
+        <fieldset class="field">
+          <legend class="label">{{ key === 'memberRoleIds' ? 'Rôles donnant le statut Membre' : 'Rôles donnant le statut Admin' }}</legend>
+          <div class="role-list">
+            @for (r of roles(); track r.id) {
+              <label class="check-inline">
+                <input type="checkbox" [checked]="f[key].includes(r.id)" (change)="toggleRole(key, r.id, $any($event.target).checked)" />
+                {{ r.name }} <span class="mono small muted">{{ r.id }}</span>
+              </label>
+            }
+            @for (id of f[key]; track id) {
+              @if (!roles().length || !roles().some(x => x.id === id)) {
+                <label class="check-inline">
+                  <input type="checkbox" checked (change)="toggleRole(key, id, $any($event.target).checked)" />
+                  <span class="mono small">{{ id }}</span>
+                </label>
+              }
+            }
+          </div>
+          <div class="row">
+            <input #roleInput class="input" style="flex: 1" placeholder="Ajouter un ID de rôle" [attr.aria-label]="'Ajouter un ID de rôle'" />
+            <button type="button" class="btn btn--sm" (click)="addRoleId(key, roleInput)">Ajouter</button>
+          </div>
+        </fieldset>
+      }
+    </div>
+    <div class="admin-grid">
+      <div class="field">
+        <label for="s-channel">ID du salon d'annonce des médailles</label>
+        <input id="s-channel" class="input mono" [(ngModel)]="f.announceChannelId" name="announceChannelId" />
+      </div>
+      <div class="field">
+        <label for="s-invite">Lien d'invitation Discord (bouton « Rejoindre la 501e »)</label>
+        <input id="s-invite" class="input" type="url" [(ngModel)]="f.inviteUrl" name="inviteUrl" placeholder="https://discord.gg/…" />
+      </div>
+    </div>
+    <label class="switch" style="margin-bottom: var(--space-5)">
+      <input type="checkbox" role="switch" [(ngModel)]="f.announceMentions" name="announceMentions" />
+      Mentionner les récipiendaires (&#64;membre) dans les annonces
+    </label>
+
+    <h3 class="card-title">Texte de consentement RGPD</h3>
+    <div class="field" style="max-width: 280px">
+      <label for="s-cv">Version</label>
+      <input id="s-cv" class="input mono" [(ngModel)]="f.consentVersion" name="consentVersion" />
+      <span class="field__hint">Changer la version redemande le consentement à tous les membres.</span>
+    </div>
+    <div class="field">
+      <label for="s-ct">Texte affiché dans la modale</label>
+      <textarea id="s-ct" class="textarea" rows="8" [(ngModel)]="f.consentText" name="consentText"></textarea>
+    </div>
+    <button type="submit" class="btn btn--primary" [disabled]="saving()">Enregistrer les paramètres</button>
+  </form>
+
+  <section class="card" style="margin-top: var(--space-5)" aria-labelledby="ranks-title">
+    <h2 id="ranks-title" class="card-title">Grades ↔ rôles Discord</h2>
+    <p class="small muted">Le grade affiché est le rôle de plus haut « ordre » détenu par le membre.</p>
+    <div class="table-wrap">
+      <table class="table table--stack">
+        <thead><tr><th>Ordre</th><th>Nom</th><th>Abrév.</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
+        <tbody>
+          @for (r of d.ranks; track r.id) {
+            <tr>
+              <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="r.order" [attr.aria-label]="'Ordre de ' + r.name" /></td>
+              <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="r.name" aria-label="Nom" /></td>
+              <td data-label="Abréviation"><input class="input" style="width: 90px" [(ngModel)]="r.abbreviation" aria-label="Abréviation" /></td>
+              <td class="table__wide" data-label="Rôle Discord">
+                <select class="select" [(ngModel)]="r.discordRoleId" aria-label="Rôle Discord">
+                  <option [ngValue]="null">— Aucun —</option>
+                  @for (role of roles(); track role.id) {
+                    <option [ngValue]="role.id">{{ role.name }}</option>
+                  }
+                  @if (r.discordRoleId && !roles().some(x => x.id === r.discordRoleId)) {
+                    <option [ngValue]="r.discordRoleId">{{ r.discordRoleId }}</option>
+                  }
+                </select>
+              </td>
+              <td data-label="Membres">{{ r.usersCount }}</td>
+              <td class="row table__actions" style="flex-wrap: nowrap">
+                <button type="button" class="btn btn--sm" (click)="saveRank(r)" aria-label="Enregistrer"><app-icon name="check" [size]="14" /></button>
+                <button type="button" class="btn btn--danger btn--sm" (click)="deleteRank(r)" aria-label="Supprimer"><app-icon name="trash" [size]="14" /></button>
+              </td>
+            </tr>
+          }
+          <tr>
+            <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="newRank.order" aria-label="Ordre du nouveau grade" /></td>
+            <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="newRank.name" placeholder="Nouveau grade" aria-label="Nom du nouveau grade" /></td>
+            <td data-label="Abréviation"><input class="input" style="width: 90px" [(ngModel)]="newRank.abbreviation" placeholder="Abrév." aria-label="Abréviation" /></td>
+            <td class="table__wide" data-label="Rôle Discord">
+              <select class="select" [(ngModel)]="newRank.discordRoleId" aria-label="Rôle Discord du nouveau grade">
+                <option value="">— Aucun —</option>
+                @for (role of roles(); track role.id) {
+                  <option [value]="role.id">{{ role.name }}</option>
+                }
+              </select>
+            </td>
+            <td></td>
+            <td class="table__actions"><button type="button" class="btn btn--primary btn--sm" (click)="addRank()" [disabled]="!newRank.name || !newRank.abbreviation"><app-icon name="plus" [size]="14" /></button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top: var(--space-5)" aria-labelledby="resp-title">
+    <h2 id="resp-title" class="card-title">Responsabilités ↔ rôles Discord</h2>
+    <div class="table-wrap">
+      <table class="table table--stack">
+        <thead><tr><th>Nom</th><th>Description</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
+        <tbody>
+          @for (r of d.responsibilities; track r.id) {
+            <tr>
+              <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="r.name" aria-label="Nom" /></td>
+              <td class="table__wide" data-label="Description"><input class="input" [(ngModel)]="r.description" aria-label="Description" /></td>
+              <td class="table__wide" data-label="Rôle Discord">
+                <select class="select" [(ngModel)]="r.discordRoleId" aria-label="Rôle Discord">
+                  <option [ngValue]="null">— Aucun —</option>
+                  @for (role of roles(); track role.id) {
+                    <option [ngValue]="role.id">{{ role.name }}</option>
+                  }
+                  @if (r.discordRoleId && !roles().some(x => x.id === r.discordRoleId)) {
+                    <option [ngValue]="r.discordRoleId">{{ r.discordRoleId }}</option>
+                  }
+                </select>
+              </td>
+              <td data-label="Membres">{{ r.usersCount }}</td>
+              <td class="row table__actions" style="flex-wrap: nowrap">
+                <button type="button" class="btn btn--sm" (click)="saveResp(r)" aria-label="Enregistrer"><app-icon name="check" [size]="14" /></button>
+                <button type="button" class="btn btn--danger btn--sm" (click)="deleteResp(r)" aria-label="Supprimer"><app-icon name="trash" [size]="14" /></button>
+              </td>
+            </tr>
+          }
+          <tr>
+            <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="newResp.name" placeholder="Nouvelle responsabilité" aria-label="Nom" /></td>
+            <td class="table__wide" data-label="Description"><input class="input" [(ngModel)]="newResp.description" placeholder="Description" aria-label="Description" /></td>
+            <td class="table__wide" data-label="Rôle Discord">
+              <select class="select" [(ngModel)]="newResp.discordRoleId" aria-label="Rôle Discord">
+                <option value="">— Aucun —</option>
+                @for (role of roles(); track role.id) {
+                  <option [value]="role.id">{{ role.name }}</option>
+                }
+              </select>
+            </td>
+            <td></td>
+            <td class="table__actions"><button type="button" class="btn btn--primary btn--sm" (click)="addResp()" [disabled]="!newResp.name"><app-icon name="plus" [size]="14" /></button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

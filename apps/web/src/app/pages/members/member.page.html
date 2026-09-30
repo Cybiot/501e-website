@@ -1,0 +1,124 @@
+<div class="container">
+  <div class="page-header" style="padding-bottom: 0">
+    <app-breadcrumb [items]="[{ label: 'Membres', link: '/membres' }, { label: member()?.displayName ?? '…' }]" />
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="profile" aria-busy="true">
+        <div class="skeleton" style="aspect-ratio: 3/4"></div>
+        <div class="stack">
+          <div class="skeleton" style="height: 48px; width: 60%"></div>
+          <div class="skeleton" style="height: 20px; width: 30%"></div>
+          <div class="skeleton" style="height: 120px"></div>
+        </div>
+      </div>
+    }
+    @case ('notfound') {
+      <div class="empty" style="margin-top: var(--space-6)">
+        <app-icon name="eye-off" [size]="36" />
+        <h1 style="font-size: var(--fs-2xl)">Profil introuvable</h1>
+        <p>{{ 'members.notFound' | t }}</p>
+        <a class="btn" routerLink="/membres">{{ 'cta.back' | t }}</a>
+      </div>
+    }
+    @case ('error') {
+      <div class="alert alert--danger" role="alert" style="margin-top: var(--space-6)">
+        <app-icon name="alert-triangle" [size]="18" />
+        <span>Impossible de charger ce profil.</span>
+        <button type="button" class="btn btn--sm" (click)="retry()">{{ 'cta.retry' | t }}</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (member(); as m) {
+        <article class="profile">
+          <div class="profile__photo">
+            @if (m.avatarUrl) {
+              <img [src]="m.avatarUrl" [alt]="'Portrait de ' + m.displayName" width="360" height="480" referrerpolicy="no-referrer" />
+            } @else {
+              <div class="profile__placeholder"><app-insignia [size]="120" label="" /></div>
+            }
+          </div>
+
+          <div class="profile__body">
+            <p class="eyebrow">Fiche individuelle</p>
+            <h1>{{ m.displayName }}</h1>
+            <div class="row" style="margin-bottom: var(--space-4)">
+              @if (m.rank; as rank) {
+                <span class="badge badge--gold">
+                  @if (rank.iconUrl) {
+                    <img [src]="rank.iconUrl" alt="" width="16" height="16" />
+                  }
+                  {{ rank.name }}
+                </span>
+              }
+              @if (m.joinedAt) {
+                <span class="badge"><app-icon name="calendar" [size]="12" /> {{ 'members.seniority' | t: { date: (m.joinedAt | date: 'MMMM yyyy') ?? '' } }}</span>
+              }
+            </div>
+
+            @if (m.tagline) {
+              <blockquote class="profile__quote">« {{ m.tagline }} »</blockquote>
+            }
+
+            <section aria-labelledby="medals-title">
+              <h2 id="medals-title" class="profile__h2">{{ 'members.medals' | t }}</h2>
+              @if (ribbons().length) {
+                <ul class="ribbons">
+                  @for (r of ribbons(); track r.medal.id) {
+                    <li class="ribbon">
+                      <button
+                        type="button"
+                        class="ribbon__btn"
+                        [attr.aria-expanded]="openAward() === r.medal.id"
+                        [attr.aria-controls]="'medal-' + r.medal.id"
+                        (click)="toggle(r.medal.id)"
+                      >
+                        <img [src]="r.medal.imageUrl" alt="" width="48" height="48" />
+                        <span class="ribbon__name">{{ r.medal.name }}</span>
+                        @if (r.awards.length > 1) {
+                          <span class="badge badge--gold">×{{ r.awards.length }}</span>
+                        }
+                      </button>
+                      <div class="ribbon__detail" [id]="'medal-' + r.medal.id" role="region" [hidden]="openAward() !== r.medal.id">
+                        <p class="small muted">{{ r.medal.description }}</p>
+                        @for (a of r.awards; track a.id) {
+                          <p class="ribbon__award">
+                            <span class="mono small">{{ a.awardedAt | date: 'd MMMM yyyy' }}</span>
+                            <span>{{ a.reason }}</span>
+                          </p>
+                        }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted">{{ 'members.noMedals' | t }}</p>
+              }
+            </section>
+
+            @if (m.responsibilities.length) {
+              <section aria-labelledby="resp-title">
+                <h2 id="resp-title" class="profile__h2">{{ 'members.responsibilities' | t }}</h2>
+                <ul class="resp">
+                  @for (r of m.responsibilities; track r.id) {
+                    <li>
+                      <span class="badge badge--olive">{{ r.name }}</span>
+                      @if (r.description) {
+                        <span class="small muted">{{ r.description }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            <button type="button" class="btn btn--sm" (click)="share()" style="margin-top: var(--space-5)">
+              <app-icon name="link" [size]="14" /> {{ 'members.share' | t }}
+            </button>
+          </div>
+        </article>
+      }
+    }
+  }
+</div>

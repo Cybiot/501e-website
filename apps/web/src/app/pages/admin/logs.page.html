@@ -1,0 +1,114 @@
+<h1 class="admin-title">Logs et notifications</h1>
+
+<div class="tabs" role="tablist">
+  <button type="button" role="tab" [attr.aria-selected]="tab() === 'notifications'" (click)="switchTab('notifications')">
+    <app-icon name="bell" [size]="16" /> Notifications
+  </button>
+  <button type="button" role="tab" [attr.aria-selected]="tab() === 'logs'" (click)="switchTab('logs')">
+    <app-icon name="file-text" [size]="16" /> Journal d'audit
+  </button>
+</div>
+
+@if (tab() === 'notifications') {
+  <div class="row row--between" style="margin-bottom: var(--space-4)">
+    <div class="row">
+      <label class="sr-only" for="n-type">Type</label>
+      <select id="n-type" class="select" style="width: auto" [(ngModel)]="notifType" (ngModelChange)="notifPage = 1; loadNotifications()">
+        <option value="">Tous les types</option>
+        @for (t of notifLabels | keyvalue; track t.key) {
+          <option [value]="t.key">{{ t.value.label }}</option>
+        }
+      </select>
+      <label class="switch small"><input type="checkbox" role="switch" [(ngModel)]="unreadOnly" (ngModelChange)="notifPage = 1; loadNotifications()" /> Non lues uniquement</label>
+    </div>
+    <button type="button" class="btn btn--sm" (click)="markAllRead()"><app-icon name="check" [size]="14" /> Tout marquer comme lu</button>
+  </div>
+
+  @if (notifications(); as page) {
+    <ul class="notifs">
+      @for (n of page.items; track n.id) {
+        <li [class.unread]="!n.readAt">
+          <span class="notifs__icon"><app-icon [name]="notifLabels[n.type]?.icon ?? 'info'" [size]="18" /></span>
+          <div class="notifs__body">
+            <strong>{{ notifLabels[n.type]?.label ?? n.type }}</strong>
+            <p class="small muted">{{ describe(n) }}</p>
+            <span class="small muted mono">{{ n.createdAt | date: 'dd/MM/yyyy HH:mm' }}{{ n.readAt ? ' · lu par ' + (n.readBy ?? '?') : '' }}</span>
+          </div>
+          <div class="row">
+            @if (n.type === 'image_submitted') {
+              <a routerLink="/admin/moderation" class="btn btn--sm">Modérer</a>
+            }
+            @if (!n.readAt) {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="markRead(n)">Marquer lu</button>
+            }
+          </div>
+        </li>
+      } @empty {
+        <li class="empty"><span>Aucune notification.</span></li>
+      }
+    </ul>
+    @if (page.totalPages > 1) {
+      <nav class="pagination" aria-label="Pagination des notifications">
+        <button type="button" class="btn btn--sm" [disabled]="page.page <= 1" (click)="notifPage = page.page - 1; loadNotifications()">Précédent</button>
+        <span class="small muted">{{ page.page }} / {{ page.totalPages }}</span>
+        <button type="button" class="btn btn--sm" [disabled]="page.page >= page.totalPages" (click)="notifPage = page.page + 1; loadNotifications()">Suivant</button>
+      </nav>
+    }
+  } @else {
+    <div class="skeleton" style="height: 240px"></div>
+  }
+}
+
+@if (tab() === 'logs') {
+  <form class="log-filters" (submit)="$event.preventDefault(); logPage = 1; loadLogs()">
+    <div class="field"><label for="l-from">Du</label><input id="l-from" type="date" class="input" [(ngModel)]="logFilters.from" name="from" /></div>
+    <div class="field"><label for="l-to">Au</label><input id="l-to" type="date" class="input" [(ngModel)]="logFilters.to" name="to" /></div>
+    <div class="field">
+      <label for="l-action">Action</label>
+      <select id="l-action" class="select" [(ngModel)]="logFilters.action" name="action">
+        <option value="">Toutes</option>
+        @for (a of logs()?.actions ?? []; track a) {
+          <option [value]="a">{{ label(a) }}</option>
+        }
+      </select>
+    </div>
+    <div class="field"><label for="l-q">Recherche</label><input id="l-q" class="input" [(ngModel)]="logFilters.q" name="q" placeholder="Acteur, action, cible…" /></div>
+    <div class="row" style="align-self: end; margin-bottom: var(--space-4)">
+      <button type="submit" class="btn btn--primary btn--sm"><app-icon name="search" [size]="14" /> Filtrer</button>
+      <a class="btn btn--sm" [href]="exportUrl()" download><app-icon name="download" [size]="14" /> Export CSV</a>
+    </div>
+  </form>
+
+  @if (logs(); as page) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Date</th><th>Acteur</th><th>Action</th><th>Cible</th><th>Détails</th></tr></thead>
+        <tbody>
+          @for (l of page.items; track l.id) {
+            <tr>
+              <td class="mono small">{{ l.createdAt | date: 'dd/MM/yy HH:mm:ss' }}</td>
+              <td>{{ l.actor?.displayName ?? 'système' }}</td>
+              <td>{{ label(l.action) }}</td>
+              <td class="small muted">{{ l.targetType }}{{ l.targetId ? ' · ' + l.targetId.slice(0, 10) : '' }}</td>
+              <td>
+                @if (l.metadata) {
+                  <details><summary class="small">JSON</summary><pre class="json">{{ l.metadata | json }}</pre></details>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="muted">Aucune entrée.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <nav class="pagination" aria-label="Pagination du journal">
+      <button type="button" class="btn btn--sm" [disabled]="page.page <= 1" (click)="logPage = page.page - 1; loadLogs()">Précédent</button>
+      <span class="small muted">{{ page.page }} / {{ page.totalPages }} · {{ page.total }} entrées</span>
+      <button type="button" class="btn btn--sm" [disabled]="page.page >= page.totalPages" (click)="logPage = page.page + 1; loadLogs()">Suivant</button>
+    </nav>
+    <p class="small muted">Journal en lecture seule, conservé 12 mois. Adresses IP pseudonymisées.</p>
+  } @else {
+    <div class="skeleton" style="height: 300px"></div>
+  }
+}

@@ -1,0 +1,123 @@
+# 501st PIR — pile complète : base PostGIS, API, front SSR Angular, bot Discord, géocodeur Photon.
+#
+#   docker compose up -d --build                     # db + api + web (mode démo par défaut)
+#   docker compose --profile discord up -d           # + bot Discord (DISCORD_MODE=live)
+#   docker compose --profile geocoding up -d photon  # + géocodeur Photon auto-hébergé
+#
+# Toutes les variables viennent du fichier .env (voir .env.example).
+
+name: 501e
+
+x-app-env: &app-env
+  NODE_ENV: production
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-501e}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}@db:5432/${POSTGRES_DB:-501e}
+  API_INTERNAL_URL: http://api:3000
+  API_PORT: 3000
+  SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET manquant}
+  HASH_SALT: ${HASH_SALT:?HASH_SALT manquant}
+  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN manquant}
+  SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+  DISCORD_MODE: ${DISCORD_MODE:-mock}
+  DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+  DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+  DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+  DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+  DISCORD_MEMBER_ROLE_IDS: ${DISCORD_MEMBER_ROLE_IDS:-}
+  DISCORD_ADMIN_ROLE_IDS: ${DISCORD_ADMIN_ROLE_IDS:-}
+  DISCORD_ANNOUNCE_CHANNEL_ID: ${DISCORD_ANNOUNCE_CHANNEL_ID:-}
+  DISCORD_INVITE_URL: ${DISCORD_INVITE_URL:-}
+  ROLE_SYNC_INTERVAL_MINUTES: ${ROLE_SYNC_INTERVAL_MINUTES:-15}
+  STORAGE_DIR: /data/storage
+  GEOCODER: ${GEOCODER:-demo}
+  PHOTON_URL: http://photon:2322
+  MAP_TILE_URL: ${MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+  MAP_TILE_ATTRIBUTION: ${MAP_TILE_ATTRIBUTION:-&copy; OpenStreetMap contributors}
+  MAP_TILE_FILTER: ${MAP_TILE_FILTER:-dark}
+  AUDIT_LOG_RETENTION_MONTHS: ${AUDIT_LOG_RETENTION_MONTHS:-12}
+  REJECTED_IMAGE_RETENTION_DAYS: ${REJECTED_IMAGE_RETENTION_DAYS:-30}
+  DEPARTED_MEMBER_RETENTION_DAYS: ${DEPARTED_MEMBER_RETENTION_DAYS:-30}
+  INACTIVE_ACCOUNT_MONTHS: ${INACTIVE_ACCOUNT_MONTHS:-24}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-501e}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}
+      POSTGRES_DB: ${POSTGRES_DB:-501e}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Exposé sur la machine locale uniquement (développement, sauvegardes).
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-501e} -d ${POSTGRES_DB:-501e}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment: *app-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_INTERNAL_URL: http://api:3000
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+      MAP_TILE_URL: ${MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+    ports:
+      - '4000:4000'
+    depends_on:
+      api:
+        condition: service_healthy
+
+  bot:
+    profiles: ['discord']
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Géocodeur Photon auto-hébergé (données OpenStreetMap). Premier démarrage long :
+  # téléchargement de l'index de la région choisie (plusieurs Go pour l'Europe).
+  photon:
+    profiles: ['geocoding']
+    image: rtuszik/photon-docker:latest
+    restart: unless-stopped
+    environment:
+      REGION: ${PHOTON_REGION:-europe}
+      UPDATE_STRATEGY: SEQUENTIAL
+      UPDATE_INTERVAL: 30d
+    volumes:
+      - photon-data:/photon/data
+
+volumes:
+  db-data:
+  storage:
+  photon-data:
