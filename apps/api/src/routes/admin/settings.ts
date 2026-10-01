@@ -7,6 +7,7 @@ import { prisma } from '../../db.js';
 import { discord } from '../../discord/index.js';
 import { audit } from '../../lib/audit.js';
 import { conflict, notFound } from '../../lib/errors.js';
+import { refreshRankPrefixes } from '../../lib/rank-prefix.js';
 import { getSettings, SettingsSchema, updateSettings } from '../../lib/settings.js';
 import { parse } from '../../lib/validate.js';
 
@@ -66,20 +67,30 @@ const nullableRole = z
   .max(40)
   .nullable()
   .optional()
-  .transform((v) => (v ? v : null));
+  // Absent (PATCH partiel) : on ne touche pas au rôle ; vide : on le retire.
+  .transform((v) => (v === undefined ? undefined : v || null));
 
 const RankBody = z.object({
   name: z.string().trim().min(2).max(60),
   abbreviation: z.string().trim().min(1).max(12),
+  branch: z.enum(['toccoa', 'enlisted', 'platoon_leader', 'xo', 'co', 'staff']),
   order: z.number().int().min(0).max(999),
   discordRoleId: nullableRole,
 });
 
-const ResponsibilityBody = z.object({
+// Sans valeurs par défaut : en Zod 4, un .default() s'applique même sous .partial(),
+// ce qui écraserait les champs absents d'un PATCH.
+const ResponsibilityPatch = z.object({
   name: z.string().trim().min(2).max(60),
-  description: z.string().trim().max(300).default(''),
-  order: z.number().int().min(0).max(999).default(0),
+  description: z.string().trim().max(300),
+  kind: z.enum(['hierarchy', 'pole']),
+  order: z.number().int().min(0).max(999),
   discordRoleId: nullableRole,
+});
+const ResponsibilityBody = ResponsibilityPatch.extend({
+  description: ResponsibilityPatch.shape.description.default(''),
+  kind: ResponsibilityPatch.shape.kind.default('pole'),
+  order: ResponsibilityPatch.shape.order.default(0),
 });
 
 const uniqueGuard = (err: unknown): never => {
@@ -93,6 +104,7 @@ const uniqueGuard = (err: unknown): never => {
 settingsAdminRouter.post('/ranks', async (req, res) => {
   const body = parse(RankBody, req.body);
   const rank = await prisma.rank.create({ data: body }).catch(uniqueGuard);
+  await refreshRankPrefixes();
   await audit({ action: 'settings.updated', req, targetType: 'rank', targetId: rank.id, metadata: { created: body } });
   res.status(201).json(rank);
 });
@@ -101,6 +113,7 @@ settingsAdminRouter.patch('/ranks/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
   const body = parse(RankBody.partial(), req.body);
   const rank = await prisma.rank.update({ where: { id }, data: body }).catch(uniqueGuard);
+  await refreshRankPrefixes();
   await audit({ action: 'settings.updated', req, targetType: 'rank', targetId: id, metadata: { updated: body } });
   res.json(rank);
 });
@@ -108,6 +121,7 @@ settingsAdminRouter.patch('/ranks/:id', async (req, res) => {
 settingsAdminRouter.delete('/ranks/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
   await prisma.rank.delete({ where: { id } }).catch(uniqueGuard);
+  await refreshRankPrefixes();
   await audit({ action: 'settings.updated', req, targetType: 'rank', targetId: id, metadata: { deleted: true } });
   res.status(204).end();
 });
@@ -121,7 +135,7 @@ settingsAdminRouter.post('/responsibilities', async (req, res) => {
 
 settingsAdminRouter.patch('/responsibilities/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
-  const body = parse(ResponsibilityBody.partial(), req.body);
+  const body = parse(ResponsibilityPatch.partial(), req.body);
   const r = await prisma.responsibility.update({ where: { id }, data: body }).catch(uniqueGuard);
   await audit({ action: 'settings.updated', req, targetType: 'responsibility', targetId: id, metadata: { updated: body } });
   res.json(r);

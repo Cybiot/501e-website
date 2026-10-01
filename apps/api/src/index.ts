@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { prisma } from './db.js';
 import { startJobs } from './jobs/index.js';
 import { logger } from './lib/logger.js';
+import { refreshRankPrefixes } from './lib/rank-prefix.js';
 
 const app = createApp();
 const server = app.listen(config.API_PORT, () => {
@@ -11,6 +12,7 @@ const server = app.listen(config.API_PORT, () => {
     `API 501e démarrée sur http://localhost:${config.API_PORT}`,
   );
 });
+void refreshRankPrefixes();
 const stopJobs = startJobs();
 
 const shutdown = async (signal: string) => {

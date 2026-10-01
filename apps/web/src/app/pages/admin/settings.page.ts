@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminRank, AdminResponsibility, AppSettings, DiscordRole } from '../../core/models';
+import { AdminRank, AdminResponsibility, AppSettings, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -33,8 +33,21 @@ export class SettingsPage {
   protected readonly checking = signal(false);
   protected readonly syncing = signal(false);
 
-  protected newRank = { name: '', abbreviation: '', order: 10, discordRoleId: '' };
-  protected newResp = { name: '', description: '', order: 0, discordRoleId: '' };
+  protected readonly branches = RANK_BRANCHES;
+  protected newRank: { name: string; abbreviation: string; branch: RankBranch; order: number; discordRoleId: string } = {
+    name: '',
+    abbreviation: '',
+    branch: 'enlisted',
+    order: 10,
+    discordRoleId: '',
+  };
+  protected newResp: { name: string; description: string; kind: ResponsibilityKind; order: number; discordRoleId: string } = {
+    name: '',
+    description: '',
+    kind: 'pole',
+    order: 0,
+    discordRoleId: '',
+  };
 
   constructor() {
     void this.load();
@@ -114,7 +127,7 @@ export class SettingsPage {
 
   protected async saveRank(r: AdminRank) {
     try {
-      await this.api.patch(`/admin/ranks/${r.id}`, { name: r.name, abbreviation: r.abbreviation, order: Number(r.order), discordRoleId: r.discordRoleId || null });
+      await this.api.patch(`/admin/ranks/${r.id}`, { name: r.name, abbreviation: r.abbreviation, branch: r.branch, order: Number(r.order), discordRoleId: r.discordRoleId || null });
       this.toast.success(`Grade « ${r.name} » enregistré.`);
     } catch (err) {
       this.toast.error((err as ApiError).message);
@@ -125,7 +138,7 @@ export class SettingsPage {
   protected async addRank() {
     try {
       await this.api.post('/admin/ranks', { ...this.newRank, order: Number(this.newRank.order), discordRoleId: this.newRank.discordRoleId || null });
-      this.newRank = { name: '', abbreviation: '', order: 10, discordRoleId: '' };
+      this.newRank = { name: '', abbreviation: '', branch: 'enlisted', order: 10, discordRoleId: '' };
       this.toast.success('Grade ajouté.');
       await this.load();
     } catch (err) {
@@ -147,7 +160,7 @@ export class SettingsPage {
 
   protected async saveResp(r: AdminResponsibility) {
     try {
-      await this.api.patch(`/admin/responsibilities/${r.id}`, { name: r.name, description: r.description, order: Number(r.order), discordRoleId: r.discordRoleId || null });
+      await this.api.patch(`/admin/responsibilities/${r.id}`, { name: r.name, description: r.description, kind: r.kind, order: Number(r.order), discordRoleId: r.discordRoleId || null });
       this.toast.success(`Responsabilité « ${r.name} » enregistrée.`);
     } catch (err) {
       this.toast.error((err as ApiError).message);
@@ -158,7 +171,7 @@ export class SettingsPage {
   protected async addResp() {
     try {
       await this.api.post('/admin/responsibilities', { ...this.newResp, order: Number(this.newResp.order), discordRoleId: this.newResp.discordRoleId || null });
-      this.newResp = { name: '', description: '', order: 0, discordRoleId: '' };
+      this.newResp = { name: '', description: '', kind: 'pole', order: 0, discordRoleId: '' };
       this.toast.success('Responsabilité ajoutée.');
       await this.load();
     } catch (err) {

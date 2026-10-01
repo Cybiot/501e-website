@@ -5,7 +5,7 @@
     [style.transform]="'translate3d(0,' + parallax() + 'px,0)'"
   ></div>
   <div
-    #dropScene
+    [appDropScene]="dropClock"
     class="drop"
     aria-hidden="true"
     [class.drop--ready]="dropReady()"
@@ -101,9 +101,9 @@
             <div class="honor" [appReveal]="i * 80">
               <app-dog-tag [member]="f.member" />
               <p class="honor__award">
-                <img [src]="f.award.medalImageUrl" alt="" width="22" height="22" />
+                <img class="medal-img" [src]="f.award.medalImageUrl" alt="" width="40" height="20" />
                 <span
-                  ><strong>{{ f.award.medalName }}</strong> — {{ f.award.reason }}</span
+                  ><strong>{{ label({ name: f.award.medalName, tier: f.award.tier }) }}</strong> — {{ f.award.reason }}</span
                 >
               </p>
             </div>

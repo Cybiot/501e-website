@@ -55,7 +55,7 @@ cp .env.example .env          # valeurs de démo prêtes à l'emploi
 npm install
 npm run db:up                 # PostgreSQL + PostGIS dans Docker
 npm run db:migrate            # crée le schéma
-npm run db:seed               # 23 comptes fictifs, 8 médailles, 9 grades…
+npm run db:seed               # 23 comptes fictifs, 20 médailles, 17 grades…
 npm run dev:api               # API sur http://localhost:3000
 npm run dev:web               # site sur http://localhost:4200
 ```
@@ -182,8 +182,8 @@ docker compose exec -T db pg_dump -U 501e 501e | gzip | gpg --symmetric --cipher
 - Pages légales : `apps/web/src/content/legal/*.md`. Complète les éléments entre crochets avant la mise en ligne.
 - Textes d'interface : `apps/web/src/app/core/i18n/fr.ts`, architecture prête pour l'ajout de l'anglais.
 - Couleurs et typographies : `apps/web/src/styles/tokens.css`.
-- Visuels placeholder (rubans, insignes, fonds) : `node apps/web/scripts/generate-assets.mjs`, sortie dans `apps/web/public/`.
-- Insigne du régiment : `apps/web/src/app/shared/insignia.component.ts`, à remplacer par le logo officiel.
+- Visuels (rubans, insignes, fonds, déclinaisons du logo) : `node apps/web/scripts/generate-assets.mjs`, sortie dans `apps/web/public/`. Attention, le script réécrit aussi `visuels/hero-parachutes.svg`, retouché à la main depuis.
+- Logo officiel : source dans `assets/logo/501e.png`. Le script en tire les variantes détourées (`public/logo/`), `favicon.ico`, les icônes du manifeste, `apple-touch-icon.png` et `og-image.png`. Affichage dans le site via `apps/web/src/app/shared/insignia.component.ts`.
 
 ## Hypothèses retenues et limites connues
 

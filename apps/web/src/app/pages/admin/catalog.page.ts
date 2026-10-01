@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminMedal, DiscordRole, MemberCard } from '../../core/models';
+import { AdminMedal, DiscordRole, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { DogTagComponent } from '../../shared/dog-tag.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -19,13 +19,15 @@ interface MedalForm {
   discordRoleId: string;
   roleColor: string;
   currentImageUrl: string | null;
+  currentTierImages: Record<MedalTier, string> | null;
+  removeTiers: boolean;
 }
 
 const empty = (): MedalForm => ({
   id: null,
   name: '',
   description: '',
-  category: 'Bravoure',
+  category: '',
   order: 0,
   repeatable: true,
   isActive: true,
@@ -33,6 +35,8 @@ const empty = (): MedalForm => ({
   discordRoleId: '',
   roleColor: '#c9a24b',
   currentImageUrl: null,
+  currentTierImages: null,
+  removeTiers: false,
 });
 
 @Component({
@@ -52,6 +56,11 @@ export class CatalogPage {
   protected readonly editing = signal<MedalForm | null>(null);
   protected readonly imageFile = signal<File | null>(null);
   protected readonly imagePreview = signal<string | null>(null);
+  /** Images de palier envoyées (bronze, argent, or) et leurs aperçus. */
+  protected readonly tierFiles = signal<Partial<Record<MedalTier, File>>>({});
+  protected readonly tierPreviews = signal<Partial<Record<MedalTier, string>>>({});
+  protected readonly tiers = MEDAL_TIERS;
+  protected readonly tierLabels = TIER_LABELS;
   protected readonly saving = signal(false);
 
   /** Aperçu de la médaille telle qu'elle apparaîtra sur une carte membre. */
@@ -63,7 +72,7 @@ export class CatalogPage {
       id: 'apercu',
       displayName: 'Pvt. Exemple',
       avatarUrl: null,
-      rank: { id: 'r', name: 'Private First Class', abbreviation: 'Pfc.', order: 2 },
+      rank: { id: 'r', name: 'Private First Class', abbreviation: 'Pfc.', branch: 'enlisted', order: 20 },
       tagline: 'Aperçu de la médaille sur une carte membre.',
       responsibilities: [],
       medals: img ? [{ medal: { id: 'm', name: f.name || 'Nouvelle médaille', description: f.description, imageUrl: img, category: f.category }, count: 1 }] : [],
@@ -95,16 +104,21 @@ export class CatalogPage {
     }
   }
 
-  protected create() {
+  private resetFiles() {
     this.imageFile.set(null);
     this.imagePreview.set(null);
-    this.editing.set(empty());
+    this.tierFiles.set({});
+    this.tierPreviews.set({});
+  }
+
+  protected create() {
+    this.resetFiles();
+    this.editing.set({ ...empty(), category: this.categories()[0] ?? '' });
     void this.loadRoles();
   }
 
   protected edit(m: AdminMedal) {
-    this.imageFile.set(null);
-    this.imagePreview.set(null);
+    this.resetFiles();
     this.editing.set({
       id: m.id,
       name: m.name,
@@ -117,6 +131,8 @@ export class CatalogPage {
       discordRoleId: m.discordRoleId ?? '',
       roleColor: '#c9a24b',
       currentImageUrl: m.imageUrl,
+      currentTierImages: m.tierImages,
+      removeTiers: false,
     });
     void this.loadRoles();
   }
@@ -135,6 +151,21 @@ export class CatalogPage {
     this.imagePreview.set(file ? URL.createObjectURL(file) : null);
   }
 
+  protected onTierImage(tier: MedalTier, e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    if (file && file.size > 1024 * 1024) {
+      this.toast.error('Image trop lourde (1 Mo maximum).');
+      return;
+    }
+    this.tierFiles.update((f) => ({ ...f, [tier]: file ?? undefined }));
+    this.tierPreviews.update((p) => ({ ...p, [tier]: file ? URL.createObjectURL(file) : undefined }));
+  }
+
+  /** Image de palier affichée : nouvelle image envoyée, sinon image actuelle. */
+  protected tierImage(f: MedalForm, tier: MedalTier) {
+    return this.tierPreviews()[tier] ?? (f.removeTiers ? null : f.currentTierImages?.[tier]) ?? null;
+  }
+
   protected roleName(id: string | null) {
     if (!id) return 'Aucun';
     return this.roles().find((r) => r.id === id)?.name ?? id;
@@ -145,6 +176,11 @@ export class CatalogPage {
     if (!f) return;
     if (!f.id && !this.imageFile()) {
       this.toast.error("L'image de la médaille est obligatoire.");
+      return;
+    }
+    const tierCount = this.tiers.filter((t) => this.tierImage(f, t)).length;
+    if (!f.removeTiers && tierCount > 0 && tierCount < this.tiers.length) {
+      this.toast.error('Une médaille à paliers a besoin des trois images (bronze, argent et or).');
       return;
     }
     const form = new FormData();
@@ -161,6 +197,13 @@ export class CatalogPage {
     }
     const file = this.imageFile();
     if (file) form.append('image', file);
+    if (f.removeTiers) form.append('removeTiers', 'true');
+    else {
+      const tierFiles = this.tierFiles();
+      if (tierFiles.bronze) form.append('imageBronze', tierFiles.bronze);
+      if (tierFiles.silver) form.append('imageSilver', tierFiles.silver);
+      if (tierFiles.gold) form.append('imageGold', tierFiles.gold);
+    }
 
     this.saving.set(true);
     try {

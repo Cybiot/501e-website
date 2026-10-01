@@ -96,7 +96,7 @@
   font-weight: 600;
 }
 .ribbon__detail {
-  padding: var(--space-3) var(--space-4) var(--space-2) calc(48px + var(--space-6));
+  padding: var(--space-3) var(--space-4) var(--space-2) calc(72px + var(--space-6));
 }
 .ribbon__award {
   display: flex;

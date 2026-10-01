@@ -3,7 +3,17 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminAward, AdminMedal, AnnouncementHistory, AnnouncementPreview, MemberSearchResult } from '../../core/models';
+import {
+  AdminAward,
+  AdminMedal,
+  AnnouncementHistory,
+  AnnouncementPreview,
+  MEDAL_TIERS,
+  MedalTier,
+  MemberSearchResult,
+  TIER_LABELS,
+  medalLabel,
+} from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -31,12 +41,17 @@ export class AwardsPage {
   protected readonly memberResults = signal<MemberSearchResult[]>([]);
   protected readonly selectedMember = signal<MemberSearchResult | null>(null);
   protected readonly selectedMedalId = signal<string | null>(null);
+  /** Palier choisi (médailles à paliers) ; null : image de base. */
+  protected readonly selectedTier = signal<MedalTier | null>(null);
   protected readonly reason = signal('');
   protected readonly submitting = signal(false);
   protected readonly duplicate = signal<string | null>(null);
   private idempotencyKey = newIdempotencyKey();
   private searchTimer?: ReturnType<typeof setTimeout>;
   protected readonly reasonMax = REASON_MAX;
+  protected readonly tiers = MEDAL_TIERS;
+  protected readonly tierLabels = TIER_LABELS;
+  protected readonly label = medalLabel;
 
   // Annonce
   protected readonly preview = signal<AnnouncementPreview | null>(null);
@@ -92,6 +107,7 @@ export class AwardsPage {
 
   protected pickMedal(id: string) {
     this.selectedMedalId.set(id);
+    this.selectedTier.set(null);
     this.resetKey();
   }
 
@@ -110,13 +126,15 @@ export class AwardsPage {
         userId: member.id,
         medalId: this.selectedMedalId(),
         reason: this.reason().trim(),
+        tier: this.selectedTier(),
         idempotencyKey: this.idempotencyKey,
         confirmDuplicate: confirmDuplicate || undefined,
       });
-      this.toast.success(`${this.selectedMedal()?.name} attribuée à ${member.displayName}. Rôle Discord ajouté.`);
+      this.toast.success(`${this.label({ name: this.selectedMedal()?.name ?? '', tier: this.selectedTier() })} attribuée à ${member.displayName}. Rôle Discord ajouté.`);
       this.selectedMember.set(null);
       this.memberQuery = '';
       this.selectedMedalId.set(null);
+      this.selectedTier.set(null);
       this.reason.set('');
       this.resetKey();
       await this.refresh();

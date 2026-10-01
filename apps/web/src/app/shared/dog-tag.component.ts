@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MemberCard } from '../core/models';
+import { MemberCard, medalLabel } from '../core/models';
 import { AvatarComponent } from './avatar.component';
 
 /**
@@ -45,8 +45,8 @@ import { AvatarComponent } from './avatar.component';
         @if (visibleMedals().length) {
           <ul class="tag__medals" aria-label="Décorations">
             @for (m of visibleMedals(); track m.medal.id) {
-              <li [title]="m.medal.name + (m.count > 1 ? ' ×' + m.count : '')">
-                <img [src]="m.medal.imageUrl" [alt]="m.medal.name" width="28" height="28" loading="lazy" />
+              <li [title]="label(m.medal) + (m.count > 1 ? ' ×' + m.count : '')">
+                <img class="medal-img" [src]="m.medal.imageUrl" [alt]="label(m.medal)" width="44" height="22" loading="lazy" />
               </li>
             }
             @if (extraMedals() > 0) {
@@ -156,9 +156,12 @@ import { AvatarComponent } from './avatar.component';
     .tag__medals img {
       filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
     }
+    .tag__medals li {
+      display: flex;
+    }
     .tag__more {
       min-width: 28px;
-      height: 28px;
+      height: 22px;
       display: grid;
       place-items: center;
       font-size: var(--fs-xs);
@@ -182,6 +185,7 @@ export class DogTagComponent {
   readonly member = input.required<MemberCard>();
   readonly link = input(true);
   readonly maxMedals = input(3);
+  protected readonly label = medalLabel;
   protected readonly visibleMedals = computed(() => this.member().medals.slice(0, this.maxMedals()));
   protected readonly extraMedals = computed(() => this.member().medals.length - this.visibleMedals().length);
   /** Matricule décoratif stable dérivé de l'identifiant. */

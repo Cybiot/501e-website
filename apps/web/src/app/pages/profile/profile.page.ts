@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { MemberCard, MyProfile } from '../../core/models';
+import { MemberCard, MyProfile, medalLabel } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { ToastService } from '../../core/toast.service';
 import { AvatarComponent } from '../../shared/avatar.component';
@@ -27,6 +27,7 @@ export class ProfilePage {
   protected readonly auth = inject(AuthService);
 
   protected readonly profile = signal<MyProfile | null>(null);
+  protected readonly label = medalLabel;
   protected readonly error = signal<string | null>(null);
   protected readonly tagline = signal('');
   protected readonly savingTagline = signal(false);

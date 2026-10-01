@@ -9,21 +9,49 @@ export interface Me {
   consent?: { version: string; text: string } | null;
 }
 
+/** Branches de progression, du plus bas au plus haut. */
+export const RANK_BRANCHES = [
+  { id: 'toccoa', label: 'Toccoa Bootcamp' },
+  { id: 'enlisted', label: 'Homme du rang' },
+  { id: 'platoon_leader', label: 'Platoon Leader' },
+  { id: 'xo', label: 'XO' },
+  { id: 'co', label: 'CO' },
+  { id: 'staff', label: 'État-major' },
+] as const;
+export type RankBranch = (typeof RANK_BRANCHES)[number]['id'];
+
 export interface Rank {
   id: string;
   name: string;
   abbreviation: string;
+  branch: RankBranch;
   order: number;
   iconUrl?: string | null;
 }
+
+/** Palier d'une médaille (étoile bronze, argent ou or sur le ruban). */
+export type MedalTier = 'bronze' | 'silver' | 'gold';
+
+export const MEDAL_TIERS: MedalTier[] = ['bronze', 'silver', 'gold'];
+export const TIER_LABELS: Record<MedalTier, string> = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' };
 
 export interface Medal {
   id: string;
   name: string;
   description: string;
+  /** Image correspondant au palier `tier` (image de base sans palier). */
   imageUrl: string;
   category: string;
+  /** La médaille a-t-elle des paliers (bronze, argent, or) ? */
+  tiered?: boolean;
+  tier?: MedalTier | null;
 }
+
+/** Nom de la médaille suivi de son palier, ex. « Silver Star (Or) ». */
+export const medalLabel = (m: Pick<Medal, 'name' | 'tier'>) => (m.tier ? `${m.name} (${TIER_LABELS[m.tier]})` : m.name);
+
+/** Hiérarchie (EM, CO, XO, PL) ou pôle transverse (Staff Toccoa, Recruteur…). */
+export type ResponsibilityKind = 'hierarchy' | 'pole';
 
 export interface MemberCard {
   id: string;
@@ -31,7 +59,7 @@ export interface MemberCard {
   avatarUrl: string | null;
   rank: Rank | null;
   tagline: string | null;
-  responsibilities: { id: string; name: string; description?: string }[];
+  responsibilities: { id: string; name: string; kind: ResponsibilityKind; description?: string }[];
   medals: { medal: Medal; count: number }[];
   medalsTotal: number;
   joinedAt: string | null;
@@ -51,7 +79,7 @@ export interface Page<T> {
 
 export interface Filters {
   ranks: Rank[];
-  responsibilities: { id: string; name: string }[];
+  responsibilities: { id: string; name: string; kind: ResponsibilityKind }[];
   medals: { id: string; name: string; imageUrl: string }[];
 }
 
@@ -63,7 +91,7 @@ export interface PublicConfig {
 
 export interface Featured {
   member: MemberCard;
-  award: { medalName: string; medalImageUrl: string; reason: string; awardedAt: string };
+  award: { medalName: string; medalImageUrl: string; tier: MedalTier | null; reason: string; awardedAt: string };
 }
 
 export interface Location {
@@ -119,6 +147,7 @@ export interface ApiErrorBody {
 // --- Administration ---------------------------------------------------------
 
 export interface AdminMedal extends Medal {
+  tierImages: Record<MedalTier, string> | null;
   order: number;
   isActive: boolean;
   repeatable: boolean;
@@ -129,6 +158,7 @@ export interface AdminMedal extends Medal {
 export interface AdminAward {
   id: string;
   reason: string;
+  tier: MedalTier | null;
   awardedAt: string;
   announcedAt: string | null;
   revokedAt: string | null;
@@ -174,7 +204,7 @@ export interface AnnouncementHistory {
   channelId: string;
   messagesCount: number;
   awardsCount: number;
-  awards: { member: string; medal: string; reason: string }[];
+  awards: { member: string; medal: string; tier: MedalTier | null; reason: string }[];
 }
 
 export interface NotificationItem {
@@ -228,6 +258,7 @@ export interface AdminResponsibility {
   id: string;
   name: string;
   description: string;
+  kind: ResponsibilityKind;
   order: number;
   discordRoleId: string | null;
   usersCount: number;

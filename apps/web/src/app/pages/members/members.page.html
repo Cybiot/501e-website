@@ -25,8 +25,12 @@
       <label for="m-rank" class="sr-only">Grade</label>
       <select id="m-rank" class="select" [value]="rank() ?? ''" (change)="setParam('rank', $any($event.target).value)">
         <option value="">{{ 'members.allRanks' | t }}</option>
-        @for (r of filters()?.ranks ?? []; track r.id) {
-          <option [value]="r.id" [selected]="r.id === rank()">{{ r.name }}</option>
+        @for (group of rankGroups(); track group.label) {
+          <optgroup [label]="group.label">
+            @for (r of group.items; track r.id) {
+              <option [value]="r.id" [selected]="r.id === rank()">{{ r.name }}</option>
+            }
+          </optgroup>
         }
       </select>
     </div>
@@ -34,8 +38,12 @@
       <label for="m-resp" class="sr-only">Responsabilité</label>
       <select id="m-resp" class="select" (change)="setParam('responsibility', $any($event.target).value)">
         <option value="">{{ 'members.allResponsibilities' | t }}</option>
-        @for (r of filters()?.responsibilities ?? []; track r.id) {
-          <option [value]="r.id" [selected]="r.id === responsibility()">{{ r.name }}</option>
+        @for (group of responsibilityGroups(); track group.label) {
+          <optgroup [label]="group.label">
+            @for (r of group.items; track r.id) {
+              <option [value]="r.id" [selected]="r.id === responsibility()">{{ r.name }}</option>
+            }
+          </optgroup>
         }
       </select>
     </div>

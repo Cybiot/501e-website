@@ -13,4 +13,4 @@
 <path d="M-6 92 h12 v8 l6 22 h-6 l-6 -16 l-6 16 h-6 l6 -22z"/></g><g transform="translate(330 520) scale(0.35)" fill="#ecefe6">
 <path d="M-60 0 C-60 -40 60 -40 60 0 C45 -8 30 -8 20 0 C10 -8 -10 -8 -20 0 C-30 -8 -45 -8 -60 0Z"/>
 <path d="M-58 2 L-4 92 M58 2 L4 92 M-20 2 L-2 92 M20 2 L2 92" stroke="#ecefe6" stroke-width="1.4" fill="none"/>
-<path d="M-6 92 h12 v8 l6 22 h-6 l-6 -16 l-6 16 h-6 l6 -22z"/></g></svg>
+<path d="M-6 92 h12 v8 l6 22 h-6 l-6 -16 l-6 16 h-6 l6 -22z"/></g><g fill="#ecefe6" opacity=".7"><path d="M40 60 l90 -8 l10 -10 l6 10 l40 -2 l-40 6 l-4 8 l-10 -6 l-92 10z"/></g></svg>

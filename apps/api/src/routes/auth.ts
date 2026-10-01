@@ -12,6 +12,7 @@ import { randomToken } from '../lib/crypto.js';
 import { notFound } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { getSettings } from '../lib/settings.js';
+import { stripRankPrefix } from '../lib/rank-prefix.js';
 import { parse } from '../lib/validate.js';
 
 export const authRouter = Router();
@@ -44,7 +45,7 @@ authRouter.get('/me', async (req, res) => {
     user: {
       id: u.id,
       discordId: u.discordId,
-      displayName: u.displayName,
+      displayName: stripRankPrefix(u.displayName),
       avatarUrl: u.discordAvatarUrl,
     },
     // « none » = connecté non-membre : traité exactement comme un visiteur.

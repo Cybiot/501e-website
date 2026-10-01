@@ -7,7 +7,8 @@ import { config } from '../config.js';
 import { prisma } from '../db.js';
 import { notFound } from '../lib/errors.js';
 import { notifyAdmins } from '../lib/notify.js';
-import { memberInclude, presentMemberCard, presentMemberDetail } from '../lib/presenters.js';
+import { medalImageFor, memberInclude, presentMemberCard, presentMemberDetail } from '../lib/presenters.js';
+import { stripRankPrefix } from '../lib/rank-prefix.js';
 import { getSettings } from '../lib/settings.js';
 import { parse, toPage } from '../lib/validate.js';
 
@@ -46,8 +47,8 @@ publicRouter.get('/filters', async (_req, res) => {
     prisma.medal.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
   ]);
   res.json({
-    ranks: ranks.map((r) => ({ id: r.id, name: r.name, abbreviation: r.abbreviation, order: r.order })),
-    responsibilities: responsibilities.map((r) => ({ id: r.id, name: r.name })),
+    ranks: ranks.map((r) => ({ id: r.id, name: r.name, abbreviation: r.abbreviation, branch: r.branch, order: r.order })),
+    responsibilities: responsibilities.map((r) => ({ id: r.id, name: r.name, kind: r.kind })),
     medals: medals.map((m) => ({ id: m.id, name: m.name, imageUrl: m.imageUrl })),
   });
 });
@@ -74,7 +75,7 @@ publicRouter.get('/members', async (req, res) => {
   // Volume attendu : quelques centaines de membres → tri en mémoire, simple et lisible.
   const users = await prisma.user.findMany({ where, include: memberInclude });
   const byName = (a: (typeof users)[number], b: (typeof users)[number]) =>
-    a.displayName.localeCompare(b.displayName, 'fr', { sensitivity: 'base' });
+    stripRankPrefix(a.displayName).localeCompare(stripRankPrefix(b.displayName), 'fr', { sensitivity: 'base' });
   users.sort((a, b) => {
     if (q.sort === 'alpha') return byName(a, b);
     if (q.sort === 'seniority') {
@@ -103,7 +104,13 @@ publicRouter.get('/members/featured', async (req, res) => {
     seen.add(a.userId);
     featured.push({
       member: presentMemberCard(a.user),
-      award: { medalName: a.medal.name, medalImageUrl: a.medal.imageUrl, reason: a.reason, awardedAt: a.awardedAt },
+      award: {
+        medalName: a.medal.name,
+        medalImageUrl: medalImageFor(a.medal, a.tier),
+        tier: a.tier,
+        reason: a.reason,
+        awardedAt: a.awardedAt,
+      },
     });
     if (featured.length >= 4) break;
   }

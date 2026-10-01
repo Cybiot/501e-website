@@ -17,7 +17,7 @@
     @for (m of medals(); track m.id) {
       <article class="card medal-card" [class.inactive]="!m.isActive">
         <div class="row" style="flex-wrap: nowrap">
-          <img [src]="m.imageUrl" alt="" width="56" height="56" />
+          <img class="medal-img" [src]="m.imageUrl" alt="" width="80" height="40" />
           <div style="min-width: 0">
             <h2 class="card-title" style="margin: 0">{{ m.name }}</h2>
             <div class="row" style="gap: var(--space-1); margin-top: var(--space-1)">
@@ -27,6 +27,9 @@
               }
               @if (!m.repeatable) {
                 <span class="badge">Unique</span>
+              }
+              @if (m.tierImages) {
+                <span class="badge badge--gold">Paliers</span>
               }
             </div>
           </div>
@@ -83,6 +86,20 @@
             <label for="mf-img">Image / ruban (PNG, WebP ou SVG · 1 Mo max)</label>
             <input id="mf-img" class="input" type="file" accept="image/png,image/webp,image/svg+xml" (change)="onImage($event)" />
           </div>
+          <fieldset class="field">
+            <legend class="label">Paliers (facultatif : les trois images ou aucune)</legend>
+            @for (t of tiers; track t) {
+              <label class="row small" style="flex-wrap: nowrap; margin-bottom: var(--space-2)">
+                <span style="width: 56px">{{ tierLabels[t] }}</span>
+                <input class="input" type="file" accept="image/png,image/webp,image/svg+xml" [disabled]="f.removeTiers" (change)="onTierImage(t, $event)" />
+              </label>
+            }
+            @if (f.currentTierImages) {
+              <label class="check-inline"
+                ><input type="checkbox" [checked]="f.removeTiers" (change)="patch({ removeTiers: $any($event.target).checked })" /> Retirer les paliers</label
+              >
+            }
+          </fieldset>
           <div class="stack" style="margin-bottom: var(--space-4)">
             <label class="switch"><input type="checkbox" role="switch" [checked]="f.repeatable" (change)="patch({ repeatable: $any($event.target).checked })" /> Cumulable (plusieurs fois par membre)</label>
             <label class="switch"><input type="checkbox" role="switch" [checked]="f.isActive" (change)="patch({ isActive: $any($event.target).checked })" /> Active</label>
@@ -116,8 +133,18 @@
             <app-dog-tag [member]="card" [link]="false" />
           }
           @if (imagePreview() ?? f.currentImageUrl; as img) {
-            <img [src]="img" alt="Aperçu de l'image" width="96" height="96" style="margin-top: var(--space-4)" />
+            <img class="medal-img" [src]="img" alt="Aperçu de l'image" width="160" height="80" style="margin-top: var(--space-4)" />
           }
+          <div class="row" style="margin-top: var(--space-3)">
+            @for (t of tiers; track t) {
+              @if (tierImage(f, t); as timg) {
+                <figure style="margin: 0; text-align: center">
+                  <img class="medal-img" [src]="timg" alt="" width="64" height="32" />
+                  <figcaption class="small muted">{{ tierLabels[t] }}</figcaption>
+                </figure>
+              }
+            }
+          </div>
         </div>
 
         <div class="modal__actions" style="grid-column: 1 / -1">

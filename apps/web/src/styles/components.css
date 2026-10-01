@@ -695,3 +695,9 @@
   text-transform: none;
   margin-bottom: var(--space-3);
 }
+
+/* Médailles : rubans (≈ 3,7:1) et insignes dans une boîte 2:1, sans déformation. */
+.medal-img {
+  object-fit: contain;
+  flex-shrink: 0;
+}

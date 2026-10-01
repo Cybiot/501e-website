@@ -110,6 +110,38 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(user.discordRoleIds).not.toContain(medal.discordRoleId);
   });
 
+  it('enregistre le palier choisi et affiche le plus haut palier obtenu', async () => {
+    const { member, a } = await setup();
+    const medal = await createMedal({ tiered: true });
+    const award = (tier: string | null, confirmDuplicate?: boolean) =>
+      a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, tier, reason: 'Assaut.', idempotencyKey: randomUUID(), confirmDuplicate });
+
+    const first = await award('silver');
+    expect(first.status).toBe(201);
+    expect(first.body.tier).toBe('silver');
+    expect(first.body.medal.imageUrl).toBe('/medailles/test-argent.png');
+    expect((await award('bronze', true)).status).toBe(201);
+
+    const card = await a.get(`/api/members/${member.id}`);
+    expect(card.body.medals).toEqual([expect.objectContaining({ count: 2, medal: expect.objectContaining({ tier: 'silver', imageUrl: '/medailles/test-argent.png' }) })]);
+    expect(card.body.awards.map((w: { medal: { tier: string } }) => w.medal.tier).sort()).toEqual(['bronze', 'silver']);
+  });
+
+  it('refuse un palier sur une médaille sans paliers', async () => {
+    const { member, medal, a } = await setup();
+    const res = await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, tier: 'gold', reason: 'X.', idempotencyKey: randomUUID() });
+    expect(res.status).toBe(400);
+    expect(await prisma.medalAward.count()).toBe(0);
+  });
+
+  it('mentionne le palier dans l’annonce Discord', () => {
+    const [message] = buildAnnouncementMessages(
+      [{ id: 'a1', reason: 'Assaut.', tier: 'gold', awardedAt: new Date(), user: { discordId: '1', displayName: 'Winters' }, medal: { id: 'm', name: 'Silver Star', order: 0 } }],
+      { mentions: false },
+    );
+    expect(message!.embeds[0]!.description).toBe('• **Winters** (Or) — Assaut.');
+  });
+
   it('découpe les annonces volumineuses selon les limites Discord', () => {
     const awards = Array.from({ length: 400 }, (_, i) => ({
       id: `a${i}`,

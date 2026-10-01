@@ -3,7 +3,8 @@
  * Comptes de connexion démo : demo-admin (Admin), demo-membre (Membre, consentement à donner),
  * demo-visiteur (connecté sans rôle membre → traité comme un visiteur).
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type MedalTier } from '@prisma/client';
+import { MEDAL_CATALOG, medalImages } from '../src/data/medals.js';
 import {
   MOCK_MEDAL_ROLE_PREFIX,
   MOCK_RANK_ROLES,
@@ -14,36 +15,41 @@ import {
 const prisma = new PrismaClient();
 const CONSENT_VERSION = '2026-09-v1';
 
+/** Du plus bas au plus haut : [slug de l’insigne, nom, abréviation, branche]. */
 const RANKS = [
-  ['Private', 'Pvt.'],
-  ['Private First Class', 'Pfc.'],
-  ['Corporal', 'Cpl.'],
-  ['Sergeant', 'Sgt.'],
-  ['Staff Sergeant', 'SSgt.'],
-  ['Second Lieutenant', '2nd Lt.'],
-  ['First Lieutenant', '1st Lt.'],
-  ['Captain', 'Capt.'],
-  ['Major', 'Maj.'],
+  ['pvt', 'Private', 'Pvt.', 'toccoa'],
+  ['pfc', 'Private First Class', 'Pfc.', 'enlisted'],
+  ['cpl', 'Corporal', 'Cpl.', 'enlisted'],
+  ['t5', 'Technician Fifth Grade', 'T/5.', 'enlisted'],
+  ['t4', 'Technician Fourth Grade', 'T/4.', 'enlisted'],
+  ['t3', 'Technician Third Grade', 'T/3.', 'enlisted'],
+  ['sgt', 'Sergeant', 'Sgt.', 'platoon_leader'],
+  ['ssgt', 'Staff Sergeant', 'S/Sgt.', 'platoon_leader'],
+  ['sfc', 'Sergeant First Class', 'Sfc.', 'platoon_leader'],
+  ['1sgt', '1st Sergeant', '1/Sgt.', 'xo'],
+  ['msgt', 'Master Sergeant', 'M/Sgt.', 'xo'],
+  ['2lt', '2nd Lieutenant', '2Lt.', 'xo'],
+  ['1lt', '1st Lieutenant', '1Lt.', 'co'],
+  ['cpt', 'Captain', 'Cpt.', 'co'],
+  ['mjr', 'Major', 'Mjr.', 'co'],
+  ['ltcol', 'Lieutenant Colonel', 'Lt.Col.', 'staff'],
+  ['col', 'Colonel', 'Col.', 'staff'],
 ] as const;
 
 const RESPONSIBILITIES = [
-  ['Chef de section', 'Dirige une section lors des opérations et coordonne ses chefs d’escouade.'],
-  ['Instructeur', 'Assure les formations des recrues et des spécialistes.'],
-  ['Recruteur', 'Accueille les candidats, mène les entretiens et les accompagne jusqu’à la formation initiale.'],
-  ['Modérateur', 'Veille au respect du règlement sur le Discord et en jeu.'],
-  ['Opérateur radio', 'Référent des communications radio et des procédures de transmission.'],
+  ['EM - État-major', 'Direction de la communauté : décisions, organisation générale et arbitrages.', 'hierarchy'],
+  ['CO - Commanding Officer', 'Commande le régiment et fixe les orientations en opération.', 'hierarchy'],
+  ['XO - Executive Officer', 'Seconde le CO et le remplace en son absence.', 'hierarchy'],
+  ['PL - Platoon Leader', 'Commande un peloton lors des opérations.', 'hierarchy'],
+  ['Staff Toccoa', 'Encadre la formation des recrues au camp Toccoa.', 'pole'],
+  ['Recruteur', 'Accueille les candidats, mène les entretiens et les accompagne jusqu’à la formation initiale.', 'pole'],
+  ['Organisateur Event', 'Prépare et anime les événements et opérations spéciales.', 'pole'],
+  ['Komité des médailles', 'Étudie les propositions de décorations et prépare les attributions.', 'pole'],
+  ['Police militaire', 'Veille au respect du règlement sur le Discord et en jeu.', 'pole'],
 ] as const;
 
-const MEDALS = [
-  ['Médaille d’honneur de la 501e', 'Bravoure', 'Acte de bravoure exceptionnel ayant changé le cours d’une opération.', 'honneur', false],
-  ['Étoile d’argent', 'Bravoure', 'Action d’éclat au combat, au-delà de ce qui est attendu.', 'etoile-argent', true],
-  ['Étoile de bronze', 'Bravoure', 'Conduite méritoire au cours d’une opération.', 'etoile-bronze', true],
-  ['Cœur violet', 'Service', 'Tombé au combat en tenant sa position jusqu’au bout.', 'coeur-violet', true],
-  ['Médaille de bonne conduite', 'Service', 'Exemplarité, fair-play et esprit d’équipe sur la durée.', 'bonne-conduite', false],
-  ['Insigne d’instructeur', 'Formation', 'A formé au moins cinq recrues jusqu’à leur validation.', 'instructeur', false],
-  ['Campagne de Normandie', 'Événement', 'Participation à la campagne événementielle de Normandie.', 'normandie', false],
-  ['Vétéran — 1 an', 'Ancienneté', 'Un an de service au sein de la communauté.', 'veteran', false],
-] as const;
+/** Palier tiré au hasard pour les médailles à paliers (null : image de base). */
+const TIERS: (MedalTier | null)[] = [null, 'bronze', 'silver', 'gold'];
 
 const FIRST = ['Julien', 'Maxime', 'Lucas', 'Thomas', 'Hugo', 'Antoine', 'Nicolas', 'Alexandre', 'Mathieu', 'Kevin', 'Romain', 'Clément', 'Louis', 'Arthur', 'Baptiste', 'Quentin', 'Samuel', 'Florian', 'Adrien', 'Victor'];
 const LAST = ['Martin', 'Bernard', 'Dubois', 'Laurent', 'Moreau', 'Lefèvre', 'Garnier', 'Rousseau', 'Faure', 'Mercier', 'Blanc', 'Guérin', 'Boyer', 'Chevalier', 'Perrin', 'Morin', 'Roux', 'Fournier', 'Girard', 'Lambert'];
@@ -118,28 +124,28 @@ async function main() {
   ]);
 
   const ranks = await Promise.all(
-    RANKS.map(([name, abbreviation], i) =>
+    RANKS.map(([slug, name, abbreviation, branch], i) =>
       prisma.rank.create({
-        data: { name, abbreviation, order: i + 1, discordRoleId: MOCK_RANK_ROLES[i]!.id, iconUrl: `/insignes/grade-${i + 1}.svg` },
+        data: { name, abbreviation, branch, order: (i + 1) * 10, discordRoleId: MOCK_RANK_ROLES[i]!.id, iconUrl: `/insignes/${slug}.svg` },
       }),
     ),
   );
   const resps = await Promise.all(
-    RESPONSIBILITIES.map(([name, description], i) =>
-      prisma.responsibility.create({ data: { name, description, order: i, discordRoleId: MOCK_RESPONSIBILITY_ROLES[i]!.id } }),
+    RESPONSIBILITIES.map(([name, description, kind], i) =>
+      prisma.responsibility.create({ data: { name, description, kind, order: i, discordRoleId: MOCK_RESPONSIBILITY_ROLES[i]!.id } }),
     ),
   );
   const medals = await Promise.all(
-    MEDALS.map(([name, category, description, slug, repeatable], i) =>
+    MEDAL_CATALOG.map((m, i) =>
       prisma.medal.create({
         data: {
-          name,
-          category,
-          description,
-          repeatable,
-          order: i,
-          imageUrl: `/medailles/${slug}.svg`,
-          discordRoleId: `${MOCK_MEDAL_ROLE_PREFIX}${slug}`,
+          name: m.name,
+          category: m.category,
+          description: m.description,
+          repeatable: m.repeatable,
+          order: (i + 1) * 10,
+          ...medalImages(m),
+          discordRoleId: `${MOCK_MEDAL_ROLE_PREFIX}${m.slug}`,
         },
       }),
     ),
@@ -147,18 +153,20 @@ async function main() {
 
   type SeedUser = { discordId: string; name: string; rank: number; admin?: boolean; resp?: number[]; consent?: boolean; member?: boolean; hidden?: boolean };
   const users: SeedUser[] = [
-    { discordId: 'demo-admin', name: 'Capt. Winters (démo admin)', rank: 7, admin: true, resp: [0] },
+    { discordId: 'demo-admin', name: 'Cpt. Winters (démo admin)', rank: 13, admin: true, resp: [0, 1] },
     { discordId: 'demo-membre', name: 'Pvt. Blithe (démo membre)', rank: 0, consent: false },
     { discordId: 'demo-visiteur', name: 'Curieux (démo non-membre)', rank: -1, member: false },
   ];
   for (let i = 0; i < 20; i++) {
-    const rank = Math.min(8, Math.floor(rand() * rand() * 9));
+    const rank = Math.floor(rand() * rand() * RANKS.length);
     users.push({
       discordId: `demo-${String(i + 1).padStart(3, '0')}`,
-      name: `${FIRST[i]} « ${LAST[i]} »`,
+      // Comme sur Discord, le pseudo commence par l'abréviation du grade.
+      name: `${RANKS[rank]![2]} ${FIRST[i]} « ${LAST[i]} »`,
       rank,
       admin: i === 0,
-      resp: rand() < 0.35 ? [Math.floor(rand() * resps.length)] : [],
+      // EM, CO et XO ne sont pas tirés au hasard : les autres membres reçoivent un PL ou un pôle.
+      resp: rand() < 0.35 ? [3 + Math.floor(rand() * (resps.length - 3))] : [],
       hidden: i === 7 || i === 15,
     });
   }
@@ -208,7 +216,7 @@ async function main() {
       }
     }
     if (isMember) {
-      const nAwards = Math.floor(rand() * 4) + (u.rank > 4 ? 1 : 0);
+      const nAwards = Math.floor(rand() * 4) + (u.rank >= 8 ? 1 : 0);
       const given = new Set<number>();
       for (let a = 0; a < nAwards; a++) {
         const m = Math.floor(rand() * medals.length);
@@ -219,6 +227,7 @@ async function main() {
             userId: user.id,
             medalId: medals[m]!.id,
             reason: pick(REASONS),
+            tier: medals[m]!.imageBronzeUrl ? pick(TIERS) : null,
             awardedAt: new Date(joinedAt.getTime() + rand() * (Date.now() - joinedAt.getTime())),
             announcedAt: new Date(),
           },
@@ -233,7 +242,7 @@ async function main() {
   const recipients = await prisma.user.findMany({ where: { discordId: { in: ['demo-002', 'demo-005'] } } });
   for (const r of recipients) {
     await prisma.medalAward.create({
-      data: { userId: r.id, medalId: medals[2]!.id, reason: 'Assaut réussi sur la ferme fortifiée lors de la dernière opération.', awardedById: admin.id },
+      data: { userId: r.id, medalId: medals[2]!.id, tier: 'bronze', reason: 'Assaut réussi sur la ferme fortifiée lors de la dernière opération.', awardedById: admin.id },
     });
   }
 

@@ -67,14 +67,17 @@ export async function loginAs(discordId?: string) {
   };
 }
 
-export async function createMedal(opts: { repeatable?: boolean; discordRoleId?: string | null } = {}) {
+export async function createMedal(opts: { repeatable?: boolean; discordRoleId?: string | null; tiered?: boolean } = {}) {
   counter++;
   return prisma.medal.create({
     data: {
       name: `Médaille ${counter}`,
       description: 'Test',
       category: 'Bravoure',
-      imageUrl: '/medailles/test.svg',
+      imageUrl: '/medailles/test.png',
+      ...(opts.tiered
+        ? { imageBronzeUrl: '/medailles/test-bronze.png', imageSilverUrl: '/medailles/test-argent.png', imageGoldUrl: '/medailles/test-or.png' }
+        : {}),
       repeatable: opts.repeatable ?? true,
       discordRoleId: opts.discordRoleId === undefined ? `role-medal-${counter}` : opts.discordRoleId,
     },

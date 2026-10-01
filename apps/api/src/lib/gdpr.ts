@@ -71,6 +71,7 @@ export async function exportUserData(userId: string) {
     })),
     medals: user.awards.map((a) => ({
       medal: a.medal.name,
+      tier: a.tier,
       reason: a.reason,
       awardedAt: a.awardedAt,
       revokedAt: a.revokedAt,

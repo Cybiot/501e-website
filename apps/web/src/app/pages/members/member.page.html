@@ -74,8 +74,8 @@
                         [attr.aria-controls]="'medal-' + r.medal.id"
                         (click)="toggle(r.medal.id)"
                       >
-                        <img [src]="r.medal.imageUrl" alt="" width="48" height="48" />
-                        <span class="ribbon__name">{{ r.medal.name }}</span>
+                        <img class="medal-img" [src]="r.medal.imageUrl" alt="" width="72" height="36" />
+                        <span class="ribbon__name">{{ label(r.medal) }}</span>
                         @if (r.awards.length > 1) {
                           <span class="badge badge--gold">×{{ r.awards.length }}</span>
                         }
@@ -84,7 +84,9 @@
                         <p class="small muted">{{ r.medal.description }}</p>
                         @for (a of r.awards; track a.id) {
                           <p class="ribbon__award">
-                            <span class="mono small">{{ a.awardedAt | date: 'd MMMM yyyy' }}</span>
+                            <span class="mono small"
+                              >{{ a.awardedAt | date: 'd MMMM yyyy' }}{{ a.medal.tier ? ' · ' + tierLabels[a.medal.tier] : '' }}</span
+                            >
                             <span>{{ a.reason }}</span>
                           </p>
                         }

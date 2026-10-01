@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, PL
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { t, TPipe } from '../../core/i18n';
-import { MemberDetail } from '../../core/models';
+import { MEDAL_TIERS, MedalTier, MemberDetail, TIER_LABELS, medalLabel } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { ToastService } from '../../core/toast.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
@@ -29,18 +29,22 @@ export class MemberPage {
   protected readonly state = signal<'loading' | 'ready' | 'notfound' | 'error'>('loading');
   protected readonly openAward = signal<string | null>(null);
 
-  /** Rubans : une entrée par médaille, avec toutes ses attributions. */
+  /** Rubans : une entrée par médaille, avec toutes ses attributions, au palier le plus haut obtenu. */
   protected readonly ribbons = computed(() => {
     const m = this.member();
     if (!m) return [];
+    const rank = (t: MedalTier | null | undefined) => (t ? MEDAL_TIERS.indexOf(t) : -1);
     const map = new Map<string, { medal: MemberDetail['awards'][number]['medal']; awards: MemberDetail['awards'] }>();
     for (const a of m.awards) {
       const entry = map.get(a.medal.id) ?? { medal: a.medal, awards: [] };
+      if (rank(a.medal.tier) > rank(entry.medal.tier)) entry.medal = a.medal;
       entry.awards.push(a);
       map.set(a.medal.id, entry);
     }
     return [...map.values()];
   });
+  protected readonly tierLabels = TIER_LABELS;
+  protected readonly label = medalLabel;
 
   constructor() {
     effect(() => {

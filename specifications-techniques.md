@@ -200,7 +200,7 @@ Le thème est historique, mais **l'expérience doit être résolument moderne** 
 
 - **User** : `id`, `discordId` (unique), `displayName`, `discordAvatarUrl`, `status` (calculé : member/admin/none), `rankId`, `joinedAt`, `lastLoginAt`, `consentAcceptedAt`, `consentVersion`, `publicProfileEnabled` (bool, défaut true), `deletedAt`.
 - **Rank (Grade)** : `id`, `name`, `abbreviation`, `order`, `discordRoleId`, `iconUrl`. `[HYPOTHÈSE]` Seed : Private, Private First Class, Corporal, Sergeant, Staff Sergeant, Second Lieutenant, First Lieutenant, Captain, Major (personnalisable).
-- **Responsibility** : `id`, `name`, `description`, `discordRoleId` (optionnel). Liaison N–N avec User (ex. Chef de section, Instructeur, Recruteur, Modérateur…).
+- **Responsibility** : `id`, `name`, `description`, `kind` (hiérarchie ou pôle), `discordRoleId` (optionnel). Liaison N–N avec User. Hiérarchie : EM - État-major, CO - Commanding Officer, XO - Executive Officer, PL - Platoon Leader. Pôles : Staff Toccoa, Recruteur, Organisateur Event, Komité des médailles, Police militaire.
 - **Profile** : `userId`, `tagline` (max 140 car.), `customImageId` (image approuvée en cours), `pendingImageId`.
 - **CustomImage** : `id`, `userId`, `storageKey`, `status` (`pending` / `approved` / `rejected`), `rejectionReason`, `submittedAt`, `reviewedAt`, `reviewedBy`.
 - **Medal** : `id`, `name`, `description`, `imageUrl`, `category`, `discordRoleId`, `order`, `isActive`.
@@ -340,7 +340,7 @@ Le thème est historique, mais **l'expérience doit être résolument moderne** 
 
 **Modifier**
 
-- **Phrase personnalisée** : texte court (max 140 caractères), compteur, filtrage basique des contenus interdits, aperçu en direct de la carte « dog tag ».
+- **Phrase personnalisée** : texte court (max 140 caractères), compteur, liens refusés (anti-spam), aperçu en direct de la carte « dog tag ».
 
 - Image personnalisée
 
@@ -615,7 +615,7 @@ Le thème est historique, mais **l'expérience doit être résolument moderne** 
 
 > À valider par le commanditaire ; l'IA applique les hypothèses par défaut en attendant.
 
-1. **Grades et responsabilités** : liste exacte et correspondance avec les rôles Discord ? *(Hyp. : liste standard US Army, modifiable.)*
+1. **Grades et responsabilités** : ~~liste exacte~~ *(Réponse : 17 grades répartis en branches, du plus bas au plus haut. Toccoa Bootcamp : Pvt. · Homme du rang : Pfc., Cpl., T/5., T/4., T/3. · Platoon Leader : Sgt., S/Sgt., Sfc. · XO : 1/Sgt., M/Sgt., 2Lt. · CO : 1Lt., Cpt., Mjr. · État-major : Lt.Col., Col. Le pseudo Discord commence par l'abréviation du grade, retirée à l'affichage. Le système de points de promotion est reporté à une version ultérieure.)* Correspondance avec les rôles Discord : à faire dans Admin > Paramètres.
 2. **Rôles Discord** : un seul rôle « Membre » ou plusieurs ? Quels rôles pour Admin ? Existe-t-il un rôle « Recrue » à traiter comme membre ou non ?
 3. **Médailles** : les rôles existent-ils déjà (association) ou faut-il que le site les crée ? Une médaille peut-elle être attribuée plusieurs fois au même membre ?
 4. **Annonce Discord** : quel format souhaité (un embed unique groupé, un message par médaille) ? Quel salon ? Mention des membres ?

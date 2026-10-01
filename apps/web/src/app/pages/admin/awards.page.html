@@ -49,7 +49,7 @@
         @for (m of activeMedals(); track m.id) {
           <label class="medal-option" [class.selected]="selectedMedalId() === m.id">
             <input type="radio" name="medal" class="sr-only" [value]="m.id" [checked]="selectedMedalId() === m.id" (change)="pickMedal(m.id)" />
-            <img [src]="m.imageUrl" alt="" width="40" height="40" />
+            <img class="medal-img" [src]="m.imageUrl" alt="" width="64" height="32" />
             <span>{{ m.name }}</span>
           </label>
         } @empty {
@@ -58,6 +58,22 @@
       </div>
       @if (selectedMedal(); as sm) {
         <p class="field__hint">{{ sm.description }} · {{ sm.repeatable ? 'Cumulable' : 'Non cumulable' }}</p>
+        @if (sm.tierImages; as images) {
+          <div class="medal-pick" role="radiogroup" aria-label="Palier" style="margin-top: var(--space-3)">
+            <label class="medal-option" [class.selected]="selectedTier() === null">
+              <input type="radio" name="tier" class="sr-only" [checked]="selectedTier() === null" (change)="selectedTier.set(null); resetKey()" />
+              <img class="medal-img" [src]="sm.imageUrl" alt="" width="64" height="32" />
+              <span>Sans palier</span>
+            </label>
+            @for (t of tiers; track t) {
+              <label class="medal-option" [class.selected]="selectedTier() === t">
+                <input type="radio" name="tier" class="sr-only" [checked]="selectedTier() === t" (change)="selectedTier.set(t); resetKey()" />
+                <img class="medal-img" [src]="images[t]" alt="" width="64" height="32" />
+                <span>{{ tierLabels[t] }}</span>
+              </label>
+            }
+          </div>
+        }
       }
       @if (alreadyHeld() > 0) {
         <div class="alert alert--warning"><app-icon name="alert-triangle" [size]="16" /><span>Ce membre possède déjà cette médaille ({{ alreadyHeld() }}×).</span></div>
@@ -116,9 +132,9 @@
       <ul class="pending">
         @for (a of pending(); track a.id) {
           <li>
-            <img [src]="a.medal.imageUrl" alt="" width="32" height="32" />
+            <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="48" height="24" />
             <div class="pending__body">
-              <strong>{{ a.member.displayName }}</strong> <span class="muted small">· {{ a.medal.name }}</span>
+              <strong>{{ a.member.displayName }}</strong> <span class="muted small">· {{ label(a.medal) }}</span>
               <p class="small muted">{{ a.reason }}</p>
               <span class="small muted mono">{{ a.awardedAt | date: 'dd/MM/yyyy HH:mm' }}{{ a.awardedBy ? ' · par ' + a.awardedBy.displayName : '' }}</span>
             </div>
@@ -154,7 +170,7 @@
                   <summary class="small">Voir</summary>
                   <ul class="small">
                     @for (w of h.awards; track $index) {
-                      <li>{{ w.member }} — {{ w.medal }} : {{ w.reason }}</li>
+                      <li>{{ w.member }} — {{ label({ name: w.medal, tier: w.tier }) }} : {{ w.reason }}</li>
                     }
                   </ul>
                 </details>

@@ -4,7 +4,6 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { requireMember } from '../auth/guards.js';
 import { destroySession } from '../auth/session.js';
-import { checkTagline } from '../data/banned-words.js';
 import { prisma } from '../db.js';
 import { searchCities } from '../geocoding/index.js';
 import { audit } from '../lib/audit.js';
@@ -21,6 +20,8 @@ export const meRouter = Router();
 
 export const MAX_LOCATIONS = 2;
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+/** Liens et invitations : interdits dans la phrase personnalisée (anti-spam). */
+const LINK_PATTERN = /(https?:\/\/|www\.|discord\.gg|discord(app)?\.com\/invite)/i;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -136,8 +137,7 @@ meRouter.patch('/profile', async (req, res) => {
   if (body.tagline) {
     // Retire les caractères de contrôle et les retours à la ligne.
     body.tagline = body.tagline.replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim();
-    const problem = checkTagline(body.tagline);
-    if (problem) throw badRequest(problem);
+    if (LINK_PATTERN.test(body.tagline)) throw badRequest('Les liens ne sont pas autorisés dans la phrase.');
   }
   const before = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const consentChanged =

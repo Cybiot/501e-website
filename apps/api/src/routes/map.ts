@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireMember } from '../auth/guards.js';
 import { prisma } from '../db.js';
 import { avatarOf, presentRank } from '../lib/presenters.js';
+import { stripRankPrefix } from '../lib/rank-prefix.js';
 
 export const mapRouter = Router();
 
@@ -20,7 +21,7 @@ mapRouter.get('/members', requireMember(), async (_req, res) => {
   res.json(
     users.map((u) => ({
       id: u.id,
-      displayName: u.displayName,
+      displayName: stripRankPrefix(u.displayName),
       avatarUrl: avatarOf(u),
       rank: presentRank(u.rank),
       tagline: u.profile?.tagline ?? null,

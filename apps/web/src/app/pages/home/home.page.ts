@@ -4,24 +4,22 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   inject,
   PLATFORM_ID,
   signal,
-  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import content from '../../../content/accueil.json';
 import { Api } from '../../core/api.service';
 import { TPipe } from '../../core/i18n';
-import { Featured } from '../../core/models';
+import { Featured, medalLabel } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { CountUpComponent } from '../../shared/count-up.component';
 import { DogTagComponent } from '../../shared/dog-tag.component';
 import { IconComponent } from '../../shared/icon.component';
 import { InsigniaComponent } from '../../shared/insignia.component';
 import { RevealDirective } from '../../shared/reveal.directive';
-import { DROP_SCENE, playDrop } from './drop-scene';
+import { DROP_SCENE, DropClock, DropSceneDirective } from './drop-scene';
 
 @Component({
   selector: 'app-home-page',
@@ -34,6 +32,7 @@ import { DROP_SCENE, playDrop } from './drop-scene';
     CountUpComponent,
     DogTagComponent,
     RevealDirective,
+    DropSceneDirective,
   ],
   templateUrl: './home.page.html',
   styleUrl: './home.page.css',
@@ -41,9 +40,10 @@ import { DROP_SCENE, playDrop } from './drop-scene';
 export class HomePage {
   private readonly api = inject(Api);
   protected readonly c = content;
+  protected readonly label = medalLabel;
   protected readonly drop = DROP_SCENE;
   protected readonly dropReady = signal(false);
-  private readonly dropEl = viewChild.required<ElementRef<HTMLElement>>('dropScene');
+  protected readonly dropClock: DropClock = { start: null };
   protected readonly years = new Date().getFullYear() - content.stats.foundedYear;
   protected readonly stats = signal<{ members: number; medalsAwarded: number } | null>(null);
   protected readonly featured = signal<Featured[] | null>(null);
@@ -60,12 +60,8 @@ export class HomePage {
       .then((f) => this.featured.set(f))
       .catch(() => this.featured.set([]));
 
-    // Largage lancé une seule fois, après l'hydratation (scène finale directe si les animations sont réduites).
-    afterNextRender(() => {
-      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
-        playDrop(this.dropEl().nativeElement);
-      this.dropReady.set(true);
-    });
+    // Scène révélée après l'hydratation, une fois le largage lancé par DropSceneDirective.
+    afterNextRender(() => this.dropReady.set(true));
 
     // Parallaxe légère sur le hero (désactivée si l'utilisateur réduit les animations).
     if (

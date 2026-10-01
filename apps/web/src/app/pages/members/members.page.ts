@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api.service';
 import { t, TPipe } from '../../core/i18n';
-import { Filters, MemberCard, Page } from '../../core/models';
+import { Filters, MemberCard, Page, RANK_BRANCHES } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
 import { DogTagComponent } from '../../shared/dog-tag.component';
@@ -72,6 +72,22 @@ export class MembersPage {
   readonly page = input<string>();
 
   protected readonly filters = signal<Filters | null>(null);
+  /** Grades groupés par branche pour le filtre, du plus haut au plus bas comme l'API. */
+  protected readonly rankGroups = computed(() => {
+    const list = this.filters()?.ranks ?? [];
+    return [...RANK_BRANCHES]
+      .reverse()
+      .map((b) => ({ label: b.label, items: list.filter((r) => r.branch === b.id) }))
+      .filter((g) => g.items.length);
+  });
+  /** Responsabilités groupées pour le filtre : hiérarchie puis pôles (ordre de l'API conservé). */
+  protected readonly responsibilityGroups = computed(() => {
+    const list = this.filters()?.responsibilities ?? [];
+    return [
+      { label: 'Hiérarchie', items: list.filter((r) => r.kind === 'hierarchy') },
+      { label: 'Pôles', items: list.filter((r) => r.kind === 'pole') },
+    ].filter((g) => g.items.length);
+  });
   protected readonly result = signal<Page<MemberCard> | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);

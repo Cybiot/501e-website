@@ -99,13 +99,20 @@
     <p class="small muted">Le grade affiché est le rôle de plus haut « ordre » détenu par le membre.</p>
     <div class="table-wrap">
       <table class="table table--stack">
-        <thead><tr><th>Ordre</th><th>Nom</th><th>Abrév.</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
+        <thead><tr><th>Ordre</th><th>Nom</th><th>Abrév.</th><th>Branche</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
         <tbody>
           @for (r of d.ranks; track r.id) {
             <tr>
               <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="r.order" [attr.aria-label]="'Ordre de ' + r.name" /></td>
               <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="r.name" aria-label="Nom" /></td>
               <td data-label="Abréviation"><input class="input" style="width: 90px" [(ngModel)]="r.abbreviation" aria-label="Abréviation" /></td>
+              <td data-label="Branche">
+                <select class="select" [(ngModel)]="r.branch" aria-label="Branche">
+                  @for (b of branches; track b.id) {
+                    <option [value]="b.id">{{ b.label }}</option>
+                  }
+                </select>
+              </td>
               <td class="table__wide" data-label="Rôle Discord">
                 <select class="select" [(ngModel)]="r.discordRoleId" aria-label="Rôle Discord">
                   <option [ngValue]="null">— Aucun —</option>
@@ -128,6 +135,13 @@
             <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="newRank.order" aria-label="Ordre du nouveau grade" /></td>
             <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="newRank.name" placeholder="Nouveau grade" aria-label="Nom du nouveau grade" /></td>
             <td data-label="Abréviation"><input class="input" style="width: 90px" [(ngModel)]="newRank.abbreviation" placeholder="Abrév." aria-label="Abréviation" /></td>
+            <td data-label="Branche">
+              <select class="select" [(ngModel)]="newRank.branch" aria-label="Branche du nouveau grade">
+                @for (b of branches; track b.id) {
+                  <option [value]="b.id">{{ b.label }}</option>
+                }
+              </select>
+            </td>
             <td class="table__wide" data-label="Rôle Discord">
               <select class="select" [(ngModel)]="newRank.discordRoleId" aria-label="Rôle Discord du nouveau grade">
                 <option value="">— Aucun —</option>
@@ -148,11 +162,17 @@
     <h2 id="resp-title" class="card-title">Responsabilités ↔ rôles Discord</h2>
     <div class="table-wrap">
       <table class="table table--stack">
-        <thead><tr><th>Nom</th><th>Description</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
+        <thead><tr><th>Nom</th><th>Catégorie</th><th>Description</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
         <tbody>
           @for (r of d.responsibilities; track r.id) {
             <tr>
               <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="r.name" aria-label="Nom" /></td>
+              <td data-label="Catégorie">
+                <select class="select" [(ngModel)]="r.kind" aria-label="Catégorie">
+                  <option value="hierarchy">Hiérarchie</option>
+                  <option value="pole">Pôle</option>
+                </select>
+              </td>
               <td class="table__wide" data-label="Description"><input class="input" [(ngModel)]="r.description" aria-label="Description" /></td>
               <td class="table__wide" data-label="Rôle Discord">
                 <select class="select" [(ngModel)]="r.discordRoleId" aria-label="Rôle Discord">
@@ -174,6 +194,12 @@
           }
           <tr>
             <td class="table__wide" data-label="Nom"><input class="input" [(ngModel)]="newResp.name" placeholder="Nouvelle responsabilité" aria-label="Nom" /></td>
+            <td data-label="Catégorie">
+              <select class="select" [(ngModel)]="newResp.kind" aria-label="Catégorie">
+                <option value="hierarchy">Hiérarchie</option>
+                <option value="pole">Pôle</option>
+              </select>
+            </td>
             <td class="table__wide" data-label="Description"><input class="input" [(ngModel)]="newResp.description" placeholder="Description" aria-label="Description" /></td>
             <td class="table__wide" data-label="Rôle Discord">
               <select class="select" [(ngModel)]="newResp.discordRoleId" aria-label="Rôle Discord">

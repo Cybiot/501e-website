@@ -83,24 +83,42 @@ model Session {
   @@index([expiresAt])
 }
 
+/// Branche de progression. Le total de points est remis à 0 à chaque changement de branche.
+enum RankBranch {
+  toccoa
+  enlisted
+  platoon_leader
+  xo
+  co
+  staff
+}
+
 model Rank {
-  id            String  @id @default(cuid())
-  name          String  @unique
+  id            String     @id @default(cuid())
+  name          String     @unique
   abbreviation  String
+  branch        RankBranch @default(enlisted)
   /// Plus la valeur est grande, plus le grade est élevé.
-  order         Int     @unique
-  discordRoleId String? @unique
+  order         Int        @unique
+  discordRoleId String?    @unique
   iconUrl       String?
 
   users User[]
 }
 
+/// Hiérarchie (EM, CO, XO, PL) ou pôle transverse (Staff Toccoa, Recruteur…).
+enum ResponsibilityKind {
+  hierarchy
+  pole
+}
+
 model Responsibility {
-  id            String  @id @default(cuid())
-  name          String  @unique
+  id            String             @id @default(cuid())
+  name          String             @unique
   description   String
-  discordRoleId String? @unique
-  order         Int     @default(0)
+  kind          ResponsibilityKind @default(pole)
+  discordRoleId String?            @unique
+  order         Int                @default(0)
 
   users UserResponsibility[]
 }
@@ -146,19 +164,30 @@ model CustomImage {
   @@index([userId])
 }
 
+/// Paliers d'une médaille (étoile bronze, argent ou or sur le ruban). Sans palier : image de base.
+enum MedalTier {
+  bronze
+  silver
+  gold
+}
+
 model Medal {
-  id            String   @id @default(cuid())
-  name          String   @unique
-  description   String
-  imageUrl      String
-  category      String
-  discordRoleId String?
-  order         Int      @default(0)
-  isActive      Boolean  @default(true)
+  id             String   @id @default(cuid())
+  name           String   @unique
+  description    String
+  imageUrl       String
+  /// Images des paliers : renseignées (toutes les trois) pour une médaille à paliers.
+  imageBronzeUrl String?
+  imageSilverUrl String?
+  imageGoldUrl   String?
+  category       String
+  discordRoleId  String?
+  order          Int      @default(0)
+  isActive       Boolean  @default(true)
   /// Un membre peut-il recevoir plusieurs fois cette médaille ?
-  repeatable    Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  repeatable     Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   awards MedalAward[]
 
@@ -166,18 +195,20 @@ model Medal {
 }
 
 model MedalAward {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   userId         String
   medalId        String
-  reason         String    @db.VarChar(200)
+  reason         String     @db.VarChar(200)
+  /// Palier choisi à l'attribution (null : image de base).
+  tier           MedalTier?
   awardedById    String?
-  awardedAt      DateTime  @default(now())
+  awardedAt      DateTime   @default(now())
   announcedAt    DateTime?
   announcementId String?
   revokedAt      DateTime?
   revokedById    String?
   /// Clé fournie par le formulaire pour rendre l'attribution idempotente (double-clic).
-  idempotencyKey String?   @unique
+  idempotencyKey String?    @unique
 
   user         User          @relation("AwardRecipient", fields: [userId], references: [id], onDelete: Cascade)
   medal        Medal         @relation(fields: [medalId], references: [id], onDelete: Restrict)

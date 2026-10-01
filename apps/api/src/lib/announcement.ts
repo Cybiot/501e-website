@@ -1,3 +1,4 @@
+import type { MedalTier } from '@prisma/client';
 import type { DiscordEmbed, DiscordMessagePayload } from '../discord/types.js';
 
 /** Limites de l'API Discord pour les messages. */
@@ -12,6 +13,8 @@ export const DISCORD_LIMITS = {
 export interface AnnounceableAward {
   id: string;
   reason: string;
+  /** Palier de la médaille (null : sans palier). */
+  tier?: MedalTier | null;
   awardedAt: Date;
   user: { discordId: string; displayName: string };
   medal: { id: string; name: string; order: number };
@@ -23,6 +26,8 @@ export interface AnnouncementMessage extends DiscordMessagePayload {
 }
 
 const GOLD = 0xc9a24b;
+
+export const TIER_LABELS: Record<MedalTier, string> = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' };
 
 const embedSize = (e: DiscordEmbed) =>
   (e.title?.length ?? 0) + (e.description?.length ?? 0) + (e.footer?.text.length ?? 0);
@@ -63,7 +68,8 @@ export function buildAnnouncementMessages(
     };
     for (const a of list) {
       const who = opts.mentions ? `<@${a.user.discordId}>` : `**${a.user.displayName}**`;
-      const line = `• ${who} — ${a.reason}`.slice(0, 1000);
+      const tier = a.tier ? ` (${TIER_LABELS[a.tier]})` : '';
+      const line = `• ${who}${tier} — ${a.reason}`.slice(0, 1000);
       const currentLength = lines.reduce((n, l) => n + l.length + 1, 0);
       if (currentLength + line.length + 1 > DISCORD_LIMITS.embedDescription) flush();
       lines.push(line);
