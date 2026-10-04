@@ -16,7 +16,7 @@ adminRouter.use((_req, res, next) => {
 });
 
 adminRouter.get('/dashboard', async (_req, res) => {
-  const [members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, locations, recentLogs] =
+  const [members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, pendingPromotions, locations, recentLogs] =
     await Promise.all([
       prisma.user.count({ where: { status: { in: ['member', 'admin'] }, deletedAt: null } }),
       prisma.user.count({ where: { status: 'admin', deletedAt: null } }),
@@ -24,6 +24,7 @@ adminRouter.get('/dashboard', async (_req, res) => {
       prisma.customImage.count({ where: { status: 'pending' } }),
       prisma.notification.count({ where: { readAt: null } }),
       prisma.medalAward.count({ where: { announcedAt: null, revokedAt: null } }),
+      prisma.rankPromotion.count({ where: { announcedAt: null, user: { status: { in: ['member', 'admin'] }, deletedAt: null } } }),
       prisma.memberLocation.count(),
       prisma.auditLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -32,7 +33,7 @@ adminRouter.get('/dashboard', async (_req, res) => {
       }),
     ]);
   res.json({
-    counts: { members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, locations },
+    counts: { members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, pendingPromotions, locations },
     recentLogs: recentLogs.map((l) => ({
       id: l.id,
       createdAt: l.createdAt,

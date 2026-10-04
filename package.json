@@ -2,7 +2,7 @@
   "name": "501e-site",
   "version": "0.1.0",
   "private": true,
-  "description": "Site officiel de la communauté RP 501st PIR (Squad 44)",
+  "description": "Site officiel de la communauté RP 501e (Squad 44)",
   "workspaces": [
     "apps/api",
     "apps/web",

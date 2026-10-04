@@ -46,7 +46,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
           <h2>Prêt ?</h2>
           <p class="muted">Le bouton t'emmène directement sur notre serveur Discord.</p>
         </div>
-        <a class="btn btn--gold btn--lg" href="/api/join" rel="nofollow">
+        <a class="btn btn--gold btn--lg" href="/api/join" target="_blank" rel="nofollow noopener noreferrer">
           <app-icon name="message" [size]="18" /> {{ 'cta.join' | t }}
         </a>
       </div>

@@ -34,6 +34,12 @@ import { AvatarComponent } from './avatar.component';
           } @else {
             <p class="tag__rank muted">Sans grade</p>
           }
+          @if (member().company; as co) {
+            <p class="tag__company">
+              <img [src]="'/logo/compagnies/' + co.slug + '-160.webp'" alt="" width="18" height="18" loading="lazy" />
+              <span>{{ co.name }}@if (co.platoon) {<span class="muted"> · {{ co.platoon }}</span>}</span>
+            </p>
+          }
         </div>
       </div>
 
@@ -131,6 +137,20 @@ import { AvatarComponent } from './avatar.component';
       font-size: var(--fs-sm);
       color: var(--gold-text);
       font-weight: 600;
+    }
+    .tag__company {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin: var(--space-1) 0 0;
+      font-size: var(--fs-xs);
+      color: var(--text);
+    }
+    .tag__company img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
     .tag__quote {
       margin: 0;

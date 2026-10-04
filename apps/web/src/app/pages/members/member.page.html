@@ -52,6 +52,12 @@
                   {{ rank.name }}
                 </span>
               }
+              @if (m.company; as co) {
+                <a class="badge badge--company" [routerLink]="['/compagnies', co.slug]">
+                  <img [src]="'/logo/compagnies/' + co.slug + '-160.webp'" alt="" width="16" height="16" />
+                  {{ co.name }}{{ co.platoon ? ' · ' + co.platoon : '' }}
+                </a>
+              }
               @if (m.joinedAt) {
                 <span class="badge"><app-icon name="calendar" [size]="12" /> {{ 'members.seniority' | t: { date: (m.joinedAt | date: 'MMMM yyyy') ?? '' } }}</span>
               }

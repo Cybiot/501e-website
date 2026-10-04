@@ -14,10 +14,11 @@ import { parse } from '../../lib/validate.js';
 export const settingsAdminRouter = Router();
 
 settingsAdminRouter.get('/settings', async (_req, res) => {
-  const [settings, ranks, responsibilities] = await Promise.all([
+  const [settings, ranks, responsibilities, companies] = await Promise.all([
     getSettings(),
     prisma.rank.findMany({ orderBy: { order: 'desc' }, include: { _count: { select: { users: true } } } }),
     prisma.responsibility.findMany({ orderBy: [{ order: 'asc' }, { name: 'asc' }], include: { _count: { select: { users: true } } } }),
+    prisma.company.findMany({ orderBy: { order: 'asc' }, include: { platoons: { orderBy: [{ order: 'asc' }, { name: 'asc' }] } } }),
   ]);
   res.json({
     discordMode: config.DISCORD_MODE,
@@ -25,6 +26,7 @@ settingsAdminRouter.get('/settings', async (_req, res) => {
     settings,
     ranks: ranks.map(({ _count, ...r }) => ({ ...r, usersCount: _count.users })),
     responsibilities: responsibilities.map(({ _count, ...r }) => ({ ...r, usersCount: _count.users })),
+    companies,
   });
 });
 
@@ -145,5 +147,45 @@ settingsAdminRouter.delete('/responsibilities/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
   await prisma.responsibility.delete({ where: { id } }).catch(uniqueGuard);
   await audit({ action: 'settings.updated', req, targetType: 'responsibility', targetId: id, metadata: { deleted: true } });
+  res.status(204).end();
+});
+
+// --- Compagnies et platoons (appartenance par rôle Discord) ----------------------------------
+// Les compagnies sont fixes (textes et logos dans le contenu du site) : seul leur rôle se modifie.
+
+settingsAdminRouter.patch('/companies/:id', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  const body = parse(z.object({ discordRoleId: nullableRole }), req.body);
+  const c = await prisma.company.update({ where: { id }, data: body }).catch(uniqueGuard);
+  await audit({ action: 'settings.updated', req, targetType: 'company', targetId: id, metadata: { updated: body } });
+  res.json(c);
+});
+
+const PlatoonBody = z.object({
+  name: z.string().trim().min(2).max(60),
+  order: z.number().int().min(0).max(999),
+  discordRoleId: nullableRole,
+});
+
+settingsAdminRouter.post('/companies/:id/platoons', async (req, res) => {
+  const companyId = parse(z.string().min(1), req.params.id);
+  const body = parse(PlatoonBody, req.body);
+  const p = await prisma.platoon.create({ data: { ...body, companyId } }).catch(uniqueGuard);
+  await audit({ action: 'settings.updated', req, targetType: 'platoon', targetId: p.id, metadata: { created: { ...body, companyId } } });
+  res.status(201).json(p);
+});
+
+settingsAdminRouter.patch('/platoons/:id', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  const body = parse(PlatoonBody.partial(), req.body);
+  const p = await prisma.platoon.update({ where: { id }, data: body }).catch(uniqueGuard);
+  await audit({ action: 'settings.updated', req, targetType: 'platoon', targetId: id, metadata: { updated: body } });
+  res.json(p);
+});
+
+settingsAdminRouter.delete('/platoons/:id', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  await prisma.platoon.delete({ where: { id } }).catch(uniqueGuard);
+  await audit({ action: 'settings.updated', req, targetType: 'platoon', targetId: id, metadata: { deleted: true } });
   res.status(204).end();
 });

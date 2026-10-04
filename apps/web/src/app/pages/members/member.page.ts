@@ -61,7 +61,7 @@ export class MemberPage {
       this.state.set('ready');
       this.seo.set({
         title: m.displayName,
-        description: `${m.rank?.name ?? 'Membre'} du 501st PIR${m.awards.length ? ` · ${m.awards.length} décoration(s)` : ''}${m.tagline ? ` — « ${m.tagline} »` : ''}`,
+        description: `${m.rank?.name ?? 'Membre'} de la 501e${m.awards.length ? ` · ${m.awards.length} décoration(s)` : ''}${m.tagline ? ` — « ${m.tagline} »` : ''}`,
         path: `/membres/${m.id}`,
         image: m.avatarUrl ?? undefined,
         type: 'profile',

@@ -1,21 +1,17 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
-  effect,
   ElementRef,
   HostListener,
   inject,
-  PLATFORM_ID,
   signal,
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
-import { Api } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { TPipe } from '../core/i18n';
+import { NotificationsService } from '../core/notifications.service';
 import { ThemeService } from '../core/theme.service';
 import { AvatarComponent } from '../shared/avatar.component';
 import { IconComponent } from '../shared/icon.component';
@@ -28,10 +24,10 @@ import { InsigniaComponent } from '../shared/insignia.component';
   template: `
     <header class="header" [class.header--scrolled]="scrolled()">
       <div class="container header__inner">
-        <a routerLink="/" class="brand" aria-label="501st PIR — accueil">
+        <a routerLink="/" class="brand" aria-label="501e — accueil">
           <app-insignia [size]="34" label="" />
           <span class="brand__text">
-            <strong>501st PIR</strong>
+            <strong>501e</strong>
             <small>Squad 44 · RP</small>
           </span>
         </a>
@@ -353,19 +349,18 @@ import { InsigniaComponent } from '../shared/insignia.component';
 export class HeaderComponent {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
-  private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly host = inject(ElementRef);
-  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly menuOpen = signal(false);
   protected readonly userOpen = signal(false);
   protected readonly scrolled = signal(false);
-  protected readonly unread = signal(0);
+  protected readonly unread = inject(NotificationsService).unread;
 
   protected readonly links = computed(() => [
     { path: '/', label: 'nav.home' },
     { path: '/communaute', label: 'nav.community' },
+    { path: '/compagnies', label: 'nav.companies' },
     { path: '/membres', label: 'nav.members' },
     ...(this.auth.isMember() ? [{ path: '/carte', label: 'nav.map' }] : []),
     { path: '/rejoindre', label: 'nav.join' },
@@ -376,22 +371,6 @@ export class HeaderComponent {
       this.menuOpen.set(false);
       this.userOpen.set(false);
     });
-    // Compteur de notifications non lues (admin), rafraîchi toutes les 60 s.
-    if (this.browser) {
-      let timer: ReturnType<typeof setInterval> | undefined;
-      effect(() => {
-        clearInterval(timer);
-        if (!this.auth.isAdmin()) return;
-        const refresh = () =>
-          this.api
-            .get<{ count: number }>('/admin/notifications/unread-count')
-            .then((r) => this.unread.set(r.count))
-            .catch(() => undefined);
-        void refresh();
-        timer = setInterval(refresh, 60_000);
-      });
-      inject(DestroyRef).onDestroy(() => clearInterval(timer));
-    }
   }
 
   @HostListener('window:scroll')

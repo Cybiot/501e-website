@@ -53,8 +53,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
           script: |
+            set -e
             cd "${{ secrets.VPS_APP_DIR || '/home/deploy/501e-website' }}"
             git fetch origin main
             git reset --hard origin/main

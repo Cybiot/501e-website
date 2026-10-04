@@ -15,7 +15,7 @@ describe('Attribution de médailles et annonce Discord', () => {
     return { admin, member, medal, a };
   }
 
-  it('attribue une médaille, ajoute le rôle Discord et journalise', async () => {
+  it('attribue une médaille sans toucher aux rôles Discord et journalise', async () => {
     const { member, medal, a } = await setup();
     const res = await a.post('/api/admin/awards', {
       userId: member.id,
@@ -26,7 +26,8 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(res.status).toBe(201);
     expect(res.body.announcedAt).toBeNull();
     const user = await prisma.user.findUniqueOrThrow({ where: { id: member.id } });
-    expect(user.discordRoleIds).toContain(medal.discordRoleId);
+    expect(user.discordRoleIds).toEqual(member.discordRoleIds);
+    expect(mockDiscord().sentMessages).toHaveLength(0);
     expect(await prisma.auditLog.count({ where: { action: 'medal.awarded' } })).toBe(1);
   });
 
@@ -58,18 +59,14 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(again.body.error.code).toBe('ALREADY_AWARDED');
   });
 
-  it("si Discord échoue, rien n'est enregistré et une notification admin est créée", async () => {
+  it("si Discord échoue pendant l'annonce, rien n'est marqué annoncé et une notification admin est créée", async () => {
     const { member, medal, a } = await setup();
+    await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Panne', idempotencyKey: randomUUID() });
     mockDiscord().failNext = 1;
-    const res = await a.post('/api/admin/awards', {
-      userId: member.id,
-      medalId: medal.id,
-      reason: 'Panne',
-      idempotencyKey: randomUUID(),
-    });
+    const res = await a.post('/api/admin/announcements', {});
     expect(res.status).toBe(502);
     expect(res.body.error.code).toBe('DISCORD_ERROR');
-    expect(await prisma.medalAward.count()).toBe(0);
+    expect((await a.get('/api/admin/awards/pending')).body).toHaveLength(1);
     expect(await prisma.notification.count({ where: { type: 'discord_error' } })).toBe(1);
   });
 
@@ -102,14 +99,6 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(await prisma.auditLog.count({ where: { action: 'announcement.published' } })).toBe(1);
   });
 
-  it('le retrait du dernier exemplaire retire aussi le rôle Discord', async () => {
-    const { member, medal, a } = await setup();
-    const r = await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'X', idempotencyKey: randomUUID() });
-    await a.delete(`/api/admin/awards/${r.body.id}`);
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: member.id } });
-    expect(user.discordRoleIds).not.toContain(medal.discordRoleId);
-  });
-
   it('enregistre le palier choisi et affiche le plus haut palier obtenu', async () => {
     const { member, a } = await setup();
     const medal = await createMedal({ tiered: true });
@@ -121,10 +110,46 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(first.body.tier).toBe('silver');
     expect(first.body.medal.imageUrl).toBe('/medailles/test-argent.png');
     expect((await award('bronze', true)).status).toBe(201);
+    expect((await a.post('/api/admin/announcements', {})).status).toBe(201);
 
     const card = await a.get(`/api/members/${member.id}`);
     expect(card.body.medals).toEqual([expect.objectContaining({ count: 2, medal: expect.objectContaining({ tier: 'silver', imageUrl: '/medailles/test-argent.png' }) })]);
     expect(card.body.awards.map((w: { medal: { tier: string } }) => w.medal.tier).sort()).toEqual(['bronze', 'silver']);
+  });
+
+  it("une médaille n'est visible sur le site qu'après son annonce Discord", async () => {
+    const { member, medal, a } = await setup();
+    await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Officielle à l’annonce.', idempotencyKey: randomUUID() });
+    expect((await a.get(`/api/members/${member.id}`)).body.medalsTotal).toBe(0);
+    expect((await a.get('/api/admin/medals')).body.items.find((m: { id: string }) => m.id === medal.id).awardsCount).toBe(0);
+
+    await a.post('/api/admin/announcements', {});
+    expect((await a.get(`/api/members/${member.id}`)).body.medalsTotal).toBe(1);
+    const recipients = await a.get(`/api/admin/medals/${medal.id}/awards`);
+    expect(recipients.body.map((r: { member: { id: string } }) => r.member.id)).toEqual([member.id]);
+  });
+
+  it('retirer une attribution pas encore annoncée la supprime', async () => {
+    const { member, medal, a } = await setup();
+    const r = await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Erreur de saisie.', idempotencyKey: randomUUID() });
+    expect((await a.delete(`/api/admin/awards/${r.body.id}`)).status).toBe(204);
+    expect(await prisma.medalAward.count()).toBe(0);
+    // Plus aucune attribution : la médaille redevient supprimable.
+    expect((await a.get('/api/admin/medals')).body.items.find((m: { id: string }) => m.id === medal.id).deletable).toBe(true);
+  });
+
+  it('désattribuer une médaille annoncée la retire du site, sans annonce Discord', async () => {
+    const { member, medal, a } = await setup();
+    const r = await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Assaut.', idempotencyKey: randomUUID() });
+    await a.post('/api/admin/announcements', {});
+    const sent = mockDiscord().sentMessages.length;
+
+    expect((await a.delete(`/api/admin/awards/${r.body.id}`)).status).toBe(204);
+    expect((await prisma.medalAward.findUniqueOrThrow({ where: { id: r.body.id } })).revokedAt).not.toBeNull();
+    expect((await a.get(`/api/members/${member.id}`)).body.medalsTotal).toBe(0);
+    expect((await a.get(`/api/admin/medals/${medal.id}/awards`)).body).toHaveLength(0);
+    expect((await a.get('/api/admin/awards/pending')).body).toHaveLength(0);
+    expect(mockDiscord().sentMessages).toHaveLength(sent);
   });
 
   it('refuse un palier sur une médaille sans paliers', async () => {
@@ -136,7 +161,7 @@ describe('Attribution de médailles et annonce Discord', () => {
 
   it('mentionne le palier dans l’annonce Discord', () => {
     const [message] = buildAnnouncementMessages(
-      [{ id: 'a1', reason: 'Assaut.', tier: 'gold', awardedAt: new Date(), user: { discordId: '1', displayName: 'Winters' }, medal: { id: 'm', name: 'Silver Star', order: 0 } }],
+      { awards: [{ id: 'a1', reason: 'Assaut.', tier: 'gold', awardedAt: new Date(), user: { discordId: '1', displayName: 'Winters' }, medal: { id: 'm', name: 'Silver Star', order: 0 } }] },
       { mentions: false },
     );
     expect(message!.embeds[0]!.description).toBe('• **Winters** (Or) — Assaut.');
@@ -150,7 +175,7 @@ describe('Attribution de médailles et annonce Discord', () => {
       user: { discordId: `${100000 + i}`, displayName: `Membre ${i}` },
       medal: { id: `m${i % 12}`, name: `Médaille ${i % 12}`, order: i % 12 },
     }));
-    const messages = buildAnnouncementMessages(awards, { mentions: true });
+    const messages = buildAnnouncementMessages({ awards }, { mentions: true });
     expect(messages.length).toBeGreaterThan(1);
     for (const m of messages) {
       expect(m.embeds.length).toBeLessThanOrEqual(DISCORD_LIMITS.embedsPerMessage);

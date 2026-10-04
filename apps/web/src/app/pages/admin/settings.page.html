@@ -216,4 +216,84 @@
       </table>
     </div>
   </section>
+
+  <section class="card" style="margin-top: var(--space-5)" aria-labelledby="companies-title">
+    <h2 id="companies-title" class="card-title">Compagnies et platoons ↔ rôles Discord</h2>
+    <p class="small muted">
+      Un membre apparaît sur la page d'une compagnie s'il a le rôle de la compagnie ou celui de l'un de ses platoons.
+      Les responsables « Commanding Officer » et « Executive Officer » sont affichés dans « Commandement », au-dessus des platoons ; les « Platoon Leader » en tête de leur platoon. Les membres sans platoon sont rangés dans « Hors platoon ».
+    </p>
+    @for (c of d.companies; track c.id) {
+      <div class="company-admin">
+        <div class="row" style="align-items: flex-end">
+          <h3 class="card-title" style="margin: 0; flex: 1">{{ c.name }}</h3>
+          <div class="field" style="margin: 0; min-width: 240px">
+            <label [for]="'co-role-' + c.id">{{ c.headquarters ? 'Rôle Discord des chefs de pôle' : 'Rôle Discord de la compagnie' }}</label>
+            <div class="row" style="flex-wrap: nowrap">
+              <select class="select" [id]="'co-role-' + c.id" [(ngModel)]="c.discordRoleId">
+                <option [ngValue]="null">— Aucun —</option>
+                @for (role of roles(); track role.id) {
+                  <option [ngValue]="role.id">{{ role.name }}</option>
+                }
+                @if (c.discordRoleId && !roles().some(x => x.id === c.discordRoleId)) {
+                  <option [ngValue]="c.discordRoleId">{{ c.discordRoleId }}</option>
+                }
+              </select>
+              <button type="button" class="btn btn--sm" (click)="saveCompany(c)" aria-label="Enregistrer le rôle de la compagnie"><app-icon name="check" [size]="14" /></button>
+            </div>
+          </div>
+        </div>
+        @if (c.headquarters) {
+          <p class="small muted" style="margin-top: var(--space-2)">
+            Le Lieutenant-Colonel et le Colonel (grades de la branche « État-major ») y figurent d'office, dans « Commandement » ; les porteurs de ce rôle dans « Chefs de pôle ».
+            Sur la liste des membres et leur fiche, un chef de pôle affiche sa propre compagnie : l'État-major n'apparaît que pour qui n'en a pas.
+          </p>
+        } @else {
+        <div class="table-wrap">
+          <table class="table table--stack">
+            <thead><tr><th>Ordre</th><th>Platoon</th><th>Rôle Discord</th><th></th></tr></thead>
+            <tbody>
+              @for (p of c.platoons; track p.id) {
+                <tr>
+                  <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="p.order" [attr.aria-label]="'Ordre de ' + p.name" /></td>
+                  <td class="table__wide" data-label="Platoon"><input class="input" [(ngModel)]="p.name" aria-label="Nom du platoon" /></td>
+                  <td class="table__wide" data-label="Rôle Discord">
+                    <select class="select" [(ngModel)]="p.discordRoleId" aria-label="Rôle Discord du platoon">
+                      <option [ngValue]="null">— Aucun —</option>
+                      @for (role of roles(); track role.id) {
+                        <option [ngValue]="role.id">{{ role.name }}</option>
+                      }
+                      @if (p.discordRoleId && !roles().some(x => x.id === p.discordRoleId)) {
+                        <option [ngValue]="p.discordRoleId">{{ p.discordRoleId }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td class="row table__actions" style="flex-wrap: nowrap">
+                    <button type="button" class="btn btn--sm" (click)="savePlatoon(p)" aria-label="Enregistrer"><app-icon name="check" [size]="14" /></button>
+                    <button type="button" class="btn btn--danger btn--sm" (click)="deletePlatoon(p)" aria-label="Supprimer"><app-icon name="trash" [size]="14" /></button>
+                  </td>
+                </tr>
+              }
+              @if (newPlatoon[c.id]; as np) {
+                <tr>
+                  <td data-label="Ordre"><input class="input" type="number" style="width: 70px" [(ngModel)]="np.order" aria-label="Ordre du nouveau platoon" /></td>
+                  <td class="table__wide" data-label="Platoon"><input class="input" [(ngModel)]="np.name" placeholder="Nouveau platoon" aria-label="Nom du nouveau platoon" /></td>
+                  <td class="table__wide" data-label="Rôle Discord">
+                    <select class="select" [(ngModel)]="np.discordRoleId" aria-label="Rôle Discord du nouveau platoon">
+                      <option value="">— Aucun —</option>
+                      @for (role of roles(); track role.id) {
+                        <option [value]="role.id">{{ role.name }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td class="table__actions"><button type="button" class="btn btn--primary btn--sm" (click)="addPlatoon(c)" [disabled]="np.name.trim().length < 2" aria-label="Ajouter le platoon"><app-icon name="plus" [size]="14" /></button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
+    }
+  </section>
 }

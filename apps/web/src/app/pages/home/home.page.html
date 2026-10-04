@@ -42,7 +42,7 @@
     <h1 id="hero-title">{{ c.hero.title }}</h1>
     <p class="hero__subtitle">{{ c.hero.subtitle }}</p>
     <div class="row hero__ctas">
-      <a class="btn btn--primary btn--lg" href="/api/join" rel="nofollow">
+      <a class="btn btn--primary btn--lg" href="/api/join" target="_blank" rel="nofollow noopener noreferrer">
         <app-icon name="message" [size]="18" /> {{ 'cta.join' | t }}
       </a>
       <a class="btn btn--lg" routerLink="/communaute"
@@ -151,15 +151,15 @@
       <p class="eyebrow">Nos valeurs</p>
       <h2 id="values-title">Ce qui nous tient ensemble</h2>
     </div>
-    <div class="grid" style="--min: 240px">
+    <ul class="values__list">
       @for (v of c.values; track v.title; let i = $index) {
-        <div class="card card--interactive" [appReveal]="i * 80">
-          <div class="card__icon"><app-icon [name]="v.icon" [size]="22" /></div>
+        <li class="value" [appReveal]="i * 80">
+          <span class="value__badge"><app-icon [name]="v.icon" [size]="26" /></span>
           <h3>{{ v.title }}</h3>
           <p class="muted">{{ v.text }}</p>
-        </div>
+        </li>
       }
-    </div>
+    </ul>
   </div>
 </section>
 
@@ -188,7 +188,7 @@
         <p class="muted">Rejoins le Discord, présente-toi et participe à ta première opération.</p>
       </div>
       <div class="row">
-        <a class="btn btn--gold btn--lg" href="/api/join" rel="nofollow">{{ 'cta.join' | t }}</a>
+        <a class="btn btn--gold btn--lg" href="/api/join" target="_blank" rel="nofollow noopener noreferrer">{{ 'cta.join' | t }}</a>
         <a class="btn btn--lg" routerLink="/rejoindre">Comment ça se passe ?</a>
       </div>
     </div>

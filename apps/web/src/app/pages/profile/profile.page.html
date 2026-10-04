@@ -39,7 +39,7 @@
         </div>
         <p class="eyebrow" style="margin-top: var(--space-5)">Aperçu de ta carte</p>
         @if (preview(); as card) {
-          <app-dog-tag [member]="card" [link]="false" [maxMedals]="5" />
+          <app-member-plaque [member]="card" [link]="false" [maxMedals]="5" />
         }
         <a class="btn btn--ghost btn--sm" [routerLink]="['/membres', p.id]" style="margin-top: var(--space-3)">
           <app-icon name="eye" [size]="14" /> Voir ma fiche publique

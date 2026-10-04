@@ -6,6 +6,7 @@ import { Api, ApiError } from '../../core/api.service';
 import {
   AdminAward,
   AdminMedal,
+  AdminPromotion,
   AnnouncementHistory,
   AnnouncementPreview,
   MEDAL_TIERS,
@@ -34,6 +35,7 @@ export class AwardsPage {
 
   protected readonly medals = signal<AdminMedal[]>([]);
   protected readonly pending = signal<AdminAward[] | null>(null);
+  protected readonly pendingPromotions = signal<AdminPromotion[] | null>(null);
   protected readonly history = signal<AnnouncementHistory[]>([]);
 
   // Formulaire
@@ -57,6 +59,8 @@ export class AwardsPage {
   protected readonly preview = signal<AnnouncementPreview | null>(null);
   protected readonly announcing = signal(false);
 
+  /** Total à annoncer (médailles + promotions). */
+  protected readonly pendingCount = computed(() => (this.pending()?.length ?? 0) + (this.pendingPromotions()?.length ?? 0));
   protected readonly activeMedals = computed(() => this.medals().filter((m) => m.isActive));
   protected readonly selectedMedal = computed(() => this.medals().find((m) => m.id === this.selectedMedalId()) ?? null);
   protected readonly alreadyHeld = computed(() => {
@@ -75,11 +79,13 @@ export class AwardsPage {
 
   protected async refresh() {
     try {
-      const [pending, history] = await Promise.all([
+      const [pending, promotions, history] = await Promise.all([
         this.api.get<AdminAward[]>('/admin/awards/pending'),
+        this.api.get<AdminPromotion[]>('/admin/promotions/pending'),
         this.api.get<AnnouncementHistory[]>('/admin/announcements'),
       ]);
       this.pending.set(pending);
+      this.pendingPromotions.set(promotions);
       this.history.set(history);
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.refresh());
@@ -130,7 +136,7 @@ export class AwardsPage {
         idempotencyKey: this.idempotencyKey,
         confirmDuplicate: confirmDuplicate || undefined,
       });
-      this.toast.success(`${this.label({ name: this.selectedMedal()?.name ?? '', tier: this.selectedTier() })} attribuée à ${member.displayName}. Rôle Discord ajouté.`);
+      this.toast.success(`${this.label({ name: this.selectedMedal()?.name ?? '', tier: this.selectedTier() })} attribuée à ${member.displayName}.`);
       this.selectedMember.set(null);
       this.memberQuery = '';
       this.selectedMedalId.set(null);
@@ -141,7 +147,6 @@ export class AwardsPage {
     } catch (err) {
       const e = err as ApiError;
       if (e.code === 'CONFIRM_DUPLICATE') this.duplicate.set(e.message);
-      else if (e.code === 'DISCORD_ERROR') this.toast.error(e.message, () => void this.award(confirmDuplicate));
       else this.toast.error(e.message);
     } finally {
       this.submitting.set(false);
@@ -149,13 +154,75 @@ export class AwardsPage {
   }
 
   protected async revoke(a: AdminAward) {
-    if (!confirm(`Retirer « ${a.medal.name} » à ${a.member.displayName} ? Le rôle Discord sera retiré s'il n'en possède pas d'autre exemplaire.`)) return;
+    if (!confirm(`Supprimer l'attribution de « ${a.medal.name} » à ${a.member.displayName} ? Elle n'a pas encore été annoncée.`)) return;
     try {
       await this.api.delete(`/admin/awards/${a.id}`);
-      this.toast.success('Attribution retirée.');
+      this.toast.success('Attribution supprimée.');
       await this.refresh();
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.revoke(a));
+    }
+  }
+
+  // --- Désattribution d'une médaille déjà annoncée ---
+
+  protected unawardQuery = '';
+  protected readonly unawardResults = signal<MemberSearchResult[]>([]);
+  protected readonly unawardMember = signal<MemberSearchResult | null>(null);
+  /** Médailles officielles du membre choisi (null : chargement). */
+  protected readonly unawardAwards = signal<AdminAward[] | null>(null);
+  private unawardTimer?: ReturnType<typeof setTimeout>;
+
+  protected onUnawardInput(q: string) {
+    this.unawardMember.set(null);
+    this.unawardAwards.set(null);
+    clearTimeout(this.unawardTimer);
+    this.unawardTimer = setTimeout(async () => {
+      try {
+        this.unawardResults.set(await this.api.get<MemberSearchResult[]>('/admin/members/search', { q }));
+      } catch {
+        this.unawardResults.set([]);
+      }
+    }, 250);
+  }
+
+  protected async pickUnawardMember(m: MemberSearchResult) {
+    this.unawardMember.set(m);
+    this.unawardQuery = m.displayName;
+    this.unawardResults.set([]);
+    await this.loadUnawardAwards(m);
+  }
+
+  private async loadUnawardAwards(m: MemberSearchResult) {
+    this.unawardAwards.set(null);
+    try {
+      const all = await this.api.get<AdminAward[]>('/admin/awards', { userId: m.id });
+      this.unawardAwards.set(all.filter((a) => a.announcedAt && !a.revokedAt));
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    }
+  }
+
+  protected async unaward(a: AdminAward) {
+    if (!confirm(`Désattribuer « ${this.label(a.medal)} » à ${a.member.displayName} ?`)) return;
+    try {
+      await this.api.delete(`/admin/awards/${a.id}`);
+      this.toast.success(`Médaille désattribuée à ${a.member.displayName}.`);
+      this.unawardAwards.update((list) => list?.filter((x) => x.id !== a.id) ?? list);
+    } catch (err) {
+      this.toast.error((err as ApiError).message, () => void this.unaward(a));
+    }
+  }
+
+  /** Retire une promotion de la file : elle ne sera pas annoncée (le grade reste celui de Discord). */
+  protected async dismissPromotion(p: AdminPromotion) {
+    if (!confirm(`Ne pas annoncer la promotion de ${p.member.displayName} (${p.toRank.name}) ?`)) return;
+    try {
+      await this.api.delete(`/admin/promotions/${p.id}`);
+      this.toast.success('Promotion retirée de l’annonce.');
+      await this.refresh();
+    } catch (err) {
+      this.toast.error((err as ApiError).message, () => void this.dismissPromotion(p));
     }
   }
 
@@ -182,10 +249,11 @@ export class AwardsPage {
   protected async announce() {
     this.announcing.set(true);
     try {
-      const res = await this.api.post<{ awardsCount: number; partial: boolean }>('/admin/announcements', {});
+      const res = await this.api.post<{ awardsCount: number; promotionsCount: number; partial: boolean }>('/admin/announcements', {});
       this.preview.set(null);
-      if (res.partial) this.toast.show('warning', `Annonce partielle : ${res.awardsCount} attribution(s) publiées, les autres restent à annoncer.`);
-      else this.toast.success(`Annonce publiée sur Discord (${res.awardsCount} décoration(s)).`);
+      const done = `${res.awardsCount} décoration(s), ${res.promotionsCount} promotion(s)`;
+      if (res.partial) this.toast.show('warning', `Annonce partielle : ${done} publiées, le reste demeure à annoncer.`);
+      else this.toast.success(`Annonce publiée sur Discord (${done}).`);
       await this.refresh();
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.announce());

@@ -1,13 +1,16 @@
 /**
  * Bot Discord de la 501e.
  *
- * Rôle : écouter en temps réel les changements de rôles sur le serveur (guildMemberUpdate,
- * guildMemberAdd, guildMemberRemove) et les relayer à l'API, qui recalcule le statut
- * (Membre/Admin), le grade et les responsabilités. Les actions (ajout/retrait de rôles,
- * annonces) sont effectuées par l'API via l'API REST Discord avec le même jeton de bot.
+ * Le bot n'a que deux usages : lire les membres et leurs rôles, et poster les annonces
+ * (médailles, promotions) dans le salon d'annonce configuré. Il n'agit sur rien d'autre.
  *
- * Permissions minimales du bot : View Channels, Send Messages, Embed Links, Manage Roles.
- * Intent privilégié requis : « Server Members Intent » (portail développeur Discord).
+ * Ce processus ne fait que lire : il écoute les changements de rôles (guildMemberUpdate,
+ * guildMemberAdd, guildMemberRemove) et les relaie à l'API, qui recalcule le statut, le grade
+ * (et détecte les promotions) et les responsabilités. Les annonces sont postées par l'API via
+ * l'API REST Discord, avec le même jeton, uniquement dans le salon d'annonce.
+ *
+ * Permissions : aucune au niveau du serveur ; dans le salon d'annonce seulement, View Channel,
+ * Send Messages et Embed Links. Intent privilégié requis : « Server Members Intent ».
  */
 import { Client, Events, GatewayIntentBits, type GuildMember, type PartialGuildMember } from 'discord.js';
 

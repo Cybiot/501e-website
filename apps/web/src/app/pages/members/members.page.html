@@ -94,9 +94,9 @@
       <button type="button" class="btn btn--sm" (click)="retry()">{{ 'cta.retry' | t }}</button>
     </div>
   } @else if (loading() && !result()) {
-    <div class="grid" style="--min: 270px" aria-busy="true">
+    <div class="grid" style="--min: 420px" aria-busy="true">
       @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-        <div class="skeleton" style="height: 220px"></div>
+        <div class="skeleton" style="height: 124px"></div>
       }
     </div>
   } @else if (result(); as r) {
@@ -109,38 +109,16 @@
         }
       </div>
     } @else {
-      <div class="grid" style="--min: 270px" [style.opacity]="loading() ? 0.6 : 1" [attr.aria-busy]="loading()">
+      <div class="grid" style="--min: 420px" [style.opacity]="loading() ? 0.6 : 1" [attr.aria-busy]="loading()">
         @for (g of rows(); track $index) {
           @if (g.title) {
             <h2 class="group-title">{{ g.title }}</h2>
           }
           @for (m of g.members; track m.id) {
-            <app-dog-tag [member]="m" />
+            <app-member-plaque [member]="m" />
           }
         }
       </div>
-      @if (r.totalPages > 1) {
-        <nav class="pagination" aria-label="Pagination">
-          <a
-            class="btn btn--sm"
-            [class.btn--ghost]="r.page <= 1"
-            [attr.aria-disabled]="r.page <= 1"
-            [routerLink]="[]"
-            [queryParams]="{ page: r.page - 1 }"
-            queryParamsHandling="merge"
-            ><app-icon name="chevron-left" [size]="16" /> {{ 'cta.previous' | t }}</a
-          >
-          <span class="small muted">Page {{ r.page }} / {{ r.totalPages }}</span>
-          <a
-            class="btn btn--sm"
-            [attr.aria-disabled]="r.page >= r.totalPages"
-            [routerLink]="[]"
-            [queryParams]="{ page: r.page + 1 }"
-            queryParamsHandling="merge"
-            >{{ 'cta.next' | t }} <app-icon name="chevron-right" [size]="16" /></a
-          >
-        </nav>
-      }
     }
   }
 </div>

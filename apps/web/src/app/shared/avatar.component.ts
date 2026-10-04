@@ -53,12 +53,27 @@ export class AvatarComponent {
   readonly shape = input<'round' | 'square'>('round');
   readonly alt = input(true);
   protected readonly failed = signal(false);
-  protected readonly initials = computed(() => {
-    const cleaned = this.name()
-      .replace(/[«»"()]/g, ' ')
-      .replace(/\b(Pvt|Pfc|Cpl|Sgt|SSgt|Lt|Capt|Maj)\.?\s/gi, '')
-      .trim();
-    const parts = cleaned.split(/\s+/).filter(Boolean);
-    return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase();
-  });
+  protected readonly initials = computed(() => initialsOf(this.name()));
+}
+
+/** Grade en tête de pseudo (« T/4. », « Lt.Col. »…), au cas où le préfixe n'a pas été retiré. */
+const RANK_PREFIX = /^(?:Pvt|Pfc|Cpl|T\/[345]|Sgt|S\/Sgt|SSgt|Sfc|1\/Sgt|M\/Sgt|2Lt|1Lt|Lt|Cpt|Capt|Mjr|Maj|Lt\.?\s?Col|Col)\.?\s+/i;
+
+/**
+ * Initiales d'un pseudo « Grade Prénom(s) Nom "Surnom" » : première lettre du prénom et du nom de
+ * famille (« T/4. Walter J. Cabezas "Actif" » → WC). Grade, surnom, initiales intermédiaires
+ * et précisions entre parenthèses sont ignorés.
+ */
+export function initialsOf(name: string): string {
+  const words = name
+    .replace(/"[^"]*"|“[^”]*”|«[^»]*»|\([^)]*\)/g, ' ')
+    .trim()
+    .replace(RANK_PREFIX, '')
+    .split(/\s+/)
+    .filter((w) => w && !/^\p{L}\.?$/u.test(w));
+  // Pseudo réduit à un surnom : on se rabat sur celui-ci.
+  if (!words.length) return (name.match(/\p{L}/u)?.[0] ?? '?').toUpperCase();
+  const first = words[0]![0]!;
+  const last = words.length > 1 ? words[words.length - 1]![0] : '';
+  return (first + last).toUpperCase();
 }

@@ -23,6 +23,7 @@ export type AuditAction =
   | 'medal.deleted'
   | 'medal.awarded'
   | 'medal.revoked'
+  | 'promotion.dismissed'
   | 'announcement.published'
   | 'settings.updated'
   | 'discord.error'

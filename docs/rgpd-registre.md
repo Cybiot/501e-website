@@ -11,7 +11,7 @@
 | Destinataire | Rôle | Localisation | Garanties |
 | --- | --- | --- | --- |
 | [Hébergeur] | Hébergement du site, de la base et des images | Union européenne | [DPA / contrat] |
-| Discord Inc. | Authentification OAuth2, rôles, annonces | États-Unis | Clauses contractuelles types / Data Privacy Framework (à vérifier) |
+| Discord Inc. | Authentification OAuth2, lecture des rôles, annonces (médailles, promotions) | États-Unis | Clauses contractuelles types / Data Privacy Framework (à vérifier) |
 | Fondation OpenStreetMap (ou fournisseur configuré) | Tuiles du fond de carte, chargées par le navigateur des membres sur la page Carte | Royaume-Uni / UE | Politique d'usage des tuiles |
 | Photon (auto-hébergé) | Géocodage des villes | Même serveur que le site | Aucun transfert |
 
@@ -34,7 +34,7 @@
 | --- | --- |
 | Finalité | Présenter les membres (grade, médailles, responsabilités, phrase) |
 | Base légale | Intérêt légitime pour l'affichage aux membres ; consentement pour la visibilité publique (retirable à tout moment) |
-| Données | Pseudo, avatar ou image approuvée, grade, responsabilités, médailles et motifs, phrase personnalisée, ancienneté |
+| Données | Pseudo, avatar ou image approuvée, grade et historique des promotions, responsabilités, médailles et motifs, phrase personnalisée, ancienneté |
 | Destinataires | Public si le profil est public ; sinon membres connectés uniquement |
 | Durée | Identique à T1 |
 

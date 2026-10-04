@@ -1,8 +1,9 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminMedal, DiscordRole, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
+import { AdminAward, AdminMedal, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { DogTagComponent } from '../../shared/dog-tag.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -15,9 +16,6 @@ interface MedalForm {
   order: number;
   repeatable: boolean;
   isActive: boolean;
-  roleMode: 'none' | 'existing' | 'create' | 'keep';
-  discordRoleId: string;
-  roleColor: string;
   currentImageUrl: string | null;
   currentTierImages: Record<MedalTier, string> | null;
   removeTiers: boolean;
@@ -31,9 +29,6 @@ const empty = (): MedalForm => ({
   order: 0,
   repeatable: true,
   isActive: true,
-  roleMode: 'create',
-  discordRoleId: '',
-  roleColor: '#c9a24b',
   currentImageUrl: null,
   currentTierImages: null,
   removeTiers: false,
@@ -42,7 +37,7 @@ const empty = (): MedalForm => ({
 @Component({
   selector: 'app-catalog-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, IconComponent, DogTagComponent],
+  imports: [DatePipe, FormsModule, RouterLink, IconComponent, DogTagComponent],
   templateUrl: './catalog.page.html',
   styleUrl: './admin.css',
 })
@@ -52,7 +47,6 @@ export class CatalogPage {
 
   protected readonly medals = signal<AdminMedal[] | null>(null);
   protected readonly categories = signal<string[]>([]);
-  protected readonly roles = signal<DiscordRole[]>([]);
   protected readonly editing = signal<MedalForm | null>(null);
   protected readonly imageFile = signal<File | null>(null);
   protected readonly imagePreview = signal<string | null>(null);
@@ -62,6 +56,8 @@ export class CatalogPage {
   protected readonly tiers = MEDAL_TIERS;
   protected readonly tierLabels = TIER_LABELS;
   protected readonly saving = signal(false);
+  /** Récipiendaires de la médaille ouverte (null : liste en cours de chargement). */
+  protected readonly recipients = signal<{ medal: AdminMedal; items: AdminAward[] | null } | null>(null);
 
   /** Aperçu de la médaille telle qu'elle apparaîtra sur une carte membre. */
   protected readonly previewCard = computed<MemberCard | null>(() => {
@@ -78,6 +74,7 @@ export class CatalogPage {
       medals: img ? [{ medal: { id: 'm', name: f.name || 'Nouvelle médaille', description: f.description, imageUrl: img, category: f.category }, count: 1 }] : [],
       medalsTotal: img ? 1 : 0,
       joinedAt: null,
+      company: null,
     };
   });
 
@@ -95,15 +92,6 @@ export class CatalogPage {
     }
   }
 
-  private async loadRoles() {
-    if (this.roles().length) return;
-    try {
-      this.roles.set(await this.api.get<DiscordRole[]>('/admin/discord/roles'));
-    } catch (err) {
-      this.toast.error((err as ApiError).message);
-    }
-  }
-
   private resetFiles() {
     this.imageFile.set(null);
     this.imagePreview.set(null);
@@ -114,7 +102,6 @@ export class CatalogPage {
   protected create() {
     this.resetFiles();
     this.editing.set({ ...empty(), category: this.categories()[0] ?? '' });
-    void this.loadRoles();
   }
 
   protected edit(m: AdminMedal) {
@@ -127,14 +114,10 @@ export class CatalogPage {
       order: m.order,
       repeatable: m.repeatable,
       isActive: m.isActive,
-      roleMode: 'keep',
-      discordRoleId: m.discordRoleId ?? '',
-      roleColor: '#c9a24b',
       currentImageUrl: m.imageUrl,
       currentTierImages: m.tierImages,
       removeTiers: false,
     });
-    void this.loadRoles();
   }
 
   protected patch(p: Partial<MedalForm>) {
@@ -166,11 +149,6 @@ export class CatalogPage {
     return this.tierPreviews()[tier] ?? (f.removeTiers ? null : f.currentTierImages?.[tier]) ?? null;
   }
 
-  protected roleName(id: string | null) {
-    if (!id) return 'Aucun';
-    return this.roles().find((r) => r.id === id)?.name ?? id;
-  }
-
   protected async save() {
     const f = this.editing();
     if (!f) return;
@@ -190,11 +168,6 @@ export class CatalogPage {
     form.append('order', String(f.order));
     form.append('repeatable', String(f.repeatable));
     form.append('isActive', String(f.isActive));
-    if (f.roleMode !== 'keep') {
-      form.append('roleMode', f.roleMode);
-      if (f.roleMode === 'existing') form.append('discordRoleId', f.discordRoleId);
-      if (f.roleMode === 'create') form.append('roleColor', f.roleColor);
-    }
     const file = this.imageFile();
     if (file) form.append('image', file);
     if (f.removeTiers) form.append('removeTiers', 'true');
@@ -211,12 +184,34 @@ export class CatalogPage {
       else await this.api.upload('/admin/medals', form);
       this.toast.success(f.id ? 'Médaille mise à jour.' : 'Médaille créée.');
       this.editing.set(null);
-      this.roles.set([]);
       await this.load();
     } catch (err) {
       this.toast.error((err as ApiError).message);
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  protected async openRecipients(m: AdminMedal) {
+    this.recipients.set({ medal: m, items: null });
+    try {
+      const items = await this.api.get<AdminAward[]>(`/admin/medals/${m.id}/awards`);
+      if (this.recipients()?.medal.id === m.id) this.recipients.set({ medal: m, items });
+    } catch (err) {
+      this.recipients.set(null);
+      this.toast.error((err as ApiError).message);
+    }
+  }
+
+  protected async unaward(a: AdminAward) {
+    if (!confirm(`Désattribuer « ${a.medal.name} » à ${a.member.displayName} ?`)) return;
+    try {
+      await this.api.delete(`/admin/awards/${a.id}`);
+      this.toast.success(`Médaille désattribuée à ${a.member.displayName}.`);
+      this.recipients.update((r) => (r && r.items ? { ...r, items: r.items.filter((x) => x.id !== a.id) } : r));
+      await this.load();
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
     }
   }
 

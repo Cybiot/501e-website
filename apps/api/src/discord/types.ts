@@ -31,19 +31,18 @@ export interface DiscordMessagePayload {
 }
 
 /**
- * Tout ce que le site demande à Discord passe par cette interface.
+ * Tout ce que le site demande à Discord passe par cette interface. Le bot n'a que deux usages :
+ * lire les membres et les rôles, et poster les annonces (médailles, promotions) dans le salon
+ * d'annonce configuré. Aucune autre action (rôles, pseudos, messages ailleurs…) n'est exposée.
  * Deux implémentations : `live` (API REST Discord via le jeton du bot) et `mock` (démo/tests).
  */
 export interface DiscordGateway {
   readonly mode: 'live' | 'mock';
   getMember(discordId: string): Promise<GuildMemberInfo | null>;
   listMembers(): Promise<GuildMemberInfo[]>;
-  addRole(discordId: string, roleId: string): Promise<void>;
-  removeRole(discordId: string, roleId: string): Promise<void>;
   listRoles(): Promise<DiscordRole[]>;
-  createRole(name: string, color: number): Promise<DiscordRole>;
-  /** Retourne l'identifiant du message créé. */
-  sendMessage(channelId: string, payload: DiscordMessagePayload): Promise<string>;
+  /** Poste dans le salon d'annonce configuré (le seul où le bot écrit). Retourne l'identifiant du message. */
+  postAnnouncement(payload: DiscordMessagePayload): Promise<string>;
   checkIntegration(): Promise<{ ok: boolean; checks: { label: string; ok: boolean; detail?: string }[] }>;
 }
 

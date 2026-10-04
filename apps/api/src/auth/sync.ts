@@ -1,4 +1,4 @@
-import type { UserStatus } from '@prisma/client';
+import type { Prisma, UserStatus } from '@prisma/client';
 import { discord } from '../discord/index.js';
 import type { GuildMemberInfo } from '../discord/types.js';
 import { prisma } from '../db.js';
@@ -32,8 +32,10 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
 
   const wasMember = user.status !== 'none';
   const isMember = status !== 'none';
+  const newRank = ranks[0] ?? null;
 
   const updated = await prisma.$transaction(async (tx) => {
+    if (newRank && newRank.id !== user.lastKnownRankId) await trackPromotion(tx, user, newRank, isMember);
     await tx.userResponsibility.deleteMany({ where: { userId: user.id } });
     if (responsibilities.length) {
       await tx.userResponsibility.createMany({
@@ -45,7 +47,9 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
       data: {
         status,
         discordRoleIds: roles,
-        rankId: ranks[0]?.id ?? null,
+        rankId: newRank?.id ?? null,
+        // Sans grade (rôle retiré avant l'ajout du suivant) : on garde le dernier grade connu.
+        lastKnownRankId: newRank?.id ?? user.lastKnownRankId,
         displayName: info?.displayName ?? user.displayName,
         discordAvatarUrl: info?.avatarUrl ?? user.discordAvatarUrl,
         joinedAt: info?.joinedAt ?? user.joinedAt,
@@ -70,6 +74,29 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
     }
   }
   return updated;
+}
+
+/**
+ * Changement de grade : une montée crée (ou met à jour) la promotion en attente d'annonce,
+ * une descente l'annule. La comparaison part du grade d'avant la promotion en attente, pour
+ * qu'une montée en deux temps (Pvt → Pfc → Cpl avant l'annonce) soit annoncée « Pvt → Cpl ».
+ * Le premier grade connu d'un membre (import, première connexion) n'est pas une promotion.
+ */
+async function trackPromotion(
+  tx: Prisma.TransactionClient,
+  user: { id: string; lastKnownRankId: string | null },
+  newRank: { id: string; order: number },
+  isMember: boolean,
+) {
+  const pending = await tx.rankPromotion.findFirst({ where: { userId: user.id, announcedAt: null }, include: { fromRank: true } });
+  const base = pending ? pending.fromRank : user.lastKnownRankId ? await tx.rank.findUnique({ where: { id: user.lastKnownRankId } }) : null;
+  const promoted = isMember && base !== null && newRank.order > base.order;
+  if (!promoted) {
+    if (pending) await tx.rankPromotion.delete({ where: { id: pending.id } });
+    return;
+  }
+  if (pending) await tx.rankPromotion.update({ where: { id: pending.id }, data: { toRankId: newRank.id, promotedAt: new Date() } });
+  else await tx.rankPromotion.create({ data: { userId: user.id, fromRankId: base.id, toRankId: newRank.id } });
 }
 
 /** Relit les rôles d'un utilisateur via le bot. En cas d'échec Discord, on conserve la copie locale. */

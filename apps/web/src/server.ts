@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { join } from 'node:path';
+import companies from './content/compagnies.json';
 
 /**
  * Serveur de production du front :
@@ -97,7 +98,18 @@ app.get('/robots.txt', (_req, res) => {
 });
 
 app.get('/sitemap.xml', async (_req, res) => {
-  const staticPaths = ['/', '/communaute', '/communaute/regiment', '/membres', '/rejoindre', '/mentions-legales', '/confidentialite', '/cookies'];
+  const staticPaths = [
+    '/',
+    '/communaute',
+    '/communaute/regiment',
+    '/compagnies',
+    ...companies.map((c) => `/compagnies/${c.slug}`),
+    '/membres',
+    '/rejoindre',
+    '/mentions-legales',
+    '/confidentialite',
+    '/cookies',
+  ];
   let members: { id: string; updatedAt: string }[] = [];
   try {
     const r = await fetch(`${API_URL}/api/sitemap/members`, { signal: AbortSignal.timeout(5000) });
@@ -134,7 +146,7 @@ app.use((req, res, next) => {
 /** Page 500 stylisée de dernier recours (si le rendu Angular lui-même échoue). */
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(JSON.stringify({ level: 'error', msg: 'Erreur de rendu', err: (err as Error)?.message }));
-  res.status(500).type('html').send(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Erreur · 501st PIR</title>
+  res.status(500).type('html').send(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Erreur · 501e</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#070b1a;color:#e8ecff;font-family:system-ui,sans-serif;text-align:center;padding:16px}
 .s{display:inline-block;color:#c8322b;border:2px solid;padding:4px 12px;font:700 14px monospace;letter-spacing:.2em;transform:rotate(-4deg)}a{color:#ff8a57}</style></head>
 <body><main><p class="s">ERREUR 500</p><h1>Transmission interrompue</h1><p>Une erreur est survenue de notre côté. Réessaie dans quelques instants.</p><p><a href="/">Retour à l'accueil</a></p></main></body></html>`);

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TPipe } from '../../core/i18n';
+import { NotificationsService } from '../../core/notifications.service';
 import { SeoService } from '../../core/seo.service';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -17,6 +18,9 @@ import { IconComponent } from '../../shared/icon.component';
             <li>
               <a [routerLink]="l.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
                 <app-icon [name]="l.icon" [size]="18" /> <span>{{ l.label | t }}</span>
+                @if (l.path === '/admin/logs' && unread() > 0) {
+                  <span class="count-badge" [attr.aria-label]="unread() + ' notifications non lues'">{{ unread() }}</span>
+                }
               </a>
             </li>
           }
@@ -81,12 +85,16 @@ import { IconComponent } from '../../shared/icon.component';
       color: var(--text);
       box-shadow: inset 3px 0 0 var(--gold);
     }
+    .admin__nav .count-badge {
+      margin-left: auto;
+    }
     .admin__content {
       min-width: 0;
     }
   `,
 })
 export class AdminLayout {
+  protected readonly unread = inject(NotificationsService).unread;
   protected readonly links = [
     { path: '/admin', icon: 'dashboard', label: 'admin.dashboard' },
     { path: '/admin/medailles', icon: 'award', label: 'admin.awards' },

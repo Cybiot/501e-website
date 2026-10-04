@@ -128,7 +128,7 @@
                     [class.active]="i === activeSuggestion()"
                     (mousedown)="$event.preventDefault(); addCity(s)"
                   >
-                    <strong>{{ s.city }}</strong> <span class="muted small">{{ s.region }} · {{ s.country }}</span>
+                    <strong>{{ s.city }}</strong>&nbsp;<span class="muted small">{{ s.region ? s.region + ' · ' : '' }}{{ s.country }}</span>
                   </li>
                 }
               </ul>

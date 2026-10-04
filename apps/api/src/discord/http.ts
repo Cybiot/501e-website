@@ -14,14 +14,21 @@ interface DiscordFetchOptions {
   maxAttempts?: number;
   /** Retourne null au lieu de lever une erreur sur 404. */
   allowNotFound?: boolean;
-  reason?: string;
 }
+
+/** Seule écriture autorisée avec le jeton du bot : poster un message dans un salon. */
+const BOT_WRITE_ALLOWED = /^\/channels\/\d+\/messages$/;
 
 /**
  * Appel REST Discord avec gestion des limites de débit (429 + retry_after)
  * et retry avec backoff exponentiel sur les erreurs transitoires.
  */
 export async function discordFetch<T>(path: string, opts: DiscordFetchOptions): Promise<T | null> {
+  const method = opts.method ?? 'GET';
+  // Garde-fou : le bot ne fait que lire et poster les annonces, jamais d'autre écriture.
+  if (opts.authorization.startsWith('Bot ') && method !== 'GET' && !(method === 'POST' && BOT_WRITE_ALLOWED.test(path))) {
+    throw new DiscordError(`Action Discord non autorisée pour le bot : ${method} ${path}`);
+  }
   const maxAttempts = opts.maxAttempts ?? 4;
   let attempt = 0;
   let lastError: unknown;
@@ -30,9 +37,8 @@ export async function discordFetch<T>(path: string, opts: DiscordFetchOptions): 
     try {
       const headers: Record<string, string> = { Authorization: opts.authorization };
       if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
-      if (opts.reason) headers['X-Audit-Log-Reason'] = encodeURIComponent(opts.reason);
       const res = await fetch(`${DISCORD_API}${path}`, {
-        method: opts.method ?? 'GET',
+        method,
         headers,
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
         signal: AbortSignal.timeout(10_000),

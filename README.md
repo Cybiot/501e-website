@@ -1,4 +1,4 @@
-# Site de la communauté 501st PIR (Squad 44)
+# Site de la communauté 501e (Squad 44)
 
 Site officiel de la communauté RP francophone « 501st Parachute Infantry Regiment » : vitrine publique, annuaire des membres, espace membre (profil, carte), outils d'administration synchronisés avec Discord.
 
@@ -24,8 +24,8 @@ Cette première version couvre le **périmètre V1** des spécifications (`speci
 | --- | --- |
 | **Public** | Accueil (hero, chiffres clés animés, membres à l'honneur, « Comment ça marche », valeurs, FAQ) · La communauté · Le 501st PIR (frise interactive) · Rejoindre · Liste des membres filtrable (cartes « dog tag ») · Fiche membre · Pages légales · Sitemap, robots.txt, Open Graph |
 | **Membre** | Connexion Discord · Consentement RGPD granulaire et versionné · Mon profil (phrase, image recadrée 3:4 soumise à validation, visibilité, consentements, export JSON, suppression du compte) · Carte des membres (clustering, recherche, filtres, liste par pays, 2 villes max) |
-| **Admin** | Tableau de bord · Attribution de médailles (rôle Discord, idempotence, confirmation des doublons) · Liste « À annoncer » et annonce Discord avec aperçu et découpage automatique · Catalogue des médailles (rôle existant ou créé par le bot) · Modération des images (raccourcis clavier) · Notifications et journal d'audit (filtres, export CSV) · Paramètres (rôles, salon, invitation, grades, responsabilités, texte de consentement, test de l'intégration) |
-| **Bot** | Écoute `guildMemberUpdate`, `guildMemberAdd`, `guildMemberRemove` et relaie les changements de rôles à l'API |
+| **Admin** | Tableau de bord · Attribution de médailles (idempotence, confirmation des doublons) · Liste « À annoncer » (médailles et promotions détectées sur Discord) et annonce Discord avec aperçu et découpage automatique · Catalogue des médailles · Modération des images (raccourcis clavier) · Notifications et journal d'audit (filtres, export CSV) · Paramètres (rôles, salon, invitation, grades, responsabilités, texte de consentement, test de l'intégration) |
+| **Bot** | Deux usages seulement : **lire** les membres et leurs rôles (événements `guildMemberUpdate`, `guildMemberAdd`, `guildMemberRemove` relayés à l'API, plus resynchronisation périodique) et **poster** les annonces de médailles et de promotions dans le salon d'annonce configuré. Il n'attribue ni ne retire aucun rôle et n'écrit nulle part ailleurs |
 
 ## Architecture
 
@@ -39,7 +39,8 @@ docs/    Registre des traitements RGPD
 
 - **Discord est la source de vérité des rôles.** Le statut (Visiteur / Membre / Admin), le grade et les responsabilités sont recalculés à chaque connexion, par le bot en temps réel, et par une resynchronisation périodique (15 min par défaut).
 - **Les permissions sont vérifiées côté serveur** sur chaque route. Le statut est relu en base à chaque requête et revérifié auprès de Discord si la copie locale a plus de 5 minutes.
-- **Les actions Discord** (rôles, annonces) passent par l'API REST Discord avec le jeton du bot : retry avec backoff exponentiel, respect des limites de débit, journalisation et notification admin en cas d'échec.
+- **Le bot est en lecture seule, sauf pour les annonces.** Les lectures (membres, rôles) et l'envoi des annonces passent par l'API REST Discord avec le jeton du bot : retry avec backoff exponentiel, respect des limites de débit, journalisation et notification admin en cas d'échec. Un garde-fou (`apps/api/src/discord/http.ts`) refuse toute autre écriture avec le jeton du bot, et l'envoi vise uniquement le salon d'annonce configuré.
+- **Les médailles vivent sur le site** : elles ne correspondent à aucun rôle Discord. **Les promotions** sont détectées par la synchronisation (nouveau rôle de grade plus élevé) et rejoignent la liste « À annoncer », d'où un admin publie l'annonce groupée ou écarte une promotion.
 - **Mode démo** (`DISCORD_MODE=mock`) : connexion simulée par choix d'un compte fictif, rôles et annonces simulés en base. Permet d'utiliser tout le site sans application Discord.
 
 Bibliothèques principales : `express`, `helmet`, `express-rate-limit`, `zod`, `@prisma/client`, `multer`, `sharp` (réencodage des images), `pino` (logs JSON), `discord.js`, `@angular/ssr`, `leaflet` et `leaflet.markercluster` (carte), `marked` (pages légales), `@fontsource/*` (polices auto-hébergées), `http-proxy-middleware`.
@@ -103,9 +104,10 @@ Aucun identifiant Discord n'est codé en dur : tout passe par l'environnement ou
 1. Sur https://discord.com/developers/applications, crée une application.
 2. **OAuth2** : ajoute la redirection `https://<ton-domaine>/api/auth/discord/callback` (en local : `http://localhost:4200/api/auth/discord/callback`). Copie le *Client ID* et le *Client Secret*.
 3. **Bot** : crée le bot, copie son jeton, et active l'intent privilégié **Server Members Intent**.
-4. Invite le bot sur le serveur avec les permissions *View Channels*, *Send Messages*, *Embed Links* et *Manage Roles* :
-   `https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot&permissions=268454912`
-5. Dans les paramètres des rôles du serveur, **place le rôle du bot au-dessus** des rôles qu'il doit attribuer (médailles).
+4. Invite le bot sur le serveur **sans aucune permission de serveur** :
+   `https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot&permissions=0`
+   La lecture des membres et des rôles ne demande que l'intent ci-dessus.
+5. Dans les paramètres du **salon d'annonce uniquement**, ajoute le rôle du bot avec *Voir le salon*, *Envoyer des messages* et *Intégrer des liens*. Ne lui donne aucune permission de gestion (rôles, membres, messages, salons) : « Vérifier l'intégration » signale toute permission superflue.
 6. Active le mode développeur de Discord pour copier les identifiants du serveur, des rôles et du salon d'annonce.
 7. Renseigne `.env` avec `DISCORD_MODE=live`, puis lance l'API, le front et le bot (`npm run dev:bot`).
 8. Dans **Admin > Paramètres**, clique sur « Vérifier l'intégration » et associe grades et responsabilités à leurs rôles.
@@ -189,7 +191,8 @@ docker compose exec -T db pg_dump -U 501e 501e | gzip | gpg --symmetric --cipher
 
 - **Profil public visible par défaut**, avec la case pré-cochée dans la modale de consentement (hypothèse §15.14). Les consentements image et carte sont en opt-in.
 - **Médailles cumulables par défaut**, paramétrables par médaille. Une nouvelle attribution d'une médaille déjà détenue demande une confirmation.
-- **Annonce Discord** : un récapitulatif groupé par médaille, avec mention des membres, découpé automatiquement selon les limites de Discord.
+- **Annonce Discord** : un récapitulatif groupé (promotions, puis médailles regroupées par médaille), avec mention des membres, découpé automatiquement selon les limites de Discord.
+- **Promotions** : seule une montée vers un grade plus élevé est annoncée. Plusieurs montées avant l'annonce n'en font qu'une (« Private → Corporal ») ; un retour au grade précédent l'annule. Le premier grade connu d'un membre (première connexion) n'est pas une promotion.
 - **Instance unique de l'API** : le verrou anti double-clic et le verrou d'annonce sont en mémoire. Pour plusieurs instances, il faudrait les passer en verrous PostgreSQL.
 - Les **textes d'interface** partagés sont externalisés dans `fr.ts`. Une partie des libellés des écrans d'administration et du profil reste dans les templates.
 - **PostGIS** est installé mais pas encore exploité en V1 : les coordonnées sont stockées en latitude et longitude arrondies.

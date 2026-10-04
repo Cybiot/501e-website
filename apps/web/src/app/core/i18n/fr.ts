@@ -4,16 +4,17 @@
  */
 export const fr = {
   site: {
-    name: '501st PIR',
-    fullName: '501st Parachute Infantry Regiment',
+    name: '501e',
+    fullName: '501e - FR Roleplay Community',
     tagline: 'Communauté RP francophone · Squad 44',
     description:
-      'Communauté francophone de jeu de rôle sur Squad 44 incarnant le 501st Parachute Infantry Regiment de la 101st Airborne. Rejoins la 501e.',
+      'Communauté francophone de jeu de rôle sur Squad 44 incarnant les parachutistes de la 101st Airborne. Rejoins la 501e.',
   },
   nav: {
     home: 'Accueil',
     community: 'La communauté',
-    regiment: 'Le 501st PIR',
+    companies: 'Les compagnies',
+    regiment: 'Histoire du régiment',
     members: 'Membres',
     join: 'Rejoindre',
     map: 'Carte',
@@ -65,7 +66,7 @@ export const fr = {
   },
   members: {
     title: 'Les membres',
-    intro: 'Les hommes du 501st : grades, décorations et responsabilités.',
+    intro: 'Les hommes de la 501e : grades, décorations et responsabilités.',
     search: 'Rechercher un membre',
     allRanks: 'Tous les grades',
     allResponsibilities: 'Toutes les responsabilités',
@@ -91,7 +92,7 @@ export const fr = {
     privacy: 'Confidentialité',
     cookies: 'Cookies',
     disclaimer:
-      'Communauté de joueurs indépendante, sans lien avec les éditeurs de Squad 44 ni avec l’armée des États-Unis. Hommage respectueux aux vétérans du 501st PIR.',
+      'Communauté de joueurs indépendante, sans lien avec les éditeurs de Squad 44 ni avec l’armée des États-Unis. Hommage respectueux aux vétérans de la 101st Airborne.',
     cookiesNote: 'Ce site n’utilise que des cookies strictement nécessaires. Aucun traceur.',
   },
   errors: {

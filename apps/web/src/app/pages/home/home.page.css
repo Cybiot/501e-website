@@ -22,7 +22,7 @@
     ),
     radial-gradient(ellipse at 70% 20%, rgb(var(--glow-cool-rgb) / 0.18), transparent 50%),
     radial-gradient(ellipse at 20% 80%, rgb(var(--glow-warm-rgb) / 0.25), transparent 55%),
-    url('/visuels/hero-topo.svg') center / cover,
+    var(--hero-topo) center / cover,
     var(--hero-base);
 }
 /* Scène de largage : repère 860 × 640 (voir drop-scene.ts), positions en % et décalages en cqw. */
@@ -66,6 +66,11 @@
 .drop__jumper {
   opacity: 0.8;
   transform-origin: 50% 0;
+}
+/* Thème jour : le fond brun-kaki moyen absorbe les silhouettes, on les pousse vers le blanc. */
+:host-context([data-theme='jour']) .drop__jumper {
+  opacity: 0.95;
+  filter: brightness(1.1);
 }
 .hero__content {
   padding-block: var(--space-8);
@@ -260,4 +265,64 @@
 }
 .cta-band p {
   margin: 0;
+}
+
+/* --- Valeurs : insignes centrés séparés par des filets ------------------ */
+.values__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-5) var(--space-6);
+}
+.value + .value {
+  border-left: 1px solid var(--border);
+}
+.value__badge {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--gold-text);
+  background: var(--gold-soft);
+  border: 1px solid rgb(var(--gold-rgb) / 0.5);
+  box-shadow: 0 0 0 5px var(--bg), 0 0 0 6px rgb(var(--gold-rgb) / 0.25);
+  margin-bottom: var(--space-4);
+}
+.value h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+.value h3::after {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin: var(--space-3) auto;
+  background: var(--gold);
+}
+.value p {
+  margin: 0;
+  max-width: 32ch;
+}
+/* Empilées sur mobile : filets horizontaux au lieu de verticaux. */
+@media (max-width: 799px) {
+  .values__list {
+    grid-template-columns: 1fr;
+  }
+  .value + .value {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
 }

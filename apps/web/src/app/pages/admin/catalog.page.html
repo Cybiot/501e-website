@@ -36,13 +36,17 @@
         </div>
         <p class="small muted">{{ m.description }}</p>
         <p class="small muted" style="margin: 0">
-          Ordre {{ m.order }} · {{ m.awardsCount }} attribution(s) · rôle
-          <span class="mono">{{ m.discordRoleId ?? 'aucun' }}</span>
+          Ordre {{ m.order }} ·
+          @if (m.awardsCount) {
+            <button type="button" class="link-btn" (click)="openRecipients(m)">{{ m.awardsCount }} attribution(s)</button>
+          } @else {
+            0 attribution
+          }
         </p>
         <div class="row" style="margin-top: auto; padding-top: var(--space-3)">
           <button type="button" class="btn btn--sm" (click)="edit(m)"><app-icon name="pencil" [size]="14" /> Modifier</button>
           <button type="button" class="btn btn--ghost btn--sm" (click)="toggleActive(m)">{{ m.isActive ? 'Désactiver' : 'Réactiver' }}</button>
-          @if (m.awardsCount === 0) {
+          @if (m.deletable) {
             <button type="button" class="btn btn--danger btn--sm" (click)="remove(m)" aria-label="Supprimer"><app-icon name="trash" [size]="14" /></button>
           }
         </div>
@@ -70,12 +74,14 @@
           <div class="row" style="align-items: flex-start">
             <div class="field" style="flex: 1">
               <label for="mf-cat">Catégorie</label>
-              <input id="mf-cat" class="input" list="mf-cats" [ngModel]="f.category" (ngModelChange)="patch({ category: $event })" name="category" />
-              <datalist id="mf-cats">
+              <select id="mf-cat" class="select" [ngModel]="f.category" (ngModelChange)="patch({ category: $event })" name="category">
                 @for (c of categories(); track c) {
-                  <option [value]="c"></option>
+                  <option [value]="c">{{ c }}</option>
                 }
-              </datalist>
+                @if (f.category && !categories().includes(f.category)) {
+                  <option [value]="f.category">{{ f.category }}</option>
+                }
+              </select>
             </div>
             <div class="field" style="width: 110px">
               <label for="mf-order">Ordre</label>
@@ -105,26 +111,6 @@
             <label class="switch"><input type="checkbox" role="switch" [checked]="f.isActive" (change)="patch({ isActive: $any($event.target).checked })" /> Active</label>
           </div>
 
-          <fieldset class="field">
-            <legend class="label">Rôle Discord associé</legend>
-            @if (f.id) {
-              <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'keep'" (change)="patch({ roleMode: 'keep' })" /> Conserver ({{ roleName(f.discordRoleId) }})</label>
-            }
-            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'create'" (change)="patch({ roleMode: 'create' })" /> Créer automatiquement le rôle via le bot</label>
-            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'existing'" (change)="patch({ roleMode: 'existing' })" /> Associer un rôle existant</label>
-            <label class="check-inline"><input type="radio" name="roleMode" [checked]="f.roleMode === 'none'" (change)="patch({ roleMode: 'none' })" /> Aucun rôle</label>
-            @if (f.roleMode === 'existing') {
-              <select class="select" [ngModel]="f.discordRoleId" (ngModelChange)="patch({ discordRoleId: $event })" name="discordRoleId" aria-label="Rôle Discord existant">
-                <option value="">— Choisir un rôle —</option>
-                @for (r of roles(); track r.id) {
-                  <option [value]="r.id" [disabled]="r.managed">{{ r.name }}</option>
-                }
-              </select>
-            }
-            @if (f.roleMode === 'create') {
-              <label class="row small">Couleur du rôle <input type="color" [ngModel]="f.roleColor" (ngModelChange)="patch({ roleColor: $event })" name="roleColor" /></label>
-            }
-          </fieldset>
         </div>
 
         <div class="medal-form__preview">
@@ -157,6 +143,38 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+@if (recipients(); as r) {
+  <div class="modal-backdrop" (click)="recipients.set(null)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recipients-title" (click)="$event.stopPropagation()">
+      <h2 id="recipients-title">{{ r.medal.name }}</h2>
+      <p class="small muted">Attributions annoncées sur Discord. Désattribuer retire la médaille du site, sans annonce.</p>
+      @if (r.items === null) {
+        <div class="skeleton" style="height: 120px"></div>
+      } @else {
+        <ul class="recipients">
+          @for (a of r.items; track a.id) {
+            <li>
+              <span class="recipients__name">
+                <a [routerLink]="['/membres', a.member.id]">{{ a.member.displayName }}</a>
+                @if (a.tier) {
+                  <span class="muted small"> · {{ tierLabels[a.tier] }}</span>
+                }
+              </span>
+              <span class="muted small mono">{{ a.announcedAt | date: 'dd/MM/yyyy' }}</span>
+              <button type="button" class="btn btn--danger btn--sm" (click)="unaward(a)" [attr.aria-label]="'Désattribuer à ' + a.member.displayName">Désattribuer</button>
+            </li>
+          } @empty {
+            <li class="muted small">Plus aucune attribution.</li>
+          }
+        </ul>
+      }
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="recipients.set(null)">Fermer</button>
+      </div>
     </div>
   </div>
 }

@@ -30,6 +30,22 @@ for (const file of readdirSync(medalSrc).filter((f) => f.endsWith('.png'))) {
   );
 }
 
+// --- Logos des compagnies : images officielles (assets/compagnies), déclinées en webp ------------
+const companySrc = join(root, 'assets', 'compagnies');
+for (const file of readdirSync(companySrc).filter((f) => f.endsWith('.png'))) {
+  const slug = file.replace(/\.png$/, '');
+  const trimmed = await sharp(join(companySrc, file)).trim().toBuffer();
+  for (const size of [160, 320]) {
+    write(
+      `logo/compagnies/${slug}-${size}.webp`,
+      await sharp(trimmed)
+        .resize(size, size, { fit: 'contain', background: '#00000000', withoutEnlargement: true })
+        .webp({ quality: 88 })
+        .toBuffer(),
+    );
+  }
+}
+
 // --- Insignes de grade (un fichier par grade, nommé par son slug) -----------------------------
 const GOLD = 'fill="#c9a24b" stroke="#12150f" stroke-width="1.2"';
 const chev = (y) => `<path d="M8 ${y + 9} L32 ${y} L56 ${y + 9} L56 ${y + 14} L32 ${y + 5} L8 ${y + 14}Z" ${GOLD}/>`;
@@ -77,10 +93,11 @@ for (const [cx, cy] of centers) {
     rings += `<path d="M${cx - r} ${cy} C${cx - r} ${cy - r * 0.8 + +wob(1)} ${cx + r * 0.7} ${cy - r + +wob(2)} ${cx + r} ${cy + +wob(3)} C${cx + r} ${cy + r * 0.9} ${cx - r * 0.6} ${cy + r + +wob(4)} ${cx - r} ${cy}Z"/>`;
   }
 }
-write(
-  'visuels/hero-topo.svg',
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice"><rect width="1920" height="1080" fill="#11140f"/><g fill="none" stroke="#6b7f3a" stroke-opacity=".13" stroke-width="1.2">${rings}</g><g stroke="#c9a24b" stroke-opacity=".08">${Array.from({ length: 13 }, (_, i) => `<line x1="${i * 160}" y1="0" x2="${i * 160}" y2="1080"/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<line x1="0" y1="${i * 160}" x2="1920" y2="${i * 160}"/>`).join('')}</g></svg>`,
-);
+const topo = (bg) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice"><rect width="1920" height="1080" fill="${bg}"/><g fill="none" stroke="#6b7f3a" stroke-opacity=".13" stroke-width="1.2">${rings}</g><g stroke="#c9a24b" stroke-opacity=".08">${Array.from({ length: 13 }, (_, i) => `<line x1="${i * 160}" y1="0" x2="${i * 160}" y2="1080"/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<line x1="0" y1="${i * 160}" x2="1920" y2="${i * 160}"/>`).join('')}</g></svg>`;
+write('visuels/hero-topo.svg', topo('#11140f'));
+// Thème « jour » : même dessin sur le fond brun-kaki moyen.
+write('visuels/hero-topo-jour.svg', topo('#201c15'));
 
 // --- Silhouettes de parachutes -----------------------------------------------------------------
 const chute = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})" fill="#ecefe6">
@@ -177,8 +194,8 @@ write(
   'site.webmanifest',
   JSON.stringify(
     {
-      name: '501st PIR · Communauté RP Squad 44',
-      short_name: '501st PIR',
+      name: '501e - FR Roleplay Community',
+      short_name: '501e',
       icons: [
         { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -197,7 +214,7 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
 <radialGradient id="r" cx=".8" cy=".1" r=".9"><stop offset="0" stop-color="#c9a24b" stop-opacity=".25"/><stop offset="1" stop-color="#0e100d" stop-opacity="0"/></radialGradient>
 <rect width="1200" height="630" fill="url(#r)"/>
 <g fill="none" stroke="#6b7f3a" stroke-opacity=".18">${rings.replaceAll('<path', '<path transform="scale(.62)"')}</g>
-<text x="420" y="270" font-family="Arial Narrow, Arial, sans-serif" font-size="78" font-weight="700" fill="#ecefe6" letter-spacing="2">501ST PIR</text>
+<text x="420" y="270" font-family="Arial Narrow, Arial, sans-serif" font-size="78" font-weight="700" fill="#ecefe6" letter-spacing="2">501E</text>
 <text x="422" y="330" font-family="Arial, sans-serif" font-size="30" fill="#a3aa96">Parachute Infantry Regiment · 101st Airborne</text>
 <text x="422" y="410" font-family="Courier New, monospace" font-size="24" fill="#c9a24b" letter-spacing="4">COMMUNAUTÉ RP · SQUAD 44</text>
 </svg>`;

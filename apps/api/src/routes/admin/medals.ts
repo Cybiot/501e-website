@@ -11,7 +11,7 @@ import { audit } from '../../lib/audit.js';
 import { badRequest, conflict, HttpError, notFound } from '../../lib/errors.js';
 import { logger } from '../../lib/logger.js';
 import { notifyAdmins } from '../../lib/notify.js';
-import { avatarOf, isTiered, presentMedal, presentRank } from '../../lib/presenters.js';
+import { avatarOf, isTiered, officialAward, presentMedal, presentRank } from '../../lib/presenters.js';
 import { getSettings } from '../../lib/settings.js';
 import { deleteFile, fileUrl, storeMedalImage } from '../../lib/storage.js';
 import { parse } from '../../lib/validate.js';
@@ -65,8 +65,10 @@ medalsAdminRouter.get('/discord/roles', async (req, res) => {
 medalsAdminRouter.get('/medals', async (_req, res) => {
   const medals = await prisma.medal.findMany({
     orderBy: [{ order: 'asc' }, { name: 'asc' }],
-    include: { _count: { select: { awards: true } } },
+    include: { _count: { select: { awards: { where: officialAward } } } },
   });
+  // Une médaille ne se supprime que si elle n'a aucune attribution, même en attente ou retirée.
+  const used = new Set((await prisma.medalAward.groupBy({ by: ['medalId'] })).map((g) => g.medalId));
   res.json({
     categories: MEDAL_CATEGORIES,
     items: medals.map((m) => ({
@@ -75,8 +77,8 @@ medalsAdminRouter.get('/medals', async (_req, res) => {
       order: m.order,
       isActive: m.isActive,
       repeatable: m.repeatable,
-      discordRoleId: m.discordRoleId,
       awardsCount: m._count.awards,
+      deletable: !used.has(m.id),
     })),
   });
 });
@@ -92,33 +94,7 @@ const MedalFields = z.object({
   isActive: boolField.default(true),
   /** Retire les images de palier : la médaille redevient sans palier. */
   removeTiers: boolField.default(false),
-  roleMode: z.enum(['none', 'existing', 'create']).default('none'),
-  discordRoleId: z.string().trim().max(40).optional(),
-  roleColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional(),
 });
-
-async function resolveRole(
-  body: Pick<z.infer<typeof MedalFields>, 'name' | 'roleMode' | 'discordRoleId' | 'roleColor'>,
-  req: Parameters<typeof audit>[0]['req'],
-) {
-  if (body.roleMode === 'existing') {
-    if (!body.discordRoleId) throw badRequest('Choisis un rôle Discord existant.');
-    return body.discordRoleId;
-  }
-  if (body.roleMode === 'create') {
-    try {
-      const color = body.roleColor ? parseInt(body.roleColor.slice(1), 16) : 0xc9a24b;
-      const role = await discord().createRole(body.name, color);
-      return role.id;
-    } catch (err) {
-      throw await discordFailure(err, 'create_role', req);
-    }
-  }
-  return null;
-}
 
 /** Stocke les images envoyées ; `cleanup` les supprime si la suite de l'opération échoue. */
 async function storeImages(req: Request) {
@@ -149,14 +125,7 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
   if (await prisma.medal.findUnique({ where: { name: body.name } })) {
     throw conflict('Une médaille porte déjà ce nom.');
   }
-  const { stored, cleanup } = await storeImages(req);
-  let discordRoleId: string | null;
-  try {
-    discordRoleId = await resolveRole(body, req);
-  } catch (err) {
-    await cleanup();
-    throw err;
-  }
+  const { stored } = await storeImages(req);
   const medal = await prisma.medal.create({
     data: {
       name: body.name,
@@ -169,7 +138,6 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
       imageBronzeUrl: stored.imageBronzeUrl ?? null,
       imageSilverUrl: stored.imageSilverUrl ?? null,
       imageGoldUrl: stored.imageGoldUrl ?? null,
-      discordRoleId,
     },
   });
   await audit({ action: 'medal.created', req, targetType: 'medal', targetId: medal.id, metadata: { name: medal.name } });
@@ -186,16 +154,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
     const tiersAfter = TIER_IMAGE_FIELDS.filter((t) => fileOf(req, t.field) || medal[t.column]).length;
     if (tiersAfter !== 0 && tiersAfter !== TIER_IMAGE_FIELDS.length) throw badRequest(PARTIAL_TIERS);
   }
-  const { stored, cleanup } = await storeImages(req);
-  let discordRoleId: string | null | undefined = undefined;
-  if (body.roleMode) {
-    try {
-      discordRoleId = await resolveRole({ ...body, name: body.name ?? medal.name, roleMode: body.roleMode }, req);
-    } catch (err) {
-      await cleanup();
-      throw err;
-    }
-  }
+  const { stored } = await storeImages(req);
   const tierData = Object.fromEntries(
     TIER_IMAGE_FIELDS.map(({ column }) => [column, body.removeTiers ? null : (stored[column] ?? medal[column])]),
   );
@@ -210,7 +169,6 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
       isActive: body.isActive,
       ...(stored.imageUrl ? { imageUrl: stored.imageUrl } : {}),
       ...tierData,
-      ...(discordRoleId !== undefined ? { discordRoleId } : {}),
     },
   });
   // Images remplacées ou retirées : supprimées du stockage (les images statiques du site restent).
@@ -341,15 +299,7 @@ async function createAward(req: Request, res: Response, body: z.infer<typeof Awa
     );
   }
 
-  // Rôle Discord d'abord : si Discord échoue, rien n'est enregistré et l'admin peut réessayer.
-  if (medal.discordRoleId) {
-    try {
-      await discord().addRole(user.discordId, medal.discordRoleId);
-    } catch (err) {
-      throw await discordFailure(err, 'add_role', req);
-    }
-  }
-
+  // Les médailles vivent sur le site uniquement : le bot n'ajoute aucun rôle Discord.
   try {
     const award = await prisma.medalAward.create({
       data: {
@@ -403,28 +353,80 @@ medalsAdminRouter.get('/awards', async (req, res) => {
   res.json(awards.map(presentAward));
 });
 
-/** Retrait d'une attribution (et du rôle Discord si le membre ne détient plus cette médaille). */
+/**
+ * Retrait d'une attribution. Pas encore annoncée (liste « À annoncer ») : elle est supprimée,
+ * l'attribution n'ayant jamais été officielle. Déjà annoncée : désattribution, la médaille
+ * disparaît du site mais l'attribution reste dans l'historique (sans annonce Discord).
+ */
 medalsAdminRouter.delete('/awards/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
-  const award = await prisma.medalAward.findUnique({ where: { id }, include: { user: true, medal: true } });
+  const award = await prisma.medalAward.findUnique({ where: { id }, include: { medal: true } });
   if (!award || award.revokedAt) throw notFound('Attribution introuvable.');
-  const others = await prisma.medalAward.count({
-    where: { userId: award.userId, medalId: award.medalId, revokedAt: null, id: { not: id } },
-  });
-  if (award.medal.discordRoleId && others === 0) {
-    try {
-      await discord().removeRole(award.user.discordId, award.medal.discordRoleId);
-    } catch (err) {
-      throw await discordFailure(err, 'remove_role', req);
-    }
+  const announced = award.announcedAt !== null;
+  if (announced) {
+    await prisma.medalAward.update({ where: { id }, data: { revokedAt: new Date(), revokedById: req.user!.id } });
+  } else {
+    await prisma.medalAward.delete({ where: { id } });
   }
-  await prisma.medalAward.update({ where: { id }, data: { revokedAt: new Date(), revokedById: req.user!.id } });
   await audit({
     action: 'medal.revoked',
     req,
     targetType: 'user',
     targetId: award.userId,
-    metadata: { awardId: id, medal: award.medal.name },
+    metadata: { awardId: id, medal: award.medal.name, tier: award.tier, announced },
+  });
+  res.status(204).end();
+});
+
+/** Récipiendaires d'une médaille : attributions officielles (annoncées, non retirées). */
+medalsAdminRouter.get('/medals/:id/awards', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  const awards = await prisma.medalAward.findMany({
+    where: { medalId: id, ...officialAward },
+    include: awardInclude,
+    orderBy: [{ user: { displayName: 'asc' } }, { announcedAt: 'asc' }],
+  });
+  res.json(awards.map(presentAward));
+});
+
+// --- Promotions (détectées par la synchronisation des rôles) -----------------------------------
+
+const promotionInclude = { user: true, fromRank: true, toRank: true } as const;
+/** Promotions en attente, limitées aux personnes toujours membres. */
+const pendingPromotionsWhere = {
+  announcedAt: null,
+  user: { status: { in: ['member', 'admin'] }, deletedAt: null },
+} satisfies Prisma.RankPromotionWhereInput;
+
+const presentPromotion = (p: Prisma.RankPromotionGetPayload<{ include: typeof promotionInclude }>) => ({
+  id: p.id,
+  promotedAt: p.promotedAt,
+  member: { id: p.user.id, displayName: p.user.displayName, discordId: p.user.discordId },
+  fromRank: presentRank(p.fromRank),
+  toRank: presentRank(p.toRank),
+});
+
+medalsAdminRouter.get('/promotions/pending', async (_req, res) => {
+  const promotions = await prisma.rankPromotion.findMany({
+    where: pendingPromotionsWhere,
+    include: promotionInclude,
+    orderBy: { promotedAt: 'asc' },
+  });
+  res.json(promotions.map(presentPromotion));
+});
+
+/** « Ne pas annoncer » : la promotion quitte la file (le grade, lui, reste celui de Discord). */
+medalsAdminRouter.delete('/promotions/:id', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  const p = await prisma.rankPromotion.findUnique({ where: { id }, include: promotionInclude });
+  if (!p || p.announcedAt) throw notFound('Promotion introuvable.');
+  await prisma.rankPromotion.delete({ where: { id } });
+  await audit({
+    action: 'promotion.dismissed',
+    req,
+    targetType: 'user',
+    targetId: p.userId,
+    metadata: { from: p.fromRank?.name ?? null, to: p.toRank.name },
   });
   res.status(204).end();
 });
@@ -432,21 +434,27 @@ medalsAdminRouter.delete('/awards/:id', async (req, res) => {
 // --- Annonce Discord ----------------------------------------------------------------------------
 
 async function pendingForAnnouncement() {
-  return prisma.medalAward.findMany({
-    where: { announcedAt: null, revokedAt: null },
-    include: { user: true, medal: true },
-    orderBy: { awardedAt: 'asc' },
-  });
+  const [awards, promotions] = await Promise.all([
+    prisma.medalAward.findMany({
+      where: { announcedAt: null, revokedAt: null },
+      include: { user: true, medal: true },
+      orderBy: { awardedAt: 'asc' },
+    }),
+    prisma.rankPromotion.findMany({ where: pendingPromotionsWhere, include: promotionInclude, orderBy: { promotedAt: 'asc' } }),
+  ]);
+  return { awards, promotions };
 }
 
 medalsAdminRouter.get('/announcements/preview', async (_req, res) => {
-  const [awards, settings] = await Promise.all([pendingForAnnouncement(), getSettings()]);
-  const messages = buildAnnouncementMessages(awards, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
+  const [pending, settings] = await Promise.all([pendingForAnnouncement(), getSettings()]);
+  const messages = buildAnnouncementMessages(pending, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
+  const users = [...pending.awards, ...pending.promotions].map((x) => x.user);
   res.json({
     channelId: settings.announceChannelId,
-    awardsCount: awards.length,
+    awardsCount: pending.awards.length,
+    promotionsCount: pending.promotions.length,
     // Pour l'aperçu : on remplace les mentions par les pseudos.
-    names: Object.fromEntries(awards.map((a) => [a.user.discordId, a.user.displayName])),
+    names: Object.fromEntries(users.map((u) => [u.discordId, u.displayName])),
     messages: messages.map(({ content, embeds }) => ({ content, embeds })),
   });
 });
@@ -457,18 +465,22 @@ medalsAdminRouter.post('/announcements', async (req, res) => {
   if (announcing) throw conflict('Une annonce est déjà en cours de publication.', 'ANNOUNCE_IN_PROGRESS');
   announcing = true;
   try {
-    const [awards, settings] = await Promise.all([pendingForAnnouncement(), getSettings()]);
-    if (awards.length === 0) throw conflict('Aucune attribution à annoncer.', 'NOTHING_TO_ANNOUNCE');
+    const [pending, settings] = await Promise.all([pendingForAnnouncement(), getSettings()]);
+    if (pending.awards.length === 0 && pending.promotions.length === 0) {
+      throw conflict('Rien à annoncer.', 'NOTHING_TO_ANNOUNCE');
+    }
     if (!settings.announceChannelId) throw badRequest("Aucun salon d'annonce configuré (Admin > Paramètres).");
 
-    const messages = buildAnnouncementMessages(awards, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
+    const messages = buildAnnouncementMessages(pending, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
     const sentIds: string[] = [];
     const announcedAwardIds: string[] = [];
+    const announcedPromotionIds: string[] = [];
     let failure: unknown = null;
     for (const m of messages) {
       try {
-        sentIds.push(await discord().sendMessage(settings.announceChannelId, m));
+        sentIds.push(await discord().postAnnouncement(m));
         announcedAwardIds.push(...m.awardIds);
+        announcedPromotionIds.push(...m.promotionIds);
       } catch (err) {
         failure = err;
         break;
@@ -483,12 +495,12 @@ medalsAdminRouter.post('/announcements', async (req, res) => {
           discordMessageIds: sentIds,
           channelId: settings.announceChannelId,
           awardsCount: announcedAwardIds.length,
+          promotionsCount: announcedPromotionIds.length,
         },
       });
-      await tx.medalAward.updateMany({
-        where: { id: { in: announcedAwardIds } },
-        data: { announcedAt: new Date(), announcementId: a.id },
-      });
+      const announced = { announcedAt: new Date(), announcementId: a.id };
+      await tx.medalAward.updateMany({ where: { id: { in: announcedAwardIds } }, data: announced });
+      await tx.rankPromotion.updateMany({ where: { id: { in: announcedPromotionIds } }, data: announced });
       return a;
     });
     await audit({
@@ -496,15 +508,18 @@ medalsAdminRouter.post('/announcements', async (req, res) => {
       req,
       targetType: 'announcement',
       targetId: announcement.id,
-      metadata: { awards: announcedAwardIds.length, messages: sentIds.length },
+      metadata: { awards: announcedAwardIds.length, promotions: announcedPromotionIds.length, messages: sentIds.length },
     });
     if (failure) {
-      // Envoi partiel : les attributions restantes restent « à annoncer ».
+      // Envoi partiel : le reste demeure « à annoncer ».
       await discordFailure(failure, 'announce_partial', req);
-      res.status(207).json({ id: announcement.id, awardsCount: announcedAwardIds.length, partial: true });
-      return;
     }
-    res.status(201).json({ id: announcement.id, awardsCount: announcedAwardIds.length, partial: false });
+    res.status(failure ? 207 : 201).json({
+      id: announcement.id,
+      awardsCount: announcedAwardIds.length,
+      promotionsCount: announcedPromotionIds.length,
+      partial: Boolean(failure),
+    });
   } finally {
     announcing = false;
   }
@@ -514,7 +529,11 @@ medalsAdminRouter.get('/announcements', async (_req, res) => {
   const list = await prisma.announcement.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
-    include: { createdBy: true, awards: { include: { user: true, medal: true } } },
+    include: {
+      createdBy: true,
+      awards: { include: { user: true, medal: true } },
+      promotions: { include: promotionInclude },
+    },
   });
   res.json(
     list.map((a) => ({
@@ -524,7 +543,9 @@ medalsAdminRouter.get('/announcements', async (_req, res) => {
       channelId: a.channelId,
       messagesCount: a.discordMessageIds.length,
       awardsCount: a.awardsCount,
+      promotionsCount: a.promotionsCount,
       awards: a.awards.map((w) => ({ member: w.user.displayName, medal: w.medal.name, tier: w.tier, reason: w.reason })),
+      promotions: a.promotions.map((p) => ({ member: p.user.displayName, from: p.fromRank?.name ?? null, to: p.toRank.name })),
     })),
   );
 });

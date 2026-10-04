@@ -8,32 +8,37 @@
   "session": {
     "title": "Déroulement d'une session type",
     "steps": [
-      { "time": "20:45", "title": "Rassemblement", "text": "Connexion au Discord, appel et répartition dans les escouades." },
-      { "time": "21:00", "title": "Briefing", "text": "Présentation de la situation, des objectifs et du plan par l'officier en charge." },
-      { "time": "21:15", "title": "Opération", "text": "Déploiement en jeu, communications radio, exécution du plan et adaptation." },
+      { "time": "20:25", "title": "Rassemblement", "text": "Connexion au Discord, appel et répartition dans les escouades." },
+      { "time": "20:30", "title": "Briefing", "text": "Présentation de la situation, des objectifs et du plan par l'officier en charge." },
+      { "time": "21:00", "title": "Opération", "text": "Déploiement en jeu, communications radio, exécution du plan et adaptation." },
       { "time": "23:00", "title": "Débriefing", "text": "Retour sur l'opération, points forts, axes d'amélioration et distinctions éventuelles." }
     ],
-    "note": "[Horaires indicatifs à adapter.]"
+    "note": "Les horaires sont indicatifs et peuvent varier selon les opérations et les disponibilités des membres."
   },
   "organisation": {
     "title": "Organisation",
-    "text": "La communauté est structurée en sections et en escouades, encadrées par des sous-officiers et des officiers. Les grades reflètent l'expérience et l'implication ; ils sont attribués par l'état-major sur Discord et affichés automatiquement sur le site.",
-    "units": [
-      { "name": "État-major", "text": "Direction de la communauté, planification des opérations, arbitrage." },
-      { "name": "Sections", "text": "Chaque section regroupe plusieurs escouades sous l'autorité d'un chef de section." },
-      { "name": "Escouades", "text": "Unité de base en jeu : un chef d'escouade, un opérateur radio, des fusiliers et spécialistes." },
-      { "name": "Instruction", "text": "Les instructeurs forment les recrues et les spécialistes (radio, médecin, tireur…)." }
-    ]
+    "text": "La communauté est structurée en trois grandes parties. Les grades reflètent l'expérience et l'implication ; ils sont attribués sur Discord et affichés automatiquement sur le site.",
+    "staff": {
+      "name": "L'État-Major",
+      "text": "Il dirige la communauté, planifie les opérations et arbitre. Il est composé du Lt. Col. Stan Ocelot, du Col. Lewis Moreau et des responsables de pôles."
+    },
+    "companies": {
+      "title": "Les compagnies",
+      "text": "Trois compagnies, chacune avec sa spécialité, forment le cœur du régiment. Les nouvelles recrues font leurs classes au camp Toccoa avant leur affectation."
+    }
   },
   "rules": {
     "title": "Règlement (résumé)",
     "items": [
-      "Respect de tous les membres, en jeu comme sur Discord. Aucune forme de discrimination ou de harcèlement n'est tolérée.",
-      "Aucune apologie d'idéologie ou de symbole extrémiste : nous rendons hommage à l'histoire, nous ne la glorifions pas.",
-      "Respect de la chaîne de commandement pendant les opérations.",
-      "Présence : prévenir en cas d'absence prolongée.",
-      "Fair-play : pas de triche, pas d'exploitation de bugs, respect des règles des serveurs.",
-      "[Règlement complet à compléter / lien vers le salon règlement du Discord.]"
-    ]
+      "Respect de tous : harcèlement, discrimination, menaces et apologie de la haine ou de la violence sont sanctionnés, jusqu'à l'exclusion définitive.",
+      "Pas de troll, de trashtalk ni de moqueries envers un membre ou une autre communauté.",
+      "Les décisions de la Police militaire et de l'État-Major ne se contestent pas en public : passe par un message privé.",
+      "En jeu : pseudo RP, tag 501e et présence en vocal sur le Discord.",
+      "Inscrit à un événement ou une formation ? Viens, ou préviens à l'avance.",
+      "Le tag 501e implique un comportement exemplaire, y compris en dehors de Squad 44.",
+      "3 avertissements entraînent l'exclusion de la communauté."
+    ],
+    "fullRulesLabel": "Lire le règlement complet sur Discord",
+    "fullRulesUrl": "https://discord.com/channels/477455654639108096/741383024695836682"
   }
 }

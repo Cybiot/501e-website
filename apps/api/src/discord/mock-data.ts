@@ -40,4 +40,21 @@ export const MOCK_RESPONSIBILITY_ROLES = [
   { key: 'mp', id: 'mock-resp-police-militaire', name: 'Police militaire' },
 ] as const;
 
-export const MOCK_MEDAL_ROLE_PREFIX = 'mock-medal-';
+/** Rôles de compagnie (par slug, cf. table Company créée par migration). */
+export const MOCK_COMPANY_ROLES = [
+  { slug: 'steel-hawk', id: 'mock-company-steel-hawk', name: 'Baker Company - Steel Hawk' },
+  { slug: 'blood-wall', id: 'mock-company-blood-wall', name: 'Dog Company - Blood Wall' },
+  { slug: 'sledge-hammer', id: 'mock-company-sledge-hammer', name: 'Fox Company - Sledge Hammer' },
+  { slug: 'camp-toccoa', id: 'mock-company-camp-toccoa', name: 'Camp Toccoa' },
+] as const;
+
+/** Rôles de platoon (compagnie par slug). Les instructeurs Toccoa réutilisent le rôle Staff Toccoa. */
+export const MOCK_PLATOON_ROLES = [
+  { slug: 'steel-hawk', platoon: "Platoon d'assaut", id: 'mock-platoon-sh-assaut', name: "Steel Hawk - Platoon d'assaut" },
+  { slug: 'steel-hawk', platoon: 'Platoon de soutien', id: 'mock-platoon-sh-soutien', name: 'Steel Hawk - Platoon de soutien' },
+  { slug: 'blood-wall', platoon: '1st Platoon', id: 'mock-platoon-bw-1', name: 'Blood Wall - 1st Platoon' },
+  { slug: 'blood-wall', platoon: '2nd Platoon', id: 'mock-platoon-bw-2', name: 'Blood Wall - 2nd Platoon' },
+  { slug: 'sledge-hammer', platoon: '1st Platoon', id: 'mock-platoon-sledge-1', name: 'Sledge Hammer - 1st Platoon' },
+  { slug: 'sledge-hammer', platoon: '2nd Platoon', id: 'mock-platoon-sledge-2', name: 'Sledge Hammer - 2nd Platoon' },
+  { slug: 'camp-toccoa', platoon: 'Recrues', id: 'mock-platoon-toccoa-recrues', name: 'Toccoa - Recrues' },
+] as const;

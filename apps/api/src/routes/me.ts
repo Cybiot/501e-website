@@ -11,7 +11,7 @@ import { deterministicUnit } from '../lib/crypto.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { deleteUserData, exportUserData } from '../lib/gdpr.js';
 import { notifyAdmins } from '../lib/notify.js';
-import { avatarOf, memberInclude, presentMemberDetail } from '../lib/presenters.js';
+import { avatarOf, loadCompanyIndex, memberInclude, presentMemberDetail } from '../lib/presenters.js';
 import { getSettings } from '../lib/settings.js';
 import { deleteFile, fileUrl, storeProfileImage } from '../lib/storage.js';
 import { parse } from '../lib/validate.js';
@@ -91,7 +91,7 @@ meRouter.get('/profile', async (req, res) => {
   const showRejection =
     lastRejected && (!approved?.reviewedAt || (lastRejected.reviewedAt ?? 0) > approved.reviewedAt) && !user.profile?.pendingImage;
   res.json({
-    ...presentMemberDetail(user),
+    ...presentMemberDetail(user, await loadCompanyIndex()),
     discordAvatarUrl: user.discordAvatarUrl,
     avatarUrl: avatarOf(user),
     publicProfileEnabled: user.publicProfileEnabled,

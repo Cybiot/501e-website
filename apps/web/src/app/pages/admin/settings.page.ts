@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminRank, AdminResponsibility, AppSettings, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
+import { AdminCompany, AdminPlatoon, AdminRank, AdminResponsibility, AppSettings, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -11,6 +11,7 @@ interface SettingsResponse {
   settings: AppSettings;
   ranks: AdminRank[];
   responsibilities: AdminResponsibility[];
+  companies: AdminCompany[];
 }
 
 @Component({
@@ -49,6 +50,9 @@ export class SettingsPage {
     discordRoleId: '',
   };
 
+  /** Ligne « nouveau platoon » de chaque compagnie, par id de compagnie. */
+  protected newPlatoon: Record<string, { name: string; order: number; discordRoleId: string }> = {};
+
   constructor() {
     void this.load();
     this.api.get<DiscordRole[]>('/admin/discord/roles').then((r) => this.roles.set(r)).catch(() => undefined);
@@ -59,6 +63,9 @@ export class SettingsPage {
       const d = await this.api.get<SettingsResponse>('/admin/settings');
       this.data.set(d);
       this.form = structuredClone(d.settings);
+      this.newPlatoon = Object.fromEntries(
+        d.companies.map((c) => [c.id, { name: '', order: (c.platoons.length + 1) * 10, discordRoleId: '' }]),
+      );
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.load());
     }
@@ -183,6 +190,49 @@ export class SettingsPage {
     if (!confirm(`Supprimer la responsabilité « ${r.name} » ?`)) return;
     try {
       await this.api.delete(`/admin/responsibilities/${r.id}`);
+      await this.load();
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    }
+  }
+
+  // --- Compagnies et platoons -----------------------------------------------------------
+
+  protected async saveCompany(c: AdminCompany) {
+    try {
+      await this.api.patch(`/admin/companies/${c.id}`, { discordRoleId: c.discordRoleId || null });
+      this.toast.success(`Compagnie « ${c.name} » enregistrée.`);
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+      await this.load();
+    }
+  }
+
+  protected async savePlatoon(p: AdminPlatoon) {
+    try {
+      await this.api.patch(`/admin/platoons/${p.id}`, { name: p.name, order: Number(p.order), discordRoleId: p.discordRoleId || null });
+      this.toast.success(`Platoon « ${p.name} » enregistré.`);
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+      await this.load();
+    }
+  }
+
+  protected async addPlatoon(c: AdminCompany) {
+    const p = this.newPlatoon[c.id]!;
+    try {
+      await this.api.post(`/admin/companies/${c.id}/platoons`, { name: p.name, order: Number(p.order), discordRoleId: p.discordRoleId || null });
+      this.toast.success('Platoon ajouté.');
+      await this.load();
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    }
+  }
+
+  protected async deletePlatoon(p: AdminPlatoon) {
+    if (!confirm(`Supprimer le platoon « ${p.name} » ? Ses membres resteront dans la compagnie, hors platoon.`)) return;
+    try {
+      await this.api.delete(`/admin/platoons/${p.id}`);
       await this.load();
     } catch (err) {
       this.toast.error((err as ApiError).message);

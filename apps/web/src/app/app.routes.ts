@@ -8,6 +8,13 @@ export const routes: Routes = [
     path: 'communaute/regiment',
     loadComponent: () => import('./pages/community/regiment.page').then((m) => m.RegimentPage),
   },
+  { path: 'compagnies', loadComponent: () => import('./pages/community/companies.page').then((m) => m.CompaniesPage) },
+  {
+    path: 'compagnies/:slug',
+    loadComponent: () => import('./pages/community/company.page').then((m) => m.CompanyPage),
+  },
+  // Ancienne adresse des fiches compagnie (avant la page dédiée).
+  { path: 'communaute/compagnies/:slug', redirectTo: ({ params }) => `/compagnies/${params['slug']}` },
   { path: 'membres', loadComponent: () => import('./pages/members/members.page').then((m) => m.MembersPage) },
   { path: 'membres/:id', loadComponent: () => import('./pages/members/member.page').then((m) => m.MemberPage) },
   { path: 'rejoindre', loadComponent: () => import('./pages/join/join.page').then((m) => m.JoinPage) },

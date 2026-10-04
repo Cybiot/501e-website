@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { AuditLogItem, NotificationItem, Page } from '../../core/models';
+import { NotificationsService } from '../../core/notifications.service';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ACTION_LABELS, NOTIFICATION_LABELS } from './labels';
@@ -18,6 +19,7 @@ import { ACTION_LABELS, NOTIFICATION_LABELS } from './labels';
 export class LogsPage {
   private readonly api = inject(Api);
   private readonly toast = inject(ToastService);
+  private readonly notifs = inject(NotificationsService);
 
   protected readonly tab = signal<'notifications' | 'logs'>('notifications');
   protected readonly notifLabels = NOTIFICATION_LABELS;
@@ -58,6 +60,7 @@ export class LogsPage {
           page: this.notifPage,
         }),
       );
+      void this.notifs.refresh();
     } catch (err) {
       if (!silent) this.toast.error((err as ApiError).message);
     }

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Design tokens — 501st PIR
+   Design tokens — 501e
    Deux thèmes, choisis par l'attribut data-theme de <html> (voir index.html et ThemeService) :
    - « nuit » (défaut, :root) : charte « Saut de nuit », bleu nuit, orange balise, cyan glacé ;
    - « jour » : esprit des spécifications techniques (§ 3.1) réchauffé — brun-kaki, parchemin,
@@ -48,6 +48,7 @@
 
   /* Hero et carte */
   --hero-base: #0a1026;
+  --hero-topo: url('/visuels/hero-topo.svg');
   --map-sea: #060916; /* couleur de la mer une fois les tuiles filtrées */
   --map-tiles-filter: url(#tiles-night);
 
@@ -130,13 +131,13 @@
 :root[data-theme='jour'] {
   color-scheme: dark;
 
-  /* Fonds et surfaces : brun-kaki (toile de parachute, cuir, bois de caisse) */
-  --bg: #13110d;
-  --surface-1: #1c1914;
-  --surface-2: #26221b;
-  --surface-3: #312b22;
-  --border: #3d3629;
-  --border-strong: #54493a;
+  /* Fonds et surfaces : brun-kaki moyen (toile de parachute, cuir, bois de caisse) */
+  --bg: #221e17;
+  --surface-1: #2c271f;
+  --surface-2: #373128;
+  --surface-3: #423b30;
+  --border: #4e4536;
+  --border-strong: #675b49;
 
   /* Vert olive « OD ». #6b7f3a n'atteint 4.5:1 ni comme texte ni sous un libellé :
      fond de bouton légèrement plus foncé (4.9:1 avec --on-accent), texte plus clair (8:1). */
@@ -147,7 +148,7 @@
   --olive-soft: rgba(107, 127, 58, 0.2);
   --olive-rgb: 107 127 58;
 
-  /* Or terni : médailles, éléments d'honneur, chiffres (7.6:1 sur les surfaces) */
+  /* Or terni : médailles, éléments d'honneur, chiffres (5.6:1 sur les surfaces) */
   --gold: #d0a54c;
   --gold-soft: rgba(208, 165, 76, 0.14);
   --gold-text: #d0a54c;
@@ -158,7 +159,7 @@
   /* Texte : parchemin */
   --text: #f0eadb;
   --text-muted: #b3ab94;
-  --text-faint: #9c947e;
+  --text-faint: #a8a089;
   --on-accent: #f0eadb;
 
   /* États, dans des teintes chaudes */
@@ -168,32 +169,33 @@
   --warning: #e3a840;
   --warning-soft: rgba(227, 168, 64, 0.14);
   --warning-rgb: 227 168 64;
-  --danger: #e8735a;
-  --danger-soft: rgba(232, 115, 90, 0.14);
-  --danger-rgb: 232 115 90;
+  --danger: #ee8068;
+  --danger-soft: rgba(238, 128, 104, 0.14);
+  --danger-rgb: 238 128 104;
   --info: #9fb8c4;
   --info-soft: rgba(159, 184, 196, 0.14);
   --info-rgb: 159 184 196;
   --stamp: #b23a2c;
 
-  /* Rouille : sur-titres et lueur chaude des fonds (6.4:1 sur les surfaces) */
+  /* Rouille : sur-titres et lueur chaude des fonds (4.7:1 sur les surfaces) */
   --eyebrow: #d98a52;
   --glow-warm-rgb: 181 101 46;
   --glow-cool-rgb: 208 165 76;
 
   /* Plaques d'identité : laiton patiné */
-  --tag-top: #2c261c;
-  --tag-bottom: #201c15;
-  --tag-border: #4a4031;
-  --tag-border-hover: #6e5f43;
+  --tag-top: #3a3327;
+  --tag-bottom: #2d281f;
+  --tag-border: #5a4e3c;
+  --tag-border-hover: #7d6c4e;
 
   --avatar-end: #2f3a1c;
-  --stripe: #17140f;
+  --stripe: #26221a;
 
-  --bg-rgb: 19 17 13;
-  --surface-1-rgb: 28 25 20;
+  --bg-rgb: 34 30 23;
+  --surface-1-rgb: 44 39 31;
 
-  --hero-base: #15120d;
+  --hero-base: #241f18;
+  --hero-topo: url('/visuels/hero-topo-jour.svg');
   --map-sea: #0c0a07;
   --map-tiles-filter: url(#tiles-jour);
 

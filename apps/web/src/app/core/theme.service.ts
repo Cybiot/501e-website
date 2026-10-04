@@ -6,7 +6,7 @@ export type Theme = 'nuit' | 'jour';
 /** Clé du choix explicite de l'utilisateur ; sans elle, le thème suit le réglage clair/sombre de l'appareil. */
 const STORAGE_KEY = 'theme';
 /** Couleur de la barre du navigateur mobile (= --bg de chaque thème, voir styles/tokens.css). */
-const THEME_COLOR: Record<Theme, string> = { nuit: '#070b1a', jour: '#13110d' };
+const THEME_COLOR: Record<Theme, string> = { nuit: '#070b1a', jour: '#221e17' };
 
 /**
  * Thème d'affichage, porté par l'attribut data-theme de <html>.

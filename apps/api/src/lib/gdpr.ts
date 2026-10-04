@@ -16,6 +16,7 @@ export async function exportUserData(userId: string) {
       responsibilities: { include: { responsibility: true } },
       images: true,
       awards: { include: { medal: true } },
+      promotions: { include: { fromRank: true, toRank: true } },
       locations: true,
       consents: { orderBy: { createdAt: 'asc' } },
       sessions: { select: { createdAt: true, expiresAt: true, lastSeenAt: true } },
@@ -75,6 +76,12 @@ export async function exportUserData(userId: string) {
       reason: a.reason,
       awardedAt: a.awardedAt,
       revokedAt: a.revokedAt,
+    })),
+    promotions: user.promotions.map((p) => ({
+      from: p.fromRank?.name ?? null,
+      to: p.toRank.name,
+      promotedAt: p.promotedAt,
+      announcedAt: p.announcedAt,
     })),
     locations: user.locations.map(({ cityLabel, country, lat, lng, createdAt }) => ({
       cityLabel,

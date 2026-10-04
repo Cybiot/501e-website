@@ -6,7 +6,8 @@
 import { PrismaClient, type MedalTier } from '@prisma/client';
 import { MEDAL_CATALOG, medalImages } from '../src/data/medals.js';
 import {
-  MOCK_MEDAL_ROLE_PREFIX,
+  MOCK_COMPANY_ROLES,
+  MOCK_PLATOON_ROLES,
   MOCK_RANK_ROLES,
   MOCK_RESPONSIBILITY_ROLES,
   MOCK_ROLES,
@@ -75,6 +76,8 @@ const CITIES: [string, string, number, number][] = [
   ['Grenoble, Auvergne-Rhône-Alpes', 'France', 45.19, 5.72],
 ];
 
+const NICKNAMES = ['Actif', 'Tank', 'Doc', 'Radio', 'Bulldog', 'Ghost', 'Brindille', 'Tonnerre', 'Moustache', 'Kiwi', 'Rocky', 'Biscuit', 'Fennec', 'Loup', 'Sparrow', 'Gamelle'];
+
 const TAGLINES = [
   'Currahee ! On monte, on tient, on ne recule pas.',
   'Toujours le premier dans la haie, le dernier à la radio.',
@@ -107,6 +110,7 @@ async function main() {
   console.log('Seed : nettoyage…');
   await prisma.$transaction([
     prisma.medalAward.deleteMany(),
+    prisma.rankPromotion.deleteMany(),
     prisma.announcement.deleteMany(),
     prisma.memberLocation.deleteMany(),
     prisma.consentRecord.deleteMany(),
@@ -145,30 +149,98 @@ async function main() {
           repeatable: m.repeatable,
           order: (i + 1) * 10,
           ...medalImages(m),
-          discordRoleId: `${MOCK_MEDAL_ROLE_PREFIX}${m.slug}`,
         },
       }),
     ),
   );
 
-  type SeedUser = { discordId: string; name: string; rank: number; admin?: boolean; resp?: number[]; consent?: boolean; member?: boolean; hidden?: boolean };
+  // Compagnies (créées par la migration) : rôles fictifs et platoons de démo.
+  // Les instructeurs du camp Toccoa sont reconnus par le rôle « Staff Toccoa ».
+  const staffToccoa = MOCK_RESPONSIBILITY_ROLES.find((r) => r.key === 'toccoa')!.id;
+  const platoonRoles = [...MOCK_PLATOON_ROLES, { slug: 'camp-toccoa', platoon: 'Instructeurs', id: staffToccoa }];
+  await prisma.platoon.updateMany({ data: { discordRoleId: null } });
+  for (const c of MOCK_COMPANY_ROLES) {
+    await prisma.company.update({ where: { slug: c.slug }, data: { discordRoleId: c.id } });
+  }
+  // État-major : les chefs de pôle portent le rôle « EM - État-major » (Lt.Col et Col y sont d'office).
+  await prisma.company.update({
+    where: { slug: 'etat-major' },
+    data: { discordRoleId: MOCK_RESPONSIBILITY_ROLES.find((r) => r.key === 'em')!.id },
+  });
+  for (const [i, p] of platoonRoles.entries()) {
+    const company = await prisma.company.findUniqueOrThrow({ where: { slug: p.slug } });
+    await prisma.platoon.upsert({
+      where: { companyId_name: { companyId: company.id, name: p.platoon } },
+      update: { discordRoleId: p.id },
+      create: { companyId: company.id, name: p.platoon, order: (i + 1) * 10, discordRoleId: p.id },
+    });
+  }
+
+  type SeedUser = {
+    discordId: string;
+    name: string;
+    rank: number;
+    admin?: boolean;
+    resp?: number[];
+    roles?: string[];
+    consent?: boolean;
+    member?: boolean;
+    hidden?: boolean;
+  };
   const users: SeedUser[] = [
-    { discordId: 'demo-admin', name: 'Cpt. Winters (démo admin)', rank: 13, admin: true, resp: [0, 1] },
+    { discordId: 'demo-admin', name: 'Cpt. Winters (démo admin)', rank: 13, admin: true, resp: [0] },
     { discordId: 'demo-membre', name: 'Pvt. Blithe (démo membre)', rank: 0, consent: false },
     { discordId: 'demo-visiteur', name: 'Curieux (démo non-membre)', rank: -1, member: false },
   ];
-  for (let i = 0; i < 20; i++) {
-    const rank = Math.floor(rand() * rand() * RANKS.length);
+  const RESP = Object.fromEntries(MOCK_RESPONSIBILITY_ROLES.map((r, i) => [r.key, i])) as Record<
+    (typeof MOCK_RESPONSIBILITY_ROLES)[number]['key'],
+    number
+  >;
+  const POLES = [RESP.recr, RESP.event, RESP.medailles, RESP.mp];
+  const companyRole = (slug: string) => MOCK_COMPANY_ROLES.find((c) => c.slug === slug)!.id;
+  let n = 0;
+  const addUser = (rank: number, extra: Omit<SeedUser, 'discordId' | 'name' | 'rank'> = {}) => {
+    // Paires prénom/nom toutes différentes (20 × 20 combinaisons).
+    const first = FIRST[n % FIRST.length]!;
+    const last = LAST[(n * 3 + Math.floor(n / FIRST.length)) % LAST.length]!;
+    // Initiale d'un deuxième prénom et surnom : facultatifs, comme sur Discord.
+    const middle = rand() < 0.3 ? ` ${'ABCDEFGHJLMPRT'[Math.floor(rand() * 14)]}.` : '';
+    const nickname = rand() < 0.5 ? ` "${pick(NICKNAMES)}"` : '';
+    n++;
     users.push({
-      discordId: `demo-${String(i + 1).padStart(3, '0')}`,
-      // Comme sur Discord, le pseudo commence par l'abréviation du grade.
-      name: `${RANKS[rank]![2]} ${FIRST[i]} « ${LAST[i]} »`,
+      discordId: `demo-${String(n).padStart(3, '0')}`,
+      // Format Discord : « Grade Prénom(s) Nom "Surnom" », ex. « T/4. Walter J. Cabezas "Actif" ».
+      name: `${RANKS[rank]![2]} ${first}${middle} ${last}${nickname}`,
       rank,
-      admin: i === 0,
-      // EM, CO et XO ne sont pas tirés au hasard : les autres membres reçoivent un PL ou un pôle.
-      resp: rand() < 0.35 ? [3 + Math.floor(rand() * (resps.length - 3))] : [],
-      hidden: i === 7 || i === 15,
+      ...extra,
     });
+  };
+  const randomRank = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
+  const randomPole = () => (rand() < 0.2 ? [POLES[Math.floor(rand() * POLES.length)]!] : []);
+
+  // État-major, hors compagnie.
+  addUser(16, { resp: [RESP.em], admin: true });
+  addUser(15, { resp: [RESP.em] });
+
+  // Chaque compagnie : 1 CO, 1 XO, puis 2 platoons de 1 PL + 5 membres.
+  for (const c of MOCK_COMPANY_ROLES.filter((c) => c.slug !== 'camp-toccoa')) {
+    addUser(13, { resp: [RESP.co], roles: [companyRole(c.slug)] });
+    addUser(11, { resp: [RESP.xo], roles: [companyRole(c.slug)] });
+    for (const p of MOCK_PLATOON_ROLES.filter((p) => p.slug === c.slug)) {
+      const roles = [companyRole(c.slug), p.id];
+      addUser(randomRank(6, 8), { resp: [RESP.pl], roles });
+      for (let i = 0; i < 5; i++) {
+        // Le premier membre de chaque platoon est aussi instructeur au camp Toccoa.
+        addUser(randomRank(1, 5), { resp: i === 0 ? [RESP.toccoa] : randomPole(), roles });
+      }
+    }
+  }
+
+  // Camp Toccoa : recrues (les instructeurs y apparaissent via le rôle Staff Toccoa).
+  const recruits = MOCK_PLATOON_ROLES.find((p) => p.slug === 'camp-toccoa')!.id;
+  users[1]!.roles = [companyRole('camp-toccoa'), recruits];
+  for (let i = 0; i < 6; i++) {
+    addUser(0, { roles: [companyRole('camp-toccoa'), recruits], hidden: i === 2 || i === 5 });
   }
 
   let created = 0;
@@ -180,6 +252,7 @@ async function main() {
           ...(u.admin ? [MOCK_ROLES.admin.id] : []),
           ...(u.rank >= 0 ? [MOCK_RANK_ROLES[u.rank]!.id] : []),
           ...(u.resp ?? []).map((r) => MOCK_RESPONSIBILITY_ROLES[r]!.id),
+          ...(u.roles ?? []),
         ]
       : [];
     const joinedAt = new Date(Date.now() - Math.floor(30 + rand() * 900) * 24 * 3600 * 1000);
@@ -192,6 +265,7 @@ async function main() {
         status: !isMember ? 'none' : u.admin ? 'admin' : 'member',
         discordRoleIds: roles,
         rankId: isMember && u.rank >= 0 ? ranks[u.rank]!.id : null,
+        lastKnownRankId: isMember && u.rank >= 0 ? ranks[u.rank]!.id : null,
         joinedAt: isMember ? joinedAt : null,
         rolesSyncedAt: new Date(),
         publicProfileEnabled: !u.hidden,
@@ -244,6 +318,16 @@ async function main() {
     await prisma.medalAward.create({
       data: { userId: r.id, medalId: medals[2]!.id, tier: 'bronze', reason: 'Assaut réussi sur la ferme fortifiée lors de la dernière opération.', awardedById: admin.id },
     });
+  }
+
+  // Deux promotions détectées sur Discord et pas encore annoncées (grade précédent → grade actuel).
+  const promoted = await prisma.user.findMany({
+    where: { discordId: { in: ['demo-003', 'demo-007'] }, rank: { isNot: null } },
+    include: { rank: true },
+  });
+  for (const u of promoted) {
+    const previous = ranks.filter((r) => r.order < u.rank!.order).at(-1);
+    if (previous) await prisma.rankPromotion.create({ data: { userId: u.id, fromRankId: previous.id, toRankId: u.rank!.id } });
   }
 
   await prisma.notification.create({ data: { type: 'join_click', payload: { count: 3, discordIds: [] } } });

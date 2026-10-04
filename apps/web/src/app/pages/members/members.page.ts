@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Api } from '../../core/api.service';
 import { t, TPipe } from '../../core/i18n';
-import { Filters, MemberCard, Page, RANK_BRANCHES } from '../../core/models';
+import { Filters, MemberCard, Rank, RANK_BRANCHES } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
-import { DogTagComponent } from '../../shared/dog-tag.component';
+import { MemberPlaqueComponent } from '../../shared/member-plaque.component';
 import { IconComponent } from '../../shared/icon.component';
 
 type Sort = 'rank' | 'seniority' | 'alpha';
@@ -18,7 +18,7 @@ type Sort = 'rank' | 'seniority' | 'alpha';
 @Component({
   selector: 'app-members-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, TPipe, IconComponent, DogTagComponent, BreadcrumbComponent],
+  imports: [FormsModule, TPipe, IconComponent, MemberPlaqueComponent, BreadcrumbComponent],
   templateUrl: './members.page.html',
   styles: `
     .filters {
@@ -69,7 +69,6 @@ export class MembersPage {
   readonly responsibility = input<string>();
   readonly medal = input<string>();
   readonly sort = input<Sort>();
-  readonly page = input<string>();
 
   protected readonly filters = signal<Filters | null>(null);
   /** Grades groupés par branche pour le filtre, du plus haut au plus bas comme l'API. */
@@ -88,14 +87,13 @@ export class MembersPage {
       { label: 'Pôles', items: list.filter((r) => r.kind === 'pole') },
     ].filter((g) => g.items.length);
   });
-  protected readonly result = signal<Page<MemberCard> | null>(null);
+  protected readonly result = signal<{ items: MemberCard[]; total: number } | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly grouped = signal(true);
   protected search = '';
 
   protected readonly currentSort = computed<Sort>(() => this.sort() ?? 'rank');
-  protected readonly currentPage = computed(() => Math.max(1, Number(this.page()) || 1));
   protected readonly hasFilters = computed(() => Boolean(this.q() || this.rank() || this.responsibility() || this.medal()));
 
   /** Insère des en-têtes de groupe (par grade) quand le tri est « par grade ». */
@@ -104,7 +102,7 @@ export class MembersPage {
     const groups: { title: string | null; members: MemberCard[] }[] = [];
     const group = this.grouped() && this.currentSort() === 'rank';
     for (const m of items) {
-      const title = group ? (m.rank?.name ?? t('members.noRank')) : null;
+      const title = group ? (m.rank ? rankTitle(m.rank) : t('members.noRank')) : null;
       const last = groups[groups.length - 1];
       if (last && last.title === title) last.members.push(m);
       else groups.push({ title, members: [m] });
@@ -117,7 +115,7 @@ export class MembersPage {
   constructor() {
     inject(SeoService).set({
       title: t('members.title'),
-      description: 'Les membres de la communauté 501st PIR : grades, décorations et responsabilités.',
+      description: 'Les membres de la communauté 501e : grades, décorations et responsabilités.',
       path: '/membres',
     });
     this.api.get<Filters>('/filters').then((f) => this.filters.set(f)).catch(() => undefined);
@@ -129,8 +127,6 @@ export class MembersPage {
         responsibility: this.responsibility(),
         medal: this.medal(),
         sort: this.currentSort(),
-        page: this.currentPage(),
-        pageSize: 24,
       };
       untracked(() => {
         this.search = params.q ?? '';
@@ -143,7 +139,7 @@ export class MembersPage {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.result.set(await this.api.get<Page<MemberCard>>('/members', params));
+      this.result.set(await this.api.get<{ items: MemberCard[]; total: number }>('/members', params));
     } catch (err) {
       this.error.set((err as Error).message);
     } finally {
@@ -152,12 +148,12 @@ export class MembersPage {
   }
 
   protected retry() {
-    void this.load({ q: this.q(), rank: this.rank(), responsibility: this.responsibility(), medal: this.medal(), sort: this.currentSort(), page: this.currentPage() });
+    void this.load({ q: this.q(), rank: this.rank(), responsibility: this.responsibility(), medal: this.medal(), sort: this.currentSort() });
   }
 
   protected setParam(key: string, value: string | number | null) {
     void this.router.navigate([], {
-      queryParams: { [key]: value || null, ...(key === 'page' ? {} : { page: null }) },
+      queryParams: { [key]: value || null },
       queryParamsHandling: 'merge',
       replaceUrl: key === 'q',
     });
@@ -171,4 +167,10 @@ export class MembersPage {
   protected reset() {
     void this.router.navigate([], { queryParams: {} });
   }
+}
+
+/** En-tête de groupe : « Colonel - Col. » (abréviation omise si absente ou identique au nom). */
+function rankTitle(rank: Rank): string {
+  const abbr = rank.abbreviation?.trim();
+  return abbr && abbr !== rank.name ? `${rank.name} - ${abbr}` : rank.name;
 }

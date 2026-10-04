@@ -1,4 +1,4 @@
-# 501st PIR — pile complète : base PostGIS, API, front SSR Angular, bot Discord, géocodeur Photon.
+# 501e — pile complète : base PostGIS, API, front SSR Angular, bot Discord, géocodeur Photon.
 #
 #   docker compose up -d --build                     # db + api + web (mode démo par défaut)
 #   docker compose --profile discord up -d           # + bot Discord (DISCORD_MODE=live)

@@ -63,6 +63,8 @@ export interface MemberCard {
   medals: { medal: Medal; count: number }[];
   medalsTotal: number;
   joinedAt: string | null;
+  /** Compagnie déduite des rôles Discord (rôle de la compagnie ou d'un de ses platoons). */
+  company: { slug: string; name: string; platoon: string | null } | null;
 }
 
 export interface MemberDetail extends MemberCard {
@@ -151,8 +153,10 @@ export interface AdminMedal extends Medal {
   order: number;
   isActive: boolean;
   repeatable: boolean;
-  discordRoleId: string | null;
+  /** Attributions officielles (annoncées, non retirées). */
   awardsCount: number;
+  /** Aucune attribution, même en attente ou retirée : la médaille peut être supprimée. */
+  deletable: boolean;
 }
 
 export interface AdminAward {
@@ -165,6 +169,15 @@ export interface AdminAward {
   member: { id: string; displayName: string; discordId: string };
   medal: Medal;
   awardedBy: { id: string; displayName: string } | null;
+}
+
+/** Montée en grade détectée sur Discord, en attente d'annonce. */
+export interface AdminPromotion {
+  id: string;
+  promotedAt: string;
+  member: { id: string; displayName: string; discordId: string };
+  fromRank: Rank | null;
+  toRank: Rank;
 }
 
 export interface MemberSearchResult {
@@ -193,6 +206,7 @@ export interface DiscordEmbed {
 export interface AnnouncementPreview {
   channelId: string;
   awardsCount: number;
+  promotionsCount: number;
   names: Record<string, string>;
   messages: { content?: string; embeds: DiscordEmbed[] }[];
 }
@@ -204,7 +218,9 @@ export interface AnnouncementHistory {
   channelId: string;
   messagesCount: number;
   awardsCount: number;
+  promotionsCount: number;
   awards: { member: string; medal: string; tier: MedalTier | null; reason: string }[];
+  promotions: { member: string; from: string | null; to: string }[];
 }
 
 export interface NotificationItem {
@@ -252,6 +268,40 @@ export interface AppSettings {
 export interface AdminRank extends Rank {
   discordRoleId: string | null;
   usersCount: number;
+}
+
+/** Rôle de commandement dans une compagnie (responsabilités CO, XO, PL). */
+export type CommandRole = 'co' | 'xo' | 'pl';
+
+/** Effectif d'une compagnie, groupé par platoon (barre latérale de la page compagnie). */
+export interface CompanyRoster {
+  slug: string;
+  name: string;
+  memberCount: number;
+  groups: {
+    id: string;
+    name: string;
+    members: { id: string; displayName: string; avatarUrl: string | null; rank: Rank | null; command: CommandRole | null }[];
+  }[];
+}
+
+export interface AdminPlatoon {
+  id: string;
+  companyId: string;
+  name: string;
+  order: number;
+  discordRoleId: string | null;
+}
+
+export interface AdminCompany {
+  id: string;
+  slug: string;
+  name: string;
+  order: number;
+  discordRoleId: string | null;
+  /** État-major : rôle des chefs de pôle, Lt.Col et Col d'office, pas de platoons. */
+  headquarters: boolean;
+  platoons: AdminPlatoon[];
 }
 
 export interface AdminResponsibility {

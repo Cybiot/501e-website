@@ -1,6 +1,13 @@
 import type { MedalTier, Prisma } from '@prisma/client';
+import { prisma } from '../db.js';
 import { stripRankPrefix } from './rank-prefix.js';
 import { fileUrl } from './storage.js';
+
+/**
+ * Attribution officielle : annoncée sur Discord et non retirée. Avant l'annonce, une attribution
+ * n'est visible que des admins (liste « À annoncer »).
+ */
+export const officialAward = { revokedAt: null, announcedAt: { not: null } } satisfies Prisma.MedalAwardWhereInput;
 
 /** Sélection Prisma commune pour afficher un membre (carte « dog tag » et fiche). */
 export const memberInclude = {
@@ -11,7 +18,7 @@ export const memberInclude = {
     orderBy: [{ responsibility: { order: 'asc' } }, { responsibility: { name: 'asc' } }],
   },
   awards: {
-    where: { revokedAt: null },
+    where: officialAward,
     include: { medal: true },
     orderBy: { awardedAt: 'desc' },
   },
@@ -58,8 +65,51 @@ export const presentMedal = (
   tier: isTiered(m) ? tier : null,
 });
 
+/** Compagnies et leurs platoons, pour déduire l'affectation d'un membre de ses rôles Discord. */
+export type CompanyIndex = {
+  slug: string;
+  name: string;
+  discordRoleId: string | null;
+  headquarters: boolean;
+  platoons: { name: string; discordRoleId: string | null }[];
+}[];
+
+export const loadCompanyIndex = (): Promise<CompanyIndex> =>
+  prisma.company.findMany({
+    orderBy: { order: 'asc' },
+    select: {
+      slug: true,
+      name: true,
+      discordRoleId: true,
+      headquarters: true,
+      platoons: { orderBy: [{ order: 'asc' }, { name: 'asc' }], select: { name: true, discordRoleId: true } },
+    },
+  });
+
+/** Grades rattachés d'office à l'état-major (Lt.Col, Col). */
+export const isStaffRank = (rank: { branch: string } | null | undefined) => rank?.branch === 'staff';
+
+/**
+ * Compagnie d'un membre : rôle de la compagnie ou de l'un de ses platoons (même règle que la page
+ * compagnie). Si plusieurs correspondent, la première dans l'ordre l'emporte (le camp Toccoa,
+ * dernier, ne s'affiche que pour qui n'est dans aucune compagnie de combat). L'état-major passe
+ * après toutes les autres : un chef de pôle affiche sa compagnie, l'état-major ne s'affiche que
+ * pour qui n'en a pas (Lt.Col, Col…).
+ */
+export function companyOf(roleIds: string[], rank: { branch: string } | null, companies: CompanyIndex) {
+  const has = (id: string | null) => !!id && roleIds.includes(id);
+  const ordered = [...companies.filter((c) => !c.headquarters), ...companies.filter((c) => c.headquarters)];
+  for (const c of ordered) {
+    const platoon = c.platoons.find((p) => has(p.discordRoleId));
+    if (platoon || has(c.discordRoleId) || (c.headquarters && isStaffRank(rank))) {
+      return { slug: c.slug, name: c.name, platoon: platoon?.name ?? null };
+    }
+  }
+  return null;
+}
+
 /** Carte membre (liste) : informations publiques uniquement. */
-export function presentMemberCard(u: MemberWithRelations) {
+export function presentMemberCard(u: MemberWithRelations, companies: CompanyIndex = []) {
   // Médailles regroupées : une entrée par médaille avec le nombre d'obtentions,
   // affichée au palier le plus haut obtenu.
   const grouped = new Map<string, { medal: ReturnType<typeof presentMedal>; count: number }>();
@@ -86,13 +136,14 @@ export function presentMemberCard(u: MemberWithRelations) {
     medals,
     medalsTotal: u.awards.length,
     joinedAt: u.joinedAt,
+    company: companyOf(u.discordRoleIds, u.rank, companies),
   };
 }
 
 /** Fiche membre : ajoute descriptions, dates et motifs des médailles. */
-export function presentMemberDetail(u: MemberWithRelations) {
+export function presentMemberDetail(u: MemberWithRelations, companies: CompanyIndex = []) {
   return {
-    ...presentMemberCard(u),
+    ...presentMemberCard(u, companies),
     responsibilities: u.responsibilities.map((r) => ({
       id: r.responsibility.id,
       name: r.responsibility.name,

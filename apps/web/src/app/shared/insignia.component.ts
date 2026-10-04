@@ -25,6 +25,6 @@ const RATIO = 538 / 512;
 })
 export class InsigniaComponent {
   readonly size = input(48);
-  readonly label = input('Logo du 501st PIR');
+  readonly label = input('Logo de la 501e');
   protected readonly height = computed(() => Math.round(this.size() * RATIO));
 }

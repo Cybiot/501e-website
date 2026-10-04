@@ -7,10 +7,20 @@ import { config } from '../config.js';
 import { prisma } from '../db.js';
 import { notFound } from '../lib/errors.js';
 import { notifyAdmins } from '../lib/notify.js';
-import { medalImageFor, memberInclude, presentMemberCard, presentMemberDetail } from '../lib/presenters.js';
+import {
+  avatarOf,
+  isStaffRank,
+  loadCompanyIndex,
+  medalImageFor,
+  memberInclude,
+  officialAward,
+  presentMemberCard,
+  presentMemberDetail,
+  presentRank,
+} from '../lib/presenters.js';
 import { stripRankPrefix } from '../lib/rank-prefix.js';
 import { getSettings } from '../lib/settings.js';
-import { parse, toPage } from '../lib/validate.js';
+import { parse } from '../lib/validate.js';
 
 export const publicRouter = Router();
 
@@ -33,7 +43,7 @@ publicRouter.get('/config', async (_req, res) => {
 publicRouter.get('/stats', async (_req, res) => {
   const [members, medalsAwarded] = await Promise.all([
     prisma.user.count({ where: visibleMembersWhere(true) }),
-    prisma.medalAward.count({ where: { revokedAt: null, user: visibleMembersWhere(true) } }),
+    prisma.medalAward.count({ where: { ...officialAward, user: visibleMembersWhere(true) } }),
   ]);
   res.set('Cache-Control', 'public, max-age=300');
   res.json({ members, medalsAwarded });
@@ -59,8 +69,6 @@ const ListQuery = z.object({
   responsibility: z.string().max(40).optional(),
   medal: z.string().max(40).optional(),
   sort: z.enum(['rank', 'seniority', 'alpha']).default('rank'),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(24),
 });
 
 publicRouter.get('/members', async (req, res) => {
@@ -70,10 +78,10 @@ publicRouter.get('/members', async (req, res) => {
     ...(q.q ? { displayName: { contains: q.q, mode: 'insensitive' } } : {}),
     ...(q.rank ? { rankId: q.rank } : {}),
     ...(q.responsibility ? { responsibilities: { some: { responsibilityId: q.responsibility } } } : {}),
-    ...(q.medal ? { awards: { some: { medalId: q.medal, revokedAt: null } } } : {}),
+    ...(q.medal ? { awards: { some: { medalId: q.medal, ...officialAward } } } : {}),
   };
   // Volume attendu : quelques centaines de membres → tri en mémoire, simple et lisible.
-  const users = await prisma.user.findMany({ where, include: memberInclude });
+  const [users, companies] = await Promise.all([prisma.user.findMany({ where, include: memberInclude }), loadCompanyIndex()]);
   const byName = (a: (typeof users)[number], b: (typeof users)[number]) =>
     stripRankPrefix(a.displayName).localeCompare(stripRankPrefix(b.displayName), 'fr', { sensitivity: 'base' });
   users.sort((a, b) => {
@@ -85,25 +93,26 @@ publicRouter.get('/members', async (req, res) => {
     const d = (b.rank?.order ?? -1) - (a.rank?.order ?? -1);
     return d || byName(a, b);
   });
-  const start = (q.page - 1) * q.pageSize;
-  res.json(toPage(users.slice(start, start + q.pageSize).map(presentMemberCard), users.length, q.page, q.pageSize));
+  // Pas de pagination : tous les membres visibles sont affichés sur une seule page.
+  res.json({ items: users.map((u) => presentMemberCard(u, companies)), total: users.length });
 });
 
 /** Dernières décorations (accueil : « membres à l'honneur »). */
 publicRouter.get('/members/featured', async (req, res) => {
   const awards = await prisma.medalAward.findMany({
-    where: { revokedAt: null, user: visibleMembersWhere(isMemberStatus(req.user?.status)) },
-    orderBy: { awardedAt: 'desc' },
+    where: { ...officialAward, user: visibleMembersWhere(isMemberStatus(req.user?.status)) },
+    orderBy: { announcedAt: 'desc' },
     take: 20,
     include: { user: { include: memberInclude }, medal: true },
   });
+  const companies = await loadCompanyIndex();
   const seen = new Set<string>();
   const featured = [];
   for (const a of awards) {
     if (seen.has(a.userId)) continue;
     seen.add(a.userId);
     featured.push({
-      member: presentMemberCard(a.user),
+      member: presentMemberCard(a.user, companies),
       award: {
         medalName: a.medal.name,
         medalImageUrl: medalImageFor(a.medal, a.tier),
@@ -125,7 +134,109 @@ publicRouter.get('/members/:id', async (req, res) => {
   });
   // Profil masqué ou non-membre : 404 (on ne révèle pas son existence).
   if (!user) throw notFound('Membre introuvable.');
-  res.json(presentMemberDetail(user));
+  res.json(presentMemberDetail(user, await loadCompanyIndex()));
+});
+
+/** Responsabilités de commandement, reconnues par leur nom (« CO - Commanding Officer »…). */
+const COMMAND_ROLES = [
+  { key: 'co', pattern: /commanding officer/i },
+  { key: 'xo', pattern: /executive officer/i },
+  { key: 'pl', pattern: /platoon leader/i },
+] as const;
+type CommandRole = (typeof COMMAND_ROLES)[number]['key'];
+
+/**
+ * Effectif d'une compagnie, groupé pour la barre latérale : commandement (CO puis XO, toujours
+ * au-dessus des platoons), puis chaque platoon dans l'ordre (PL en tête), puis les membres sans
+ * platoon (un PL sans rôle de platoon y passe en tête).
+ */
+publicRouter.get('/companies/:slug', async (req, res) => {
+  const slug = parse(z.string().min(1).max(40), req.params.slug);
+  const company = await prisma.company.findUnique({
+    where: { slug },
+    include: { platoons: { orderBy: [{ order: 'asc' }, { name: 'asc' }] } },
+  });
+  if (!company) throw notFound('Compagnie introuvable.');
+
+  const roleIds = [company.discordRoleId, ...company.platoons.map((p) => p.discordRoleId)].filter(
+    (r): r is string => !!r,
+  );
+  // État-major : en plus de son rôle (chefs de pôle), les grades « staff » (Lt.Col, Col) d'office.
+  const membership: Prisma.UserWhereInput[] = [
+    ...(roleIds.length ? [{ discordRoleIds: { hasSome: roleIds } }] : []),
+    ...(company.headquarters ? [{ rank: { branch: 'staff' as const } }] : []),
+  ];
+  const users = membership.length
+    ? await prisma.user.findMany({
+        where: {
+          ...visibleMembersWhere(isMemberStatus(req.user?.status)),
+          OR: membership,
+        },
+        include: {
+          rank: true,
+          profile: { include: { customImage: true } },
+          responsibilities: { include: { responsibility: true } },
+        },
+      })
+    : [];
+  const commandOf = (u: (typeof users)[number]): CommandRole | null =>
+    COMMAND_ROLES.find((c) => u.responsibilities.some((r) => c.pattern.test(r.responsibility.name)))
+      ?.key ?? null;
+  const commandRank = (u: (typeof users)[number]) => {
+    if (company.headquarters) return isStaffRank(u.rank) ? 0 : 1;
+    const i = COMMAND_ROLES.findIndex((c) => c.key === commandOf(u));
+    return i < 0 ? COMMAND_ROLES.length : i;
+  };
+  users.sort(
+    (a, b) =>
+      commandRank(a) - commandRank(b) ||
+      (b.rank?.order ?? -1) - (a.rank?.order ?? -1) ||
+      stripRankPrefix(a.displayName).localeCompare(stripRankPrefix(b.displayName), 'fr', {
+        sensitivity: 'base',
+      }),
+  );
+
+  const groups = [
+    { id: 'command', name: 'Commandement', members: [] as typeof users },
+    ...company.platoons.map((p) => ({ id: p.id, name: p.name, members: [] as typeof users })),
+    {
+      id: 'other',
+      name: company.headquarters ? 'Chefs de pôle' : company.platoons.length ? 'Hors platoon' : 'Effectif',
+      members: [] as typeof users,
+    },
+  ];
+  for (const u of users) {
+    if (company.headquarters) {
+      // État-major : le commandement (Lt.Col, Col), puis les chefs de pôle.
+      groups.find((g) => g.id === (isStaffRank(u.rank) ? 'command' : 'other'))!.members.push(u);
+      continue;
+    }
+    const command = commandOf(u);
+    const platoon = company.platoons.find(
+      (p) => p.discordRoleId && u.discordRoleIds.includes(p.discordRoleId),
+    );
+    const groupId = command === 'co' || command === 'xo' ? 'command' : (platoon?.id ?? 'other');
+    groups.find((g) => g.id === groupId)!.members.push(u);
+  }
+
+  res.json({
+    slug: company.slug,
+    name: company.name,
+    memberCount: users.length,
+    groups: groups
+      .filter((g) => g.members.length)
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        members: g.members.map((u) => ({
+          id: u.id,
+          displayName: stripRankPrefix(u.displayName),
+          avatarUrl: avatarOf(u),
+          rank: presentRank(u.rank),
+          command: commandOf(u),
+        })),
+      })),
+  });
 });
 
 /** Identifiants des fiches publiques, pour le sitemap. */

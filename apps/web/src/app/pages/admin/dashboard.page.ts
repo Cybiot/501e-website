@@ -13,6 +13,7 @@ interface Dashboard {
     pendingImages: number;
     unreadNotifications: number;
     pendingAwards: number;
+    pendingPromotions: number;
     locations: number;
   };
   recentLogs: { id: string; createdAt: string; action: string; actor: string | null }[];
@@ -29,14 +30,14 @@ interface Dashboard {
     }
     @if (data(); as d) {
       <div class="grid kpis" style="--min: 260px">
-        <a class="card card--interactive kpi" routerLink="/membres">
+        <a class="card card--interactive kpi" routerLink="/admin/parametres">
           <app-icon name="users" [size]="20" /><strong>{{ d.counts.members }}</strong><span>membres ({{ d.counts.admins }} admins)</span>
         </a>
         <a class="card card--interactive kpi" routerLink="/admin/moderation" [class.kpi--alert]="d.counts.pendingImages > 0">
           <app-icon name="image" [size]="20" /><strong>{{ d.counts.pendingImages }}</strong><span>images à modérer</span>
         </a>
-        <a class="card card--interactive kpi" routerLink="/admin/medailles" [class.kpi--alert]="d.counts.pendingAwards > 0">
-          <app-icon name="send" [size]="20" /><strong>{{ d.counts.pendingAwards }}</strong><span>médailles à annoncer</span>
+        <a class="card card--interactive kpi" routerLink="/admin/medailles" [class.kpi--alert]="d.counts.pendingAwards + d.counts.pendingPromotions > 0">
+          <app-icon name="send" [size]="20" /><strong>{{ d.counts.pendingAwards + d.counts.pendingPromotions }}</strong><span>médailles et promotions à annoncer</span>
         </a>
         <a class="card card--interactive kpi" routerLink="/admin/logs" [class.kpi--alert]="d.counts.unreadNotifications > 0">
           <app-icon name="bell" [size]="20" /><strong>{{ d.counts.unreadNotifications }}</strong><span>notifications non lues</span>

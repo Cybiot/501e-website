@@ -8,7 +8,7 @@ import { MemberCard, MyProfile, medalLabel } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { ToastService } from '../../core/toast.service';
 import { AvatarComponent } from '../../shared/avatar.component';
-import { DogTagComponent } from '../../shared/dog-tag.component';
+import { MemberPlaqueComponent } from '../../shared/member-plaque.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ImageCropperComponent } from '../../shared/image-cropper.component';
 
@@ -17,7 +17,7 @@ const TAGLINE_MAX = 140;
 @Component({
   selector: 'app-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, RouterLink, IconComponent, AvatarComponent, DogTagComponent, ImageCropperComponent],
+  imports: [DatePipe, FormsModule, RouterLink, IconComponent, AvatarComponent, MemberPlaqueComponent, ImageCropperComponent],
   templateUrl: './profile.page.html',
   styleUrl: './profile.page.css',
 })

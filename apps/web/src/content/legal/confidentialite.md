@@ -2,7 +2,7 @@
 
 > Version 2026-09-v1. Les éléments entre crochets sont à compléter par le responsable de traitement.
 
-La communauté 501st PIR attache une grande importance à la protection de tes données. Ce site applique le Règlement général sur la protection des données (RGPD) avec un principe simple : **collecter le strict nécessaire**.
+La communauté 501e attache une grande importance à la protection de tes données. Ce site applique le Règlement général sur la protection des données (RGPD) avec un principe simple : **collecter le strict nécessaire**.
 
 ## Responsable du traitement
 

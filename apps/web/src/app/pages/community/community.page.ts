@@ -19,7 +19,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
         <h1>La communauté</h1>
         <p>{{ c.intro }}</p>
         <div class="row">
-          <a class="btn btn--primary" href="/api/join" rel="nofollow"><app-icon name="message" [size]="16" /> {{ 'cta.join' | t }}</a>
+          <a class="btn btn--primary" href="/api/join" target="_blank" rel="nofollow noopener noreferrer"><app-icon name="message" [size]="16" /> {{ 'cta.join' | t }}</a>
           <a class="btn" routerLink="/communaute/regiment"><app-icon name="book" [size]="16" /> Le 501st PIR dans l'histoire</a>
         </div>
       </header>
@@ -56,13 +56,20 @@ import { RevealDirective } from '../../shared/reveal.directive';
       <section class="section section--tight" aria-labelledby="o-title">
         <h2 id="o-title">{{ c.organisation.title }}</h2>
         <p class="muted" style="max-width: 70ch">{{ c.organisation.text }}</p>
-        <div class="grid" style="--min: 220px">
-          @for (u of c.organisation.units; track u.name) {
-            <div class="card" appReveal>
-              <h3>{{ u.name }}</h3>
-              <p class="muted small" style="margin: 0">{{ u.text }}</p>
-            </div>
-          }
+        <a class="card card--interactive staff" routerLink="/compagnies/etat-major" appReveal>
+          <img src="/logo/compagnies/etat-major-160.webp" alt="" width="160" height="160" loading="lazy" />
+          <div>
+            <h3>{{ c.organisation.staff.name }}</h3>
+            <p class="muted" style="margin: 0">{{ c.organisation.staff.text }}</p>
+          </div>
+        </a>
+
+        <div class="card companies" appReveal>
+          <div>
+            <h3>{{ c.organisation.companies.title }}</h3>
+            <p class="muted" style="margin: 0">{{ c.organisation.companies.text }}</p>
+          </div>
+          <a class="btn" routerLink="/compagnies">Découvrir les compagnies <app-icon name="arrow-right" [size]="16" /></a>
         </div>
       </section>
 
@@ -73,6 +80,9 @@ import { RevealDirective } from '../../shared/reveal.directive';
             <li><app-icon name="check" [size]="18" /> <span>{{ r }}</span></li>
           }
         </ul>
+        <p>
+          <a class="btn" [href]="c.rules.fullRulesUrl" target="_blank" rel="noopener noreferrer">{{ c.rules.fullRulesLabel }}</a>
+        </p>
       </section>
     </div>
   `,
@@ -111,6 +121,31 @@ import { RevealDirective } from '../../shared/reveal.directive';
     .session p {
       margin: 0;
     }
+    .staff {
+      color: inherit;
+      text-decoration: none;
+      display: flex;
+      gap: var(--space-5);
+      align-items: center;
+      max-width: 80ch;
+    }
+    .staff img {
+      width: 72px;
+      height: auto;
+      flex-shrink: 0;
+    }
+    .companies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      align-items: center;
+      justify-content: space-between;
+      max-width: 80ch;
+      margin-top: var(--space-4);
+    }
+    .companies > div {
+      flex: 1 1 320px;
+    }
     .rules {
       list-style: none;
       padding: 0;
@@ -134,7 +169,7 @@ export class CommunityPage {
   constructor() {
     inject(SeoService).set({
       title: 'La communauté',
-      description: 'Présentation, valeurs, déroulement des sessions, organisation et règlement de la communauté 501st PIR.',
+      description: 'Présentation, valeurs, déroulement des sessions, organisation et règlement de la communauté 501e.',
       path: '/communaute',
     });
   }

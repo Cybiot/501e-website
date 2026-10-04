@@ -1,0 +1,64 @@
+[
+  {
+    "slug": "etat-major",
+    "name": "État-major",
+    "unit": "Headquarters",
+    "motto": "Geronimo!",
+    "summary": "Le commandement du régiment : le Lieutenant-Colonel, le Colonel et les chefs de pôle.",
+    "description": [
+      "L'État-major dirige la communauté : il planifie les opérations, coordonne les compagnies et arbitre les décisions importantes.",
+      "Il réunit le Lieutenant-Colonel, le Colonel et les chefs de pôle (recrutement, événements, formation, médailles, police militaire). Les chefs de pôle restent rattachés à leur compagnie au quotidien.",
+      "[Texte de présentation à compléter par l'état-major.]"
+    ]
+  },
+  {
+    "slug": "steel-hawk",
+    "name": "Steel Hawk",
+    "unit": "Baker Company",
+    "motto": "First In, Last Out",
+    "summary": "Contournement, infanterie et cavalerie lourde, guérilla et harcèlement des positions ennemies.",
+    "description": [
+      "La Baker Company « Steel Hawk » est une compagnie d’infanterie lourde spécialisée dans la défense de positions stratégiques et les opérations de maintien de ligne face à des assauts ennemis massifs.",
+      "Hautement entraînée à l’assaut lourd, l’unité est équipée de mitrailleuses lourdes, de lance-grenades automatiques, et d’un large éventail d’explosifs défensifs et offensifs. Elle excelle dans les engagements directs, notamment en terrain difficile ou fortement contesté.",
+      "Capable d’intervenir sur tout type d’environnement, la Steel Hawk sait aussi bien anéantir un ennemi retranché, que neutraliser un blindé isolé ou encore établir une ligne de feu infranchissable. Son efficacité repose sur une discipline de fer, une puissance de feu supérieure et une parfaite coordination inter-platoons.",
+      "Toujours en quête de renforts compétents et disciplinés, la compagnie recrute activement de nouveaux éléments pour intégrer ses rangs, que ce soit au sein du Platoon d’assaut, chargé de briser les lignes ennemies, ou dans le Platoon de soutien, garant de la stabilité et de la puissance de feu continue en zone de combat."
+    ]
+  },
+  {
+    "slug": "blood-wall",
+    "name": "Blood Wall",
+    "unit": "Dog Company",
+    "motto": "Shots or shells, we'll stand",
+    "summary": "Assaut frontal, tenir la ligne, encaisser le feu ennemi et garder la cohésion sous la pression.",
+    "description": [
+      "Pour que l’ensemble des forces puisse manœuvrer, encore faut-il une unité capable de tenir la ligne coûte que coûte et d’attirer l’attention de l’ennemi. C’est là que la Dog Company « Blood Wall » entre en scène.",
+      "Qu’il s’agisse de faire pleuvoir le feu depuis une position avancée ou de charger à la baïonnette à travers un rideau de fumée, la Blood Wall est l’incarnation même de la résistance frontale. Sa mission : encaisser les coups, conserver la cohésion et maintenir le moral, même lorsque la bataille tourne à la furie.",
+      "La force de la compagnie repose sur une discipline rigoureuse, une solidarité absolue, et un travail d’équipe sans faille. Aucun repli, aucune hésitation : les soldats de la Blood Wall avancent, chargent, résistent portés par la voix et le charisme de leur Capitaine, qui galvanise les troupes à chaque pas vers l’ennemi.",
+      "Ils sont le rempart vivant, le mur de feu et de chair, sur lequel viennent se briser les offensives adverses, offrant à leurs frères d’armes l’ouverture nécessaire pour contourner, frapper et vaincre."
+    ]
+  },
+  {
+    "slug": "sledge-hammer",
+    "name": "Sledge Hammer",
+    "unit": "Fox Company",
+    "motto": "We slam the nails",
+    "summary": "Force polyvalente, véhicules et armes fixes, qui domine par la puissance de feu.",
+    "description": [
+      "Née d’un regroupement d’éléments hétérogènes, la Fox Company « Sledgehammer » s’est imposée comme l’unité la plus polyvalente et adaptative du régiment. Véritable « couteau suisse » tactique, elle se distingue par sa capacité à exploiter avec efficacité une large gamme d’armes, de véhicules et de doctrines de combat.",
+      "Ses opérateurs sont entraînés à maîtriser autant les véhicules spécialisés que les armes lourdes fixes, tout en adoptant une souplesse tactique qui leur permet de répondre à n’importe quelle situation sur le terrain.",
+      "Mais sous cette adaptabilité se cache une doctrine agressive : la Fox Company ne cherche pas la subtilité. Elle domine par la puissance de feu, préférant souvent l’écrasement tactique à la finesse stratégique. Qu’il s’agisse de tir de suppression massif, d’utilisation d’armes automatiques, ou de l’emploi brutal de véhicules, son objectif est simple : submerger et imposer."
+    ]
+  },
+  {
+    "slug": "camp-toccoa",
+    "name": "Camp Toccoa",
+    "unit": "Formation des recrues",
+    "motto": "Currahee!",
+    "summary": "La compagnie des nouvelles recrues. Les instructeurs y enseignent les bases du RP, des communications radio et du travail en escouade, avant l'affectation dans une compagnie.",
+    "description": [
+      "Le Toccoa Bootcamp est le point de départ de chaque soldat du régiment. C’est ici que les volontaires deviennent des militaires, que la motivation brute se transforme en discipline, en rigueur et en esprit de cohésion.",
+      "Au fil des sessions, les recrues y apprennent les fondamentaux de la vie militaire : communication radio, déplacements en escouade, gestion du stress, respect de la hiérarchie et application stricte des ordres. Le Bootcamp ne forme pas des héros : il forme des soldats fiables, capables de s’intégrer à une unité et de tenir leur place dans le chaos d’un champ de bataille.",
+      "C’est un passage obligatoire, exigeant mais encadré, dont sortent les membres reconnus comme « prêts au combat » et officiellement intégrés au 501e PIR."
+    ]
+  }
+]

@@ -22,7 +22,7 @@ import { AuthService } from '../../core/auth.service';
 import { CitySuggestion, Location, MapMember, MyProfile, PublicConfig } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { ToastService } from '../../core/toast.service';
-import { AvatarComponent } from '../../shared/avatar.component';
+import { AvatarComponent, initialsOf } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
 
 const MAX_CITIES = 2;
@@ -155,16 +155,16 @@ export class MapPage {
   private markerIcon(m: MapMember) {
     const wrap = document.createElement('div');
     wrap.className = 'map-pin';
+    // Initiales, comme partout sur le site ; remplacées par l'avatar dès qu'il est chargé.
+    const span = document.createElement('span');
+    span.textContent = initialsOf(m.displayName);
+    wrap.appendChild(span);
     if (m.avatarUrl) {
       const img = document.createElement('img');
-      img.src = m.avatarUrl;
       img.alt = '';
       img.referrerPolicy = 'no-referrer';
-      wrap.appendChild(img);
-    } else {
-      const span = document.createElement('span');
-      span.textContent = m.displayName.replace(/[^\p{L}\p{N} ]/gu, '').trim().slice(0, 2).toUpperCase();
-      wrap.appendChild(span);
+      img.addEventListener('load', () => span.replaceWith(img), { once: true });
+      img.src = m.avatarUrl;
     }
     return this.L!.divIcon({ html: wrap, className: 'map-pin-wrap', iconSize: [40, 48], iconAnchor: [20, 48], popupAnchor: [0, -44] });
   }

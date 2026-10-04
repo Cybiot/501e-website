@@ -120,16 +120,33 @@
 
   <section class="card" aria-labelledby="pending-title">
     <div class="row row--between">
-      <h2 id="pending-title" class="card-title">À annoncer <span class="badge badge--gold">{{ pending()?.length ?? 0 }}</span></h2>
-      <button type="button" class="btn btn--gold btn--sm" (click)="openPreview()" [disabled]="!pending()?.length">
+      <h2 id="pending-title" class="card-title">À annoncer <span class="badge badge--gold">{{ pendingCount() }}</span></h2>
+      <button type="button" class="btn btn--gold btn--sm" (click)="openPreview()" [disabled]="!pendingCount()">
         <app-icon name="send" [size]="14" /> Lancer l'annonce Discord
       </button>
     </div>
-    <p class="small muted">Attributions enregistrées depuis la dernière annonce.</p>
-    @if (pending() === null) {
+    <p class="small muted">Promotions détectées sur Discord et attributions enregistrées depuis la dernière annonce. Une médaille ne devient officielle (et visible sur le site) qu'à l'annonce.</p>
+    @if (pending() === null || pendingPromotions() === null) {
       <div class="skeleton" style="height: 120px"></div>
     } @else {
       <ul class="pending">
+        @for (p of pendingPromotions(); track p.id) {
+          <li>
+            @if (p.toRank.iconUrl) {
+              <img class="medal-img" [src]="p.toRank.iconUrl" alt="" width="48" height="24" />
+            } @else {
+              <app-icon name="shield" [size]="24" />
+            }
+            <div class="pending__body">
+              <strong>{{ p.member.displayName }}</strong> <span class="muted small">· promotion</span>
+              <p class="small muted">{{ p.fromRank ? p.fromRank.name + ' → ' : '' }}{{ p.toRank.name }}</p>
+              <span class="small muted mono">{{ p.promotedAt | date: 'dd/MM/yyyy HH:mm' }} · détectée sur Discord</span>
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="dismissPromotion(p)" [attr.aria-label]="'Ne pas annoncer la promotion de ' + p.member.displayName">
+              <app-icon name="x" [size]="14" /> Ne pas annoncer
+            </button>
+          </li>
+        }
         @for (a of pending(); track a.id) {
           <li>
             <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="48" height="24" />
@@ -138,17 +155,76 @@
               <p class="small muted">{{ a.reason }}</p>
               <span class="small muted mono">{{ a.awardedAt | date: 'dd/MM/yyyy HH:mm' }}{{ a.awardedBy ? ' · par ' + a.awardedBy.displayName : '' }}</span>
             </div>
-            <button type="button" class="btn btn--danger btn--sm" (click)="revoke(a)" [attr.aria-label]="'Retirer l’attribution à ' + a.member.displayName">
-              <app-icon name="trash" [size]="14" /> Retirer
+            <button type="button" class="btn btn--danger btn--sm" (click)="revoke(a)" [attr.aria-label]="'Supprimer l’attribution à ' + a.member.displayName">
+              <app-icon name="trash" [size]="14" /> Supprimer
             </button>
           </li>
         } @empty {
-          <li class="empty" style="padding: var(--space-5)"><span>Aucune attribution en attente d'annonce.</span></li>
+          @if (!pendingPromotions()?.length) {
+            <li class="empty" style="padding: var(--space-5)"><span>Rien en attente d'annonce.</span></li>
+          }
         }
       </ul>
     }
   </section>
 </div>
+
+<section class="card" style="margin-top: var(--space-5)" aria-labelledby="unaward-title">
+  <h2 id="unaward-title" class="card-title">Désattribuer une médaille</h2>
+  <p class="small muted">Retire une médaille déjà annoncée : elle disparaît du site, sans annonce sur Discord.</p>
+  <div class="field combo" style="max-width: 420px">
+    <label for="unaward-member">Membre</label>
+    <div class="input-icon">
+      <app-icon name="search" [size]="16" />
+      <input
+        id="unaward-member"
+        class="input"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="unaward-results"
+        [attr.aria-expanded]="unawardResults().length > 0"
+        placeholder="Rechercher par pseudo…"
+        [(ngModel)]="unawardQuery"
+        (ngModelChange)="onUnawardInput($event)"
+        autocomplete="off"
+      />
+    </div>
+    @if (unawardResults().length && !unawardMember()) {
+      <ul class="combo__list" id="unaward-results" role="listbox">
+        @for (m of unawardResults(); track m.id) {
+          <li role="option" [attr.aria-selected]="false" (mousedown)="$event.preventDefault(); pickUnawardMember(m)">
+            <app-avatar [src]="m.avatarUrl" [name]="m.displayName" [size]="28" [alt]="false" />
+            <span>{{ m.displayName }}</span>
+            <span class="small muted">{{ m.rank?.name }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+  @if (unawardMember()) {
+    @if (unawardAwards(); as list) {
+      <ul class="pending">
+        @for (a of list; track a.id) {
+          <li>
+            <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="48" height="24" />
+            <div class="pending__body">
+              <strong>{{ label(a.medal) }}</strong>
+              <p class="small muted">{{ a.reason }}</p>
+              <span class="small muted mono">Annoncée le {{ a.announcedAt | date: 'dd/MM/yyyy' }}</span>
+            </div>
+            <button type="button" class="btn btn--danger btn--sm" (click)="unaward(a)" [attr.aria-label]="'Désattribuer ' + a.medal.name">
+              <app-icon name="x" [size]="14" /> Désattribuer
+            </button>
+          </li>
+        } @empty {
+          <li class="empty" style="padding: var(--space-4)"><span>Aucune médaille annoncée pour ce membre.</span></li>
+        }
+      </ul>
+    } @else {
+      <div class="skeleton" style="height: 80px"></div>
+    }
+  }
+</section>
 
 <section class="card" style="margin-top: var(--space-5)" aria-labelledby="history-title">
   <h2 id="history-title" class="card-title">Historique des annonces</h2>
@@ -156,7 +232,7 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Date</th><th>Par</th><th>Décorations</th><th>Messages</th><th>Détail</th></tr>
+          <tr><th>Date</th><th>Par</th><th>Décorations</th><th>Promotions</th><th>Messages</th><th>Détail</th></tr>
         </thead>
         <tbody>
           @for (h of history(); track h.id) {
@@ -164,11 +240,15 @@
               <td>{{ h.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td>{{ h.createdBy?.displayName ?? '—' }}</td>
               <td>{{ h.awardsCount }}</td>
+              <td>{{ h.promotionsCount }}</td>
               <td>{{ h.messagesCount }}</td>
               <td>
                 <details>
                   <summary class="small">Voir</summary>
                   <ul class="small">
+                    @for (p of h.promotions; track $index) {
+                      <li>{{ p.member }} — {{ p.from ? p.from + ' → ' : '' }}{{ p.to }}</li>
+                    }
                     @for (w of h.awards; track $index) {
                       <li>{{ w.member }} — {{ label({ name: w.medal, tier: w.tier }) }} : {{ w.reason }}</li>
                     }
@@ -190,12 +270,12 @@
     <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="preview-title" (click)="$event.stopPropagation()">
       <h2 id="preview-title">Aperçu de l'annonce</h2>
       <p class="small muted">
-        {{ p.awardsCount }} décoration(s) · {{ p.messages.length }} message(s) · salon <span class="mono">{{ p.channelId || 'non configuré' }}</span>
+        {{ p.promotionsCount }} promotion(s) · {{ p.awardsCount }} décoration(s) · {{ p.messages.length }} message(s) · salon <span class="mono">{{ p.channelId || 'non configuré' }}</span>
       </p>
       <div class="discord-preview">
         @for (msg of p.messages; track $index) {
           <div class="discord-msg">
-            <div class="discord-msg__author"><span class="discord-bot">BOT</span> 501st PIR</div>
+            <div class="discord-msg__author"><span class="discord-bot">BOT</span> 501e</div>
             @if (msg.content) {
               <p class="discord-msg__content">{{ render(msg.content) }}</p>
             }

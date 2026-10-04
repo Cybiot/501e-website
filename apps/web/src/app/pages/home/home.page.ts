@@ -50,7 +50,7 @@ export class HomePage {
   protected readonly parallax = signal(0);
 
   constructor() {
-    inject(SeoService).set({ title: '501st PIR', path: '/' });
+    inject(SeoService).set({ title: '501e - FR Roleplay Community', path: '/' });
     this.api
       .get<{ members: number; medalsAwarded: number }>('/stats')
       .then((s) => this.stats.set(s))

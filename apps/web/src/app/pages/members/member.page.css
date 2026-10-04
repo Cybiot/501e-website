@@ -121,3 +121,13 @@
   align-items: flex-start;
   gap: var(--space-1);
 }
+.badge--company {
+  color: var(--text);
+  text-decoration: none;
+}
+.badge--company:hover {
+  border-color: var(--border-strong);
+}
+.badge--company img {
+  object-fit: contain;
+}

@@ -23,6 +23,7 @@ import { InsigniaComponent } from '../shared/insignia.component';
           <ul>
             <li><a routerLink="/communaute">{{ 'nav.community' | t }}</a></li>
             <li><a routerLink="/communaute/regiment">{{ 'nav.regiment' | t }}</a></li>
+            <li><a routerLink="/compagnies">{{ 'nav.companies' | t }}</a></li>
             <li><a routerLink="/membres">{{ 'nav.members' | t }}</a></li>
             <li><a routerLink="/rejoindre">{{ 'nav.join' | t }}</a></li>
           </ul>
@@ -38,7 +39,7 @@ import { InsigniaComponent } from '../shared/insignia.component';
         <div>
           <h2 class="footer__title">Nous rejoindre</h2>
           <p class="small muted">Recrutement ouvert à tous les joueurs francophones majeurs motivés par le RP.</p>
-          <a class="btn btn--primary btn--sm" href="/api/join" rel="nofollow">
+          <a class="btn btn--primary btn--sm" href="/api/join" target="_blank" rel="nofollow noopener noreferrer">
             <app-icon name="message" [size]="16" /> {{ 'cta.join' | t }}
           </a>
         </div>
