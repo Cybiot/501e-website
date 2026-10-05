@@ -1,3 +1,4 @@
+import { prisma } from '../db.js';
 import { DiscordError } from './types.js';
 import { logger } from '../lib/logger.js';
 
@@ -16,8 +17,20 @@ interface DiscordFetchOptions {
   allowNotFound?: boolean;
 }
 
-/** Seule écriture autorisée avec le jeton du bot : poster un message dans un salon. */
+/** Écritures autorisées avec le jeton du bot : poster un message dans un salon… */
 const BOT_WRITE_ALLOWED = /^\/channels\/\d+\/messages$/;
+/** … créer un rôle, uniquement sans aucune permission (rôles de médaille)… */
+const BOT_ROLE_CREATE = /^\/guilds\/\d+\/roles$/;
+/** … et ajouter ou retirer un rôle à un membre, uniquement s'il s'agit d'un rôle de grade configuré. */
+const BOT_ROLE_WRITE = /^\/guilds\/\d+\/members\/\d+\/roles\/(\d+)$/;
+
+async function botWriteAllowed(method: string, path: string, body: unknown) {
+  if (method === 'GET') return true;
+  if (method === 'POST' && BOT_ROLE_CREATE.test(path)) return (body as { permissions?: unknown } | undefined)?.permissions === '0';
+  if (method === 'POST') return BOT_WRITE_ALLOWED.test(path);
+  const roleId = (method === 'PUT' || method === 'DELETE') && BOT_ROLE_WRITE.exec(path)?.[1];
+  return !!roleId && (await prisma.rank.count({ where: { discordRoleId: roleId } })) > 0;
+}
 
 /**
  * Appel REST Discord avec gestion des limites de débit (429 + retry_after)
@@ -25,8 +38,8 @@ const BOT_WRITE_ALLOWED = /^\/channels\/\d+\/messages$/;
  */
 export async function discordFetch<T>(path: string, opts: DiscordFetchOptions): Promise<T | null> {
   const method = opts.method ?? 'GET';
-  // Garde-fou : le bot ne fait que lire et poster les annonces, jamais d'autre écriture.
-  if (opts.authorization.startsWith('Bot ') && method !== 'GET' && !(method === 'POST' && BOT_WRITE_ALLOWED.test(path))) {
+  // Garde-fou : le bot lit, poste les annonces, change les rôles de grade et crée des rôles sans permission.
+  if (opts.authorization.startsWith('Bot ') && !(await botWriteAllowed(method, path, opts.body))) {
     throw new DiscordError(`Action Discord non autorisée pour le bot : ${method} ${path}`);
   }
   const maxAttempts = opts.maxAttempts ?? 4;

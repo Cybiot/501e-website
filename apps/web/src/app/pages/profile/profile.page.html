@@ -67,9 +67,20 @@
               {{ tagline().length }} / {{ taglineMax }} caractères · pas de liens
             </span>
           </div>
+          @if (p.taglineModeration.pending) {
+            <p><span class="badge badge--info"><app-icon name="clock" [size]="12" /> En attente de validation</span></p>
+          } @else if (p.taglineModeration.rejected) {
+            <div class="alert alert--danger" role="status">
+              <app-icon name="x-circle" [size]="18" />
+              <span><strong>Phrase refusée</strong> — {{ p.taglineModeration.rejected.reason }}. Tu peux en proposer une nouvelle.</span>
+            </div>
+          }
           <button type="button" class="btn btn--primary btn--sm" (click)="saveTagline()" [disabled]="!taglineDirty() || savingTagline()">
-            Enregistrer la phrase
+            {{ tagline().trim() ? 'Envoyer la phrase' : 'Supprimer la phrase' }}
           </button>
+          <p class="small muted">
+            Une nouvelle phrase est vérifiée par un admin avant d'être affichée{{ p.tagline ? ' ; d’ici là, « ' + p.tagline + ' » reste visible' : '' }}.
+          </p>
         </section>
 
         <!-- Image personnalisée -->

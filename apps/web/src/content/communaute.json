@@ -5,6 +5,14 @@
     { "icon": "heart", "title": "Camaraderie", "text": "Personne n'est laissé derrière : entraide, pédagogie et bonne humeur avant tout." },
     { "icon": "scale", "title": "Fair-play", "text": "Respect des adversaires, des règles des serveurs et de la communauté Squad 44." }
   ],
+  "games": {
+    "title": "Squad 44, et aussi Squad",
+    "text": "Squad 44 est notre terrain principal, mais la 501e participe aussi à des événements sur Squad, le jeu de guerre moderne. Ils se déroulent exactement comme nos événements Squad 44 : inscription à l'avance, briefing, opération encadrée et débriefing, avec la même chaîne de commandement et le même état d'esprit.",
+    "items": [
+      { "name": "Squad 44", "tag": "Jeu principal", "text": "Nos opérations de la Seconde Guerre mondiale, dans la peau des parachutistes du 501st PIR." },
+      { "name": "Squad", "tag": "Événements", "text": "Des événements sur le conflit moderne, organisés et joués comme nos opérations Squad 44." }
+    ]
+  },
   "session": {
     "title": "Déroulement d'une session type",
     "steps": [

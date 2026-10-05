@@ -16,6 +16,7 @@ export async function resetDb() {
   await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   invalidateSettingsCache();
   mockDiscord().sentMessages.length = 0;
+  mockDiscord().createdRoles.length = 0;
   mockDiscord().failNext = 0;
 }
 

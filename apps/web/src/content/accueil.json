@@ -5,11 +5,10 @@
     "subtitle": "Une communauté francophone de jeu de rôle sérieux et fraternel. Des opérations encadrées, une vraie chaîne de commandement, et des hommes qui tiennent la ligne ensemble.",
     "motto": "Geronimo !"
   },
-  "stats": {
-    "foundedYear": 2023,
-    "operationsLabel": "opérations menées",
-    "operations": 120,
-    "note": "Chiffres de démonstration : à mettre à jour dans src/content/accueil.json."
+  "founding": {
+    "date": "2018-09-01",
+    "title": "ans de fraternité d'armes",
+    "text": "Née en 2018, la 501e réunit des joueurs francophones autour d'une même idée du jeu : du sérieux sans se prendre au sérieux, une chaîne de commandement qui a du sens, et des camarades sur qui compter, opération après opération."
   },
   "how": {
     "eyebrow": "Comment ça marche",

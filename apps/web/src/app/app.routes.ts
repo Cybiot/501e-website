@@ -35,11 +35,6 @@ export const routes: Routes = [
     loadChildren: () => import('./pages/admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
-    path: 'mentions-legales',
-    loadComponent: () => import('./pages/legal/legal.page').then((m) => m.LegalPage),
-    data: { doc: 'mentions' },
-  },
-  {
     path: 'confidentialite',
     loadComponent: () => import('./pages/legal/legal.page').then((m) => m.LegalPage),
     data: { doc: 'confidentialite' },

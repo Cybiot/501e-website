@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { prisma } from '../db.js';
 import { getSettings } from '../lib/settings.js';
 import { discordFetch } from './http.js';
 import {
@@ -35,7 +36,14 @@ async function announceChannel() {
   return announceChannelId;
 }
 
-/** Permissions de serveur dont le bot n'a pas besoin (et qui lui permettraient d'agir sur Discord). */
+const ADMINISTRATOR = 1n << 3n;
+const MANAGE_ROLES = 1n << 28n;
+
+/**
+ * Permissions de serveur dont le bot n'a pas besoin (et qui lui permettraient d'agir sur Discord).
+ * « Gérer les rôles » est requise pour les promotions et les rôles de médaille ; le garde-fou (http.ts)
+ * limite son usage aux rôles de grade et à la création de rôles sans permission.
+ */
 const EXCESS_PERMISSIONS: [bigint, string][] = [
   [1n << 3n, 'Administrateur'],
   [1n << 1n, 'Expulser des membres'],
@@ -44,7 +52,6 @@ const EXCESS_PERMISSIONS: [bigint, string][] = [
   [1n << 5n, 'Gérer le serveur'],
   [1n << 13n, 'Gérer les messages'],
   [1n << 27n, 'Gérer les pseudos'],
-  [1n << 28n, 'Gérer les rôles'],
   [1n << 29n, 'Gérer les webhooks'],
   [1n << 30n, 'Gérer les expressions'],
   [1n << 33n, 'Gérer les événements'],
@@ -52,7 +59,7 @@ const EXCESS_PERMISSIONS: [bigint, string][] = [
   [1n << 40n, 'Exclure temporairement des membres'],
 ];
 
-/** Implémentation réelle : API REST Discord authentifiée avec le jeton du bot (lecture + annonces). */
+/** Implémentation réelle : API REST Discord authentifiée avec le jeton du bot (lecture, grades, annonces). */
 export class LiveDiscordGateway implements DiscordGateway {
   readonly mode = 'live' as const;
   private readonly auth = `Bot ${config.DISCORD_BOT_TOKEN}`;
@@ -96,6 +103,23 @@ export class LiveDiscordGateway implements DiscordGateway {
       .sort((a, b) => b.position - a.position);
   }
 
+  async setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]) {
+    const path = (roleId: string) => `/guilds/${this.guild}/members/${discordId}/roles/${roleId}`;
+    // Ajout d'abord : le membre n'est jamais sans grade, même si le retrait échoue.
+    await discordFetch(path(addRoleId), { method: 'PUT', authorization: this.auth });
+    for (const roleId of removeRoleIds) await discordFetch(path(roleId), { method: 'DELETE', authorization: this.auth });
+  }
+
+  async createRole(name: string) {
+    const role = await discordFetch<{ id: string }>(`/guilds/${this.guild}/roles`, {
+      method: 'POST',
+      authorization: this.auth,
+      body: { name, permissions: '0', hoist: false, mentionable: false },
+    });
+    if (!role) throw new DiscordError('Création du rôle impossible');
+    return role.id;
+  }
+
   async postAnnouncement(payload: DiscordMessagePayload) {
     const channelId = await announceChannel();
     const msg = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
@@ -112,15 +136,26 @@ export class LiveDiscordGateway implements DiscordGateway {
     return msg.id;
   }
 
-  /** Permissions du bot sur le serveur qui dépassent son usage (lecture + annonces). */
-  private async excessPermissions(botId: string) {
-    const [member, roles] = await Promise.all([
+  /**
+   * Permissions du bot qui dépassent son usage, et capacité à gérer les rôles de grade :
+   * « Gérer les rôles » et un rôle du bot placé au-dessus de tous les rôles de grade.
+   */
+  private async permissionAudit(botId: string) {
+    const [member, roles, ranks] = await Promise.all([
       discordFetch<{ roles: string[] }>(`/guilds/${this.guild}/members/${botId}`, { authorization: this.auth, maxAttempts: 1 }),
-      discordFetch<{ id: string; permissions: string }[]>(`/guilds/${this.guild}/roles`, { authorization: this.auth, maxAttempts: 1 }),
+      discordFetch<{ id: string; permissions: string; position: number }[]>(`/guilds/${this.guild}/roles`, { authorization: this.auth, maxAttempts: 1 }),
+      prisma.rank.findMany({ where: { discordRoleId: { not: null } }, select: { name: true, discordRoleId: true } }),
     ]);
     const held = new Set([this.guild, ...(member?.roles ?? [])]); // @everyone a l'ID du serveur
-    const perms = (roles ?? []).filter((r) => held.has(r.id)).reduce((acc, r) => acc | BigInt(r.permissions), 0n);
-    return EXCESS_PERMISSIONS.filter(([bit]) => (perms & bit) !== 0n).map(([, name]) => name);
+    const heldRoles = (roles ?? []).filter((r) => held.has(r.id));
+    const perms = heldRoles.reduce((acc, r) => acc | BigInt(r.permissions), 0n);
+    const extra = EXCESS_PERMISSIONS.filter(([bit]) => (perms & bit) !== 0n).map(([, name]) => name);
+
+    const top = Math.max(0, ...heldRoles.map((r) => r.position));
+    const position = new Map((roles ?? []).map((r) => [r.id, r.position]));
+    const above = ranks.filter((r) => (position.get(r.discordRoleId!) ?? 0) >= top).map((r) => r.name);
+    const manageRoles = (perms & (MANAGE_ROLES | ADMINISTRATOR)) !== 0n;
+    return { extra, manageRoles, above };
   }
 
   async checkIntegration() {
@@ -163,14 +198,23 @@ export class LiveDiscordGateway implements DiscordGateway {
       checks.push({ label: "Salon d'annonce accessible", ok: false, detail: (err as Error).message });
     }
     try {
-      const extra = await this.excessPermissions(me!.id);
+      const { extra, manageRoles, above } = await this.permissionAudit(me!.id);
+      checks.push({
+        label: 'Gestion des rôles de grade',
+        ok: manageRoles && above.length === 0,
+        detail: !manageRoles
+          ? 'Donne la permission « Gérer les rôles » au rôle du bot'
+          : above.length
+            ? `Place le rôle du bot au-dessus de : ${above.join(', ')}`
+            : 'Promotions et rétrogradations possibles',
+      });
       checks.push({
         label: 'Aucune permission superflue',
         ok: extra.length === 0,
-        detail: extra.length ? `À retirer au rôle du bot : ${extra.join(', ')}` : 'Lecture et annonces uniquement',
+        detail: extra.length ? `À retirer au rôle du bot : ${extra.join(', ')}` : 'Lecture, grades et annonces uniquement',
       });
     } catch (err) {
-      checks.push({ label: 'Aucune permission superflue', ok: false, detail: (err as Error).message });
+      checks.push({ label: 'Permissions du bot', ok: false, detail: (err as Error).message });
     }
     return { ok: checks.every((c) => c.ok), checks };
   }

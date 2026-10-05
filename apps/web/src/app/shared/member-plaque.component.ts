@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MemberCard, medalLabel } from '../core/models';
+import { MemberCard, medalLabel, rankedName } from '../core/models';
 import { AvatarComponent } from './avatar.component';
 
 /**
@@ -46,14 +46,11 @@ import { AvatarComponent } from './avatar.component';
             }
           }
           @if (link()) {
-            <a
-              [routerLink]="['/membres', member().id]"
-              class="plaque__link"
-              [title]="member().displayName"
-              >{{ member().displayName }}</a
-            >
+            <a [routerLink]="['/membres', member().id]" class="plaque__link" [title]="name()">{{
+              name()
+            }}</a>
           } @else {
-            <span class="plaque__link">{{ member().displayName }}</span>
+            <span class="plaque__link">{{ name() }}</span>
           }
         </h3>
 
@@ -326,15 +323,29 @@ import { AvatarComponent } from './avatar.component';
       margin: 0;
       padding: 0;
     }
+    /* Barrette de décorations : deux lignes de 4, à hauteur du logo de compagnie. */
+    .plaque__medals {
+      display: grid;
+      grid-template-columns: repeat(4, auto);
+      justify-content: start;
+      gap: 3px var(--space-1);
+    }
     .plaque__medals li {
       display: flex;
       flex-shrink: 0;
     }
     .plaque__medals img {
-      width: 38px;
-      height: 22px;
+      width: 32px;
+      height: 15px;
       object-fit: contain;
       filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.6));
+    }
+    .plaque__medals .plaque__more {
+      min-width: 0;
+      height: 15px;
+      padding: 0 4px;
+      font-size: 10px;
+      border-radius: 3px;
     }
     .plaque__more {
       flex-shrink: 0;
@@ -400,8 +411,11 @@ import { AvatarComponent } from './avatar.component';
         gap: var(--space-1);
       }
       .plaque__medals img {
-        width: 28px;
-        height: 18px;
+        width: 26px;
+        height: 12px;
+      }
+      .plaque__medals .plaque__more {
+        height: 12px;
       }
     }
 
@@ -419,11 +433,15 @@ import { AvatarComponent } from './avatar.component';
 export class MemberPlaqueComponent {
   readonly member = input.required<MemberCard>();
   readonly link = input(true);
-  readonly maxMedals = input(3);
+  /** Emplacements de médailles : deux lignes de 4, le dernier devient « +N » s'il en reste. */
+  readonly maxMedals = input(8);
   protected readonly label = medalLabel;
-  protected readonly visibleMedals = computed(() =>
-    this.member().medals.slice(0, this.maxMedals()),
-  );
+  protected readonly name = computed(() => rankedName(this.member()));
+  protected readonly visibleMedals = computed(() => {
+    const { medals } = this.member();
+    const max = this.maxMedals();
+    return medals.slice(0, medals.length > max ? max - 1 : max);
+  });
   /** Nom de la compagnie (et section) : texte alternatif du logo, seul porteur de l'information. */
   protected readonly companyLabel = computed(() => {
     const co = this.member().company;

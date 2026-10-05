@@ -15,6 +15,34 @@ describe('Attribution de médailles et annonce Discord', () => {
     return { admin, member, medal, a };
   }
 
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const postMedal = (a: Awaited<ReturnType<typeof loginAs>>, name: string) =>
+    a.agent
+      .post('/api/admin/medals')
+      .set('X-XSRF-TOKEN', a.xsrf)
+      .field({ name, description: 'Pour bravoure.', category: 'Bravoure' })
+      .attach('image', png, 'medaille.png');
+
+  it('crée un rôle Discord sans permission au nom de la nouvelle médaille', async () => {
+    const { a } = await setup();
+    const res = await postMedal(a, 'Étoile de bronze');
+    expect(res.status).toBe(201);
+    expect(mockDiscord().createdRoles).toEqual([{ id: expect.any(String), name: 'Étoile de bronze' }]);
+    const medal = await prisma.medal.findUniqueOrThrow({ where: { name: 'Étoile de bronze' } });
+    expect(medal.discordRoleId).toBe(mockDiscord().createdRoles[0]!.id);
+  });
+
+  it("n'enregistre pas la médaille si Discord ne peut pas créer le rôle", async () => {
+    const { a } = await setup();
+    mockDiscord().failNext = 1;
+    const res = await postMedal(a, 'Étoile d’argent');
+    expect(res.status).toBe(502);
+    expect(await prisma.medal.count({ where: { name: 'Étoile d’argent' } })).toBe(0);
+  });
+
   it('attribue une médaille sans toucher aux rôles Discord et journalise', async () => {
     const { member, medal, a } = await setup();
     const res = await a.post('/api/admin/awards', {

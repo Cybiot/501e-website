@@ -39,7 +39,7 @@ const imageUrlsOf = (m: Pick<Medal, ImageColumn>) =>
 const PARTIAL_TIERS = 'Une médaille à paliers doit avoir ses trois images de palier (bronze, argent et or).';
 
 /** Erreur Discord : journalisée, notifiée aux admins, renvoyée en 502 pour permettre de réessayer. */
-async function discordFailure(err: unknown, action: string, req: Parameters<typeof audit>[0]['req']) {
+export async function discordFailure(err: unknown, action: string, req: Parameters<typeof audit>[0]['req']) {
   const message = (err as Error).message;
   logger.error({ err: message, action }, 'Action Discord en échec');
   await audit({ action: 'discord.error', req, metadata: { action, message } });
@@ -125,10 +125,19 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
   if (await prisma.medal.findUnique({ where: { name: body.name } })) {
     throw conflict('Une médaille porte déjà ce nom.');
   }
-  const { stored } = await storeImages(req);
+  const { stored, cleanup } = await storeImages(req);
+  // Rôle Discord de la médaille, créé sans aucune permission.
+  let discordRoleId: string;
+  try {
+    discordRoleId = await discord().createRole(body.name);
+  } catch (err) {
+    await cleanup();
+    throw await discordFailure(err, 'create_medal_role', req);
+  }
   const medal = await prisma.medal.create({
     data: {
       name: body.name,
+      discordRoleId,
       description: body.description,
       category: body.category,
       order: body.order,
@@ -140,7 +149,7 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
       imageGoldUrl: stored.imageGoldUrl ?? null,
     },
   });
-  await audit({ action: 'medal.created', req, targetType: 'medal', targetId: medal.id, metadata: { name: medal.name } });
+  await audit({ action: 'medal.created', req, targetType: 'medal', targetId: medal.id, metadata: { name: medal.name, discordRoleId } });
   res.status(201).json(presentMedal(medal));
 });
 

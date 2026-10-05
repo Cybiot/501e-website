@@ -3,7 +3,7 @@
  * En mode live, ces identifiants ne sont jamais utilisés : tout vient du .env et de l'admin.
  */
 export const MOCK_ROLES = {
-  member: { id: 'mock-role-membre', name: 'Membre 501e', color: 0x6b7f3a },
+  member: { id: 'mock-role-membre', name: '501e', color: 0x6b7f3a },
   admin: { id: 'mock-role-etat-major', name: 'État-major', color: 0xc9a24b },
   recruit: { id: 'mock-role-recrue', name: 'Recrue', color: 0x8a8f80 },
 } as const;

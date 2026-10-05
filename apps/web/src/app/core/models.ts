@@ -139,6 +139,11 @@ export interface MyProfile extends MemberDetail {
     pending: { url: string; submittedAt: string } | null;
     rejected: { reason: string | null; reviewedAt: string | null } | null;
   };
+  /** Phrase proposée en attente de validation, ou motif du dernier refus. */
+  taglineModeration: {
+    pending: { text: string; submittedAt: string } | null;
+    rejected: { reason: string; reviewedAt: string | null } | null;
+  };
   locations: Location[];
 }
 
@@ -176,6 +181,13 @@ export interface AdminPromotion {
   id: string;
   promotedAt: string;
   member: { id: string; displayName: string; discordId: string };
+  fromRank: Rank | null;
+  toRank: Rank;
+}
+
+/** Résultat d'une promotion ou rétrogradation décidée depuis l'admin. */
+export interface RankChangeResult {
+  direction: 'promotion' | 'demotion';
   fromRank: Rank | null;
   toRank: Rank;
 }
@@ -223,6 +235,14 @@ export interface AnnouncementHistory {
   promotions: { member: string; from: string | null; to: string }[];
 }
 
+/** Issue d'une demande de modération, inscrite dans la notification correspondante. */
+export interface ModerationOutcome {
+  status: 'approved' | 'rejected' | 'replaced' | 'withdrawn';
+  at: string;
+  by?: string;
+  reason?: string;
+}
+
 export interface NotificationItem {
   id: string;
   type: string;
@@ -255,9 +275,20 @@ export interface ModerationItem {
   };
 }
 
+export interface TaglineModerationItem {
+  userId: string;
+  text: string;
+  submittedAt: string;
+  currentText: string | null;
+  member: {
+    id: string;
+    displayName: string;
+    rank: Rank | null;
+    discordAvatarUrl: string | null;
+  };
+}
+
 export interface AppSettings {
-  memberRoleIds: string[];
-  adminRoleIds: string[];
   announceChannelId: string;
   inviteUrl: string;
   announceMentions: boolean;
@@ -312,4 +343,16 @@ export interface AdminResponsibility {
   order: number;
   discordRoleId: string | null;
   usersCount: number;
+}
+
+/**
+ * Nom précédé de l'abréviation du grade : « Col. John Martin » (nom seul sans grade).
+ * Si le pseudo commence déjà par ce grade (« Col. » ou « COL »), il n'est pas répété.
+ */
+export function rankedName(member: Pick<MemberCard, 'displayName' | 'rank'>): string {
+  const abbr = member.rank?.abbreviation?.trim();
+  if (!abbr) return member.displayName;
+  const bare = abbr.replace(/\.$/, '').toLowerCase();
+  const first = member.displayName.trim().split(/\s+/)[0]!.replace(/\.$/, '').toLowerCase();
+  return first === bare ? member.displayName : `${abbr} ${member.displayName}`;
 }

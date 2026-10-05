@@ -3,12 +3,10 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
 import confidentialite from '../../../content/legal/confidentialite.md';
 import cookies from '../../../content/legal/cookies.md';
-import mentions from '../../../content/legal/mentions.md';
 import { SeoService } from '../../core/seo.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
 
 const DOCS: Record<string, { md: string; title: string; path: string }> = {
-  mentions: { md: mentions, title: 'Mentions légales', path: '/mentions-legales' },
   confidentialite: { md: confidentialite, title: 'Politique de confidentialité', path: '/confidentialite' },
   cookies: { md: cookies, title: 'Politique cookies', path: '/cookies' },
 };
@@ -30,8 +28,8 @@ const DOCS: Record<string, { md: string; title: string; path: string }> = {
 export class LegalPage {
   private readonly seo = inject(SeoService);
   private readonly sanitizer = inject(DomSanitizer);
-  readonly doc = input<string>('mentions');
-  protected readonly current = computed(() => DOCS[this.doc()] ?? DOCS['mentions']!);
+  readonly doc = input<string>('confidentialite');
+  protected readonly current = computed(() => DOCS[this.doc()] ?? DOCS['confidentialite']!);
 
   constructor() {
     effect(() => this.seo.set({ title: this.current().title, path: this.current().path }));

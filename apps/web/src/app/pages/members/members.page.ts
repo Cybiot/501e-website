@@ -90,7 +90,6 @@ export class MembersPage {
   protected readonly result = signal<{ items: MemberCard[]; total: number } | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly grouped = signal(true);
   protected search = '';
 
   protected readonly currentSort = computed<Sort>(() => this.sort() ?? 'rank');
@@ -100,7 +99,7 @@ export class MembersPage {
   protected readonly rows = computed(() => {
     const items = this.result()?.items ?? [];
     const groups: { title: string | null; members: MemberCard[] }[] = [];
-    const group = this.grouped() && this.currentSort() === 'rank';
+    const group = this.currentSort() === 'rank';
     for (const m of items) {
       const title = group ? (m.rank ? rankTitle(m.rank) : t('members.noRank')) : null;
       const last = groups[groups.length - 1];

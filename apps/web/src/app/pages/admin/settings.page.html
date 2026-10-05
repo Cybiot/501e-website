@@ -39,33 +39,13 @@
 
   <form class="card" style="margin-top: var(--space-5)" (submit)="$event.preventDefault(); save()" aria-labelledby="roles-title">
     <h2 id="roles-title" class="card-title">Statuts, annonces et invitation</h2>
-    <div class="admin-grid">
-      @for (key of roleLists; track key) {
-        <fieldset class="field">
-          <legend class="label">{{ key === 'memberRoleIds' ? 'Rôles donnant le statut Membre' : 'Rôles donnant le statut Admin' }}</legend>
-          <div class="role-list">
-            @for (r of roles(); track r.id) {
-              <label class="check-inline">
-                <input type="checkbox" [checked]="f[key].includes(r.id)" (change)="toggleRole(key, r.id, $any($event.target).checked)" />
-                {{ r.name }} <span class="mono small muted">{{ r.id }}</span>
-              </label>
-            }
-            @for (id of f[key]; track id) {
-              @if (!roles().length || !roles().some(x => x.id === id)) {
-                <label class="check-inline">
-                  <input type="checkbox" checked (change)="toggleRole(key, id, $any($event.target).checked)" />
-                  <span class="mono small">{{ id }}</span>
-                </label>
-              }
-            }
-          </div>
-          <div class="row">
-            <input #roleInput class="input" style="flex: 1" placeholder="Ajouter un ID de rôle" [attr.aria-label]="'Ajouter un ID de rôle'" />
-            <button type="button" class="btn btn--sm" (click)="addRoleId(key, roleInput)">Ajouter</button>
-          </div>
-        </fieldset>
-      }
-    </div>
+    <dl class="status-roles">
+      <dt>Statut Admin</dt>
+      <dd>Rôle « État-major » <span class="mono small muted">{{ d.statusRoles.adminRoleId ? roleName(d.statusRoles.adminRoleId) : 'non configuré (DISCORD_ADMIN_ROLE_ID)' }}</span></dd>
+      <dt>Statut Membre</dt>
+      <dd>Rôle « 501e » <span class="mono small muted">{{ d.statusRoles.memberRoleId ? roleName(d.statusRoles.memberRoleId) : 'non configuré (DISCORD_MEMBER_ROLE_ID)' }}</span></dd>
+    </dl>
+    <p class="small muted">Ces rôles sont fixés par la configuration du serveur et ne sont pas modifiables ici.</p>
     <div class="admin-grid">
       <div class="field">
         <label for="s-channel">ID du salon d'annonce des médailles</label>

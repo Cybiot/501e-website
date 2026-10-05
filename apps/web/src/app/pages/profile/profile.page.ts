@@ -43,7 +43,12 @@ export class ProfilePage {
     const p = this.profile();
     return p ? { ...p, tagline: this.tagline().trim() || null } : null;
   });
-  protected readonly taglineDirty = computed(() => (this.profile()?.tagline ?? '') !== this.tagline().trim());
+  /** Phrase de référence du champ : la proposition en attente si elle existe, sinon la phrase validée. */
+  private readonly savedTagline = computed(() => {
+    const p = this.profile();
+    return p?.taglineModeration.pending?.text ?? p?.tagline ?? '';
+  });
+  protected readonly taglineDirty = computed(() => this.savedTagline() !== this.tagline().trim());
 
   constructor() {
     inject(SeoService).set({ title: 'Mon profil', path: '/profil', noindex: true });
@@ -59,7 +64,7 @@ export class ProfilePage {
     try {
       const p = await this.api.get<MyProfile>('/me/profile');
       this.profile.set(p);
-      this.tagline.set(p.tagline ?? '');
+      this.tagline.set(p.taglineModeration.pending?.text ?? p.tagline ?? '');
     } catch (err) {
       // Consentement en attente : la modale est affichée, on patiente sans message d'erreur.
       if ((err as ApiError).code !== 'CONSENT_REQUIRED') this.error.set((err as ApiError).message);
@@ -69,8 +74,11 @@ export class ProfilePage {
   protected async saveTagline() {
     this.savingTagline.set(true);
     try {
-      await this.api.patch('/me/profile', { tagline: this.tagline().trim() || null });
-      this.toast.success('Phrase enregistrée.');
+      const text = this.tagline().trim() || null;
+      const r = await this.api.patch<{ taglinePending: boolean }>('/me/profile', { tagline: text });
+      this.toast.success(
+        r.taglinePending ? 'Phrase envoyée : elle sera visible après validation par un admin.' : text ? 'Phrase enregistrée.' : 'Phrase supprimée.',
+      );
       await this.load();
     } catch (err) {
       this.toast.error((err as ApiError).message);

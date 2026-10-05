@@ -1,9 +1,7 @@
 <section class="hero" aria-labelledby="hero-title">
-  <div
-    class="hero__bg"
-    aria-hidden="true"
-    [style.transform]="'translate3d(0,' + parallax() + 'px,0)'"
-  ></div>
+  <div class="hero__backdrop" aria-hidden="true">
+    <div class="hero__bg" [style.transform]="'translate3d(0,' + parallax() + 'px,0)'"></div>
+  </div>
   <div
     [appDropScene]="dropClock"
     class="drop"
@@ -51,36 +49,17 @@
     </div>
     <p class="hero__motto mono" aria-hidden="true">— {{ c.hero.motto }} —</p>
   </div>
-  <a href="#chiffres" class="hero__scroll" aria-label="Défiler vers la suite"
+  <a href="#histoire" class="hero__scroll" aria-label="Défiler vers la suite"
     ><app-icon name="chevron-down" [size]="22"
   /></a>
 </section>
 
-<section id="chiffres" class="stats container" aria-label="Chiffres clés">
-  <div class="stat">
-    @if (stats(); as s) {
-      <strong><app-count-up [value]="s.members" /></strong>
-    } @else {
-      <strong class="skeleton stat__skel"></strong>
-    }
-    <span>membres actifs</span>
-  </div>
-  <div class="stat">
-    <strong><app-count-up [value]="c.stats.operations" /></strong>
-    <span>{{ c.stats.operationsLabel }}</span>
-  </div>
-  <div class="stat">
-    @if (stats(); as s) {
-      <strong><app-count-up [value]="s.medalsAwarded" /></strong>
-    } @else {
-      <strong class="skeleton stat__skel"></strong>
-    }
-    <span>décorations remises</span>
-  </div>
-  <div class="stat">
-    <strong><app-count-up [value]="years" /></strong>
-    <span>{{ years > 1 ? 'années' : 'année' }} d'existence</span>
-  </div>
+<section id="histoire" class="founding container" aria-labelledby="founding-title" appReveal>
+  <h2 id="founding-title" class="founding__title">
+    <strong class="founding__years"><app-count-up [value]="years" /></strong>
+    {{ c.founding.title }}
+  </h2>
+  <p class="founding__text">{{ c.founding.text }}</p>
 </section>
 
 <section class="section" aria-labelledby="honor-title">
@@ -96,10 +75,10 @@
     </div>
     @if (featured(); as list) {
       @if (list.length) {
-        <div class="grid" style="--min: 250px">
+        <div class="grid" style="--min: 420px">
           @for (f of list; track f.member.id; let i = $index) {
             <div class="honor" [appReveal]="i * 80">
-              <app-dog-tag [member]="f.member" />
+              <app-member-plaque [member]="f.member" />
               <p class="honor__award">
                 <img class="medal-img" [src]="f.award.medalImageUrl" alt="" width="40" height="20" />
                 <span
@@ -151,15 +130,7 @@
       <p class="eyebrow">Nos valeurs</p>
       <h2 id="values-title">Ce qui nous tient ensemble</h2>
     </div>
-    <ul class="values__list">
-      @for (v of c.values; track v.title; let i = $index) {
-        <li class="value" [appReveal]="i * 80">
-          <span class="value__badge"><app-icon [name]="v.icon" [size]="26" /></span>
-          <h3>{{ v.title }}</h3>
-          <p class="muted">{{ v.text }}</p>
-        </li>
-      }
-    </ul>
+    <app-values-list [values]="c.values" />
   </div>
 </section>
 

@@ -15,11 +15,19 @@ import { TPipe } from '../../core/i18n';
 import { Featured, medalLabel } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { CountUpComponent } from '../../shared/count-up.component';
-import { DogTagComponent } from '../../shared/dog-tag.component';
 import { IconComponent } from '../../shared/icon.component';
 import { InsigniaComponent } from '../../shared/insignia.component';
+import { MemberPlaqueComponent } from '../../shared/member-plaque.component';
 import { RevealDirective } from '../../shared/reveal.directive';
+import { ValuesListComponent } from '../../shared/values-list.component';
 import { DROP_SCENE, DropClock, DropSceneDirective } from './drop-scene';
+
+/** Années révolues depuis une date « AAAA-MM-JJ » (anniversaire compris). */
+function fullYearsSince(isoDate: string, now = new Date()) {
+  const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number];
+  const beforeAnniversary = now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d);
+  return now.getFullYear() - y - (beforeAnniversary ? 1 : 0);
+}
 
 @Component({
   selector: 'app-home-page',
@@ -30,9 +38,10 @@ import { DROP_SCENE, DropClock, DropSceneDirective } from './drop-scene';
     IconComponent,
     InsigniaComponent,
     CountUpComponent,
-    DogTagComponent,
+    MemberPlaqueComponent,
     RevealDirective,
     DropSceneDirective,
+    ValuesListComponent,
   ],
   templateUrl: './home.page.html',
   styleUrl: './home.page.css',
@@ -44,17 +53,12 @@ export class HomePage {
   protected readonly drop = DROP_SCENE;
   protected readonly dropReady = signal(false);
   protected readonly dropClock: DropClock = { start: null };
-  protected readonly years = new Date().getFullYear() - content.stats.foundedYear;
-  protected readonly stats = signal<{ members: number; medalsAwarded: number } | null>(null);
+  protected readonly years = fullYearsSince(content.founding.date);
   protected readonly featured = signal<Featured[] | null>(null);
   protected readonly parallax = signal(0);
 
   constructor() {
     inject(SeoService).set({ title: '501e - FR Roleplay Community', path: '/' });
-    this.api
-      .get<{ members: number; medalsAwarded: number }>('/stats')
-      .then((s) => this.stats.set(s))
-      .catch(() => this.stats.set({ members: 0, medalsAwarded: 0 }));
     this.api
       .get<Featured[]>('/members/featured')
       .then((f) => this.featured.set(f))

@@ -32,11 +32,34 @@
           <div class="notifs__body">
             <strong>{{ notifLabels[n.type]?.label ?? n.type }}</strong>
             <p class="small muted">{{ describe(n) }}</p>
+            @if (moderationOf(n); as m) {
+              <p class="small notifs__outcome" [class.notifs__outcome--rejected]="m.status === 'rejected'">
+                <app-icon [name]="m.status === 'approved' ? 'check-circle' : m.status === 'rejected' ? 'x-circle' : 'info'" [size]="14" />
+                <span>
+                  <strong>{{ outcomeLabel(m) }}</strong>
+                  @if (m.by) {
+                    par {{ m.by }}
+                  }
+                  le {{ m.at | date: 'dd/MM/yyyy à HH:mm' }}
+                  @if (m.reason) {
+                    — motif : {{ m.reason }}
+                  }
+                </span>
+              </p>
+            }
             <span class="small muted mono">{{ n.createdAt | date: 'dd/MM/yyyy HH:mm' }}{{ n.readAt ? ' · lu par ' + (n.readBy ?? '?') : '' }}</span>
           </div>
           <div class="row">
-            @if (n.type === 'image_submitted') {
-              <a routerLink="/admin/moderation" class="btn btn--sm">Modérer</a>
+            @if (isModerationRequest(n)) {
+              @if (moderationOf(n); as m) {
+                <span class="badge" [class.badge--success]="m.status === 'approved' || m.status === 'rejected'">
+                  <app-icon name="check" [size]="12" /> {{ m.status === 'approved' || m.status === 'rejected' ? 'Modéré' : 'Sans suite' }}
+                </span>
+              } @else {
+                <a routerLink="/admin/moderation" [queryParams]="n.type === 'tagline_submitted' ? { onglet: 'phrases' } : null" class="btn btn--sm">
+                  Modérer
+                </a>
+              }
             }
             @if (!n.readAt) {
               <button type="button" class="btn btn--ghost btn--sm" (click)="markRead(n)">Marquer lu</button>

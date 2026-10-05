@@ -16,4 +16,8 @@ describe('Garde-fou du bot Discord', () => {
   ])('refuse %s %s avant tout appel réseau', async (method, path) => {
     await expect(discordFetch(path, { ...bot, method })).rejects.toThrow(/non autorisée pour le bot/);
   });
+
+  it.each([{ permissions: '8' }, { name: 'Sans permissions explicites' }])('refuse la création d’un rôle avec des permissions (%o)', async (body) => {
+    await expect(discordFetch('/guilds/1/roles', { ...bot, method: 'POST', body })).rejects.toThrow(/non autorisée pour le bot/);
+  });
 });

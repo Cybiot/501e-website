@@ -170,13 +170,22 @@ model UserResponsibility {
 
 model Profile {
   userId         String  @id
+  /// Phrase validée, seule affichée publiquement.
   tagline        String? @db.VarChar(140)
   customImageId  String? @unique
   pendingImageId String? @unique
 
+  /// Phrase proposée par le membre, en attente de validation par un admin.
+  pendingTagline         String?   @db.VarChar(140)
+  pendingTaglineAt       DateTime?
+  taglineRejectionReason String?   @db.VarChar(300)
+  taglineReviewedAt      DateTime?
+
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   customImage  CustomImage? @relation("ApprovedImage", fields: [customImageId], references: [id], onDelete: SetNull)
   pendingImage CustomImage? @relation("PendingImage", fields: [pendingImageId], references: [id], onDelete: SetNull)
+
+  @@index([pendingTaglineAt])
 }
 
 model CustomImage {
@@ -219,6 +228,8 @@ model Medal {
   isActive       Boolean  @default(true)
   /// Un membre peut-il recevoir plusieurs fois cette médaille ?
   repeatable     Boolean  @default(true)
+  /// Rôle Discord créé par le bot (sans permission) à la création de la médaille.
+  discordRoleId  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

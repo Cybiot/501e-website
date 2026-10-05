@@ -4,6 +4,7 @@ import { prisma } from '../../db.js';
 import { medalsAdminRouter } from './medals.js';
 import { moderationAdminRouter } from './moderation.js';
 import { logsAdminRouter } from './logs.js';
+import { ranksAdminRouter } from './ranks.js';
 import { settingsAdminRouter } from './settings.js';
 
 /** Toutes les routes /api/admin/** sont protégées côté serveur (statut Admin revérifié). */
@@ -16,12 +17,13 @@ adminRouter.use((_req, res, next) => {
 });
 
 adminRouter.get('/dashboard', async (_req, res) => {
-  const [members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, pendingPromotions, locations, recentLogs] =
+  const [members, admins, hiddenProfiles, pendingImages, pendingTaglines, unreadNotifications, pendingAwards, pendingPromotions, locations, recentLogs] =
     await Promise.all([
       prisma.user.count({ where: { status: { in: ['member', 'admin'] }, deletedAt: null } }),
       prisma.user.count({ where: { status: 'admin', deletedAt: null } }),
       prisma.user.count({ where: { status: { in: ['member', 'admin'] }, publicProfileEnabled: false } }),
       prisma.customImage.count({ where: { status: 'pending' } }),
+      prisma.profile.count({ where: { pendingTagline: { not: null } } }),
       prisma.notification.count({ where: { readAt: null } }),
       prisma.medalAward.count({ where: { announcedAt: null, revokedAt: null } }),
       prisma.rankPromotion.count({ where: { announcedAt: null, user: { status: { in: ['member', 'admin'] }, deletedAt: null } } }),
@@ -33,7 +35,7 @@ adminRouter.get('/dashboard', async (_req, res) => {
       }),
     ]);
   res.json({
-    counts: { members, admins, hiddenProfiles, pendingImages, unreadNotifications, pendingAwards, pendingPromotions, locations },
+    counts: { members, admins, hiddenProfiles, pendingImages, pendingTaglines, unreadNotifications, pendingAwards, pendingPromotions, locations },
     recentLogs: recentLogs.map((l) => ({
       id: l.id,
       createdAt: l.createdAt,
@@ -45,5 +47,6 @@ adminRouter.get('/dashboard', async (_req, res) => {
 
 adminRouter.use(medalsAdminRouter);
 adminRouter.use(moderationAdminRouter);
+adminRouter.use(ranksAdminRouter);
 adminRouter.use(logsAdminRouter);
 adminRouter.use(settingsAdminRouter);

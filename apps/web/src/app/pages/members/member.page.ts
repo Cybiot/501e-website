@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, PL
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { t, TPipe } from '../../core/i18n';
-import { MEDAL_TIERS, MedalTier, MemberDetail, TIER_LABELS, medalLabel } from '../../core/models';
+import { MEDAL_TIERS, MedalTier, MemberDetail, TIER_LABELS, medalLabel, rankedName } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
 import { ToastService } from '../../core/toast.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
@@ -45,6 +45,7 @@ export class MemberPage {
   });
   protected readonly tierLabels = TIER_LABELS;
   protected readonly label = medalLabel;
+  protected readonly rankedName = rankedName;
 
   constructor() {
     effect(() => {

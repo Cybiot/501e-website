@@ -31,9 +31,10 @@ export interface DiscordMessagePayload {
 }
 
 /**
- * Tout ce que le site demande à Discord passe par cette interface. Le bot n'a que deux usages :
- * lire les membres et les rôles, et poster les annonces (médailles, promotions) dans le salon
- * d'annonce configuré. Aucune autre action (rôles, pseudos, messages ailleurs…) n'est exposée.
+ * Tout ce que le site demande à Discord passe par cette interface. Le bot a trois usages :
+ * lire les membres et les rôles, changer le rôle de grade d'un membre (promotion ou
+ * rétrogradation décidée par un admin), créer le rôle (sans permission) d'une nouvelle médaille
+ * et poster les annonces (médailles, promotions) dans le salon d'annonce configuré. Aucune autre action (autres rôles, pseudos, messages ailleurs…) n'est exposée.
  * Deux implémentations : `live` (API REST Discord via le jeton du bot) et `mock` (démo/tests).
  */
 export interface DiscordGateway {
@@ -41,6 +42,10 @@ export interface DiscordGateway {
   getMember(discordId: string): Promise<GuildMemberInfo | null>;
   listMembers(): Promise<GuildMemberInfo[]>;
   listRoles(): Promise<DiscordRole[]>;
+  /** Ajoute le rôle de grade `addRoleId` puis retire `removeRoleIds` (rôles de grade configurés uniquement). */
+  setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]): Promise<void>;
+  /** Crée un rôle sans aucune permission (rôle de médaille). Retourne son identifiant. */
+  createRole(name: string): Promise<string>;
   /** Poste dans le salon d'annonce configuré (le seul où le bot écrit). Retourne l'identifiant du message. */
   postAnnouncement(payload: DiscordMessagePayload): Promise<string>;
   checkIntegration(): Promise<{ ok: boolean; checks: { label: string; ok: boolean; detail?: string }[] }>;

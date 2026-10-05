@@ -1,0 +1,59 @@
+<h1 class="admin-title">Promotions et grades</h1>
+
+<section class="card" aria-labelledby="rank-title">
+  <h2 id="rank-title" class="card-title">Changer le grade d'un membre</h2>
+  <p class="small muted">Change le rôle de grade du membre sur Discord, en sautant des grades si besoin. Une promotion rejoint la liste « À annoncer » (<a routerLink="/admin/medailles">Attribution des médailles</a>), une rétrogradation n'est pas annoncée.</p>
+  <div class="field combo" style="max-width: 420px">
+    <label for="rank-member">Membre</label>
+    <div class="input-icon">
+      <app-icon name="search" [size]="16" />
+      <input
+        id="rank-member"
+        class="input"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="rank-results"
+        [attr.aria-expanded]="rankResults().length > 0"
+        placeholder="Rechercher par pseudo…"
+        [(ngModel)]="rankQuery"
+        (ngModelChange)="onRankInput($event)"
+        (focus)="onRankInput(rankQuery)"
+        autocomplete="off"
+      />
+    </div>
+    @if (rankResults().length && !rankMember()) {
+      <ul class="combo__list" id="rank-results" role="listbox">
+        @for (m of rankResults(); track m.id) {
+          <li role="option" [attr.aria-selected]="false" (mousedown)="$event.preventDefault(); pickRankMember(m)">
+            <app-avatar [src]="m.avatarUrl" [name]="m.displayName" [size]="28" [alt]="false" />
+            <span>{{ m.displayName }}</span>
+            <span class="small muted">{{ m.rank?.name }}</span>
+          </li>
+        }
+      </ul>
+    }
+    @if (rankMember(); as m) {
+      <p class="field__hint"><app-icon name="check" [size]="12" /> {{ m.displayName }} · grade actuel : {{ m.rank?.name ?? 'aucun' }}</p>
+    }
+  </div>
+  @if (rankMember(); as m) {
+    <div class="field" style="max-width: 420px">
+      <label for="rank-target">Nouveau grade</label>
+      <select id="rank-target" class="select" [ngModel]="targetRankId()" (ngModelChange)="targetRankId.set($event)">
+        <option [ngValue]="null" disabled>Choisir un grade…</option>
+        @for (r of ranks(); track r.id) {
+          <option [ngValue]="r.id" [disabled]="r.id === m.rank?.id">{{ r.name }} ({{ r.abbreviation }}){{ r.id === m.rank?.id ? ' · actuel' : '' }}</option>
+        }
+      </select>
+      @if (!ranks().length) {
+        <span class="field__hint">Aucun grade n'est associé à un rôle Discord. <a routerLink="/admin/parametres">Paramètres</a></span>
+      }
+    </div>
+    <button type="button" class="btn btn--sm" [class.btn--primary]="rankDirection() !== 'demotion'" [class.btn--danger]="rankDirection() === 'demotion'" (click)="changeRank()" [disabled]="!rankDirection() || changingRank()">
+      @if (changingRank()) {
+        <app-icon name="loader" class="spin" [size]="14" />
+      }
+      {{ rankDirection() === 'demotion' ? 'Rétrograder' : 'Promouvoir' }}{{ targetRank() ? ' ' + (targetRank()!.name) : '' }}
+    </button>
+  }
+</section>

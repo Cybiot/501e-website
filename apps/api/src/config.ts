@@ -1,15 +1,5 @@
 import { z } from 'zod';
 
-const csv = z
-  .string()
-  .optional()
-  .transform((v) =>
-    (v ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
-
 const secret = (name: string) =>
   z.string().min(16, `${name} doit contenir au moins 16 caractères`);
 
@@ -29,8 +19,10 @@ const EnvSchema = z.object({
   DISCORD_CLIENT_SECRET: z.string().default(''),
   DISCORD_BOT_TOKEN: z.string().default(''),
   DISCORD_GUILD_ID: z.string().default(''),
-  DISCORD_MEMBER_ROLE_IDS: csv,
-  DISCORD_ADMIN_ROLE_IDS: csv,
+  /** ID du rôle Discord « 501e » : seul rôle donnant le statut Membre. */
+  DISCORD_MEMBER_ROLE_ID: z.string().trim().default(''),
+  /** ID du rôle Discord « État-major » : seul rôle donnant le statut Admin. */
+  DISCORD_ADMIN_ROLE_ID: z.string().trim().default(''),
   DISCORD_ANNOUNCE_CHANNEL_ID: z.string().default(''),
   DISCORD_INVITE_URL: z.string().default(''),
   ROLE_SYNC_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(15),

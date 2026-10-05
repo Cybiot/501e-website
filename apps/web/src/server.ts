@@ -106,7 +106,6 @@ app.get('/sitemap.xml', async (_req, res) => {
     ...companies.map((c) => `/compagnies/${c.slug}`),
     '/membres',
     '/rejoindre',
-    '/mentions-legales',
     '/confidentialite',
     '/cookies',
   ];

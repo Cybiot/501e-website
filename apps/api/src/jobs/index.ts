@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import { audit } from '../lib/audit.js';
 import { deleteUserData } from '../lib/gdpr.js';
 import { logger } from '../lib/logger.js';
+import { refreshRankPrefixes } from '../lib/rank-prefix.js';
 import { notifyAdmins } from '../lib/notify.js';
 import { deleteFile } from '../lib/storage.js';
 
@@ -103,6 +104,9 @@ export function startJobs() {
     timers.push(setInterval(sync, config.ROLE_SYNC_INTERVAL_MINUTES * 60 * 1000));
     timers.push(setTimeout(sync, 30_000));
   }
+  // Grades modifiés hors de l'API (seed, SQL direct) : abréviations rechargées régulièrement.
+  timers.push(setInterval(safe('rank-prefixes', refreshRankPrefixes), 5 * 60 * 1000));
+
   const retention = safe('retention', runRetention);
   timers.push(setInterval(retention, DAY));
   timers.push(setTimeout(retention, 60_000));

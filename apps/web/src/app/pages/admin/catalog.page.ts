@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { AdminAward, AdminMedal, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
-import { DogTagComponent } from '../../shared/dog-tag.component';
+import { MemberPlaqueComponent } from '../../shared/member-plaque.component';
 import { IconComponent } from '../../shared/icon.component';
 
 interface MedalForm {
@@ -37,7 +37,7 @@ const empty = (): MedalForm => ({
 @Component({
   selector: 'app-catalog-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, RouterLink, IconComponent, DogTagComponent],
+  imports: [DatePipe, FormsModule, RouterLink, IconComponent, MemberPlaqueComponent],
   templateUrl: './catalog.page.html',
   styleUrl: './admin.css',
 })

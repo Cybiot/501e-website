@@ -1,26 +1,41 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, HostListener, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
 import { ModerationItem } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
+import { TaglineModerationComponent } from './tagline-moderation.component';
 
 /**
- * File de modération. Raccourcis : A = approuver, R = rejeter, J/K ou ←/→ = image suivante/précédente.
+ * Files de modération (images et phrases). Raccourcis des images : A = approuver, R = rejeter, J/K ou ←/→ = image suivante/précédente.
  */
 @Component({
   selector: 'app-moderation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, IconComponent, AvatarComponent],
+  imports: [DatePipe, FormsModule, IconComponent, AvatarComponent, TaglineModerationComponent],
   template: `
     <div class="row row--between">
-      <h1 class="admin-title">Modération des images</h1>
-      <span class="small muted kbd-hint"><kbd>A</kbd> approuver · <kbd>R</kbd> rejeter · <kbd>J</kbd>/<kbd>K</kbd> naviguer</span>
+      <h1 class="admin-title">Modération</h1>
+      @if (tab() === 'images') {
+        <span class="small muted kbd-hint"><kbd>A</kbd> approuver · <kbd>R</kbd> rejeter · <kbd>J</kbd>/<kbd>K</kbd> naviguer</span>
+      }
     </div>
 
-    @if (items() === null) {
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" [attr.aria-selected]="tab() === 'images'" (click)="tab.set('images')">
+        <app-icon name="image" [size]="16" /> Images
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="tab() === 'phrases'" (click)="tab.set('phrases')">
+        <app-icon name="message" [size]="16" /> Phrases
+      </button>
+    </div>
+
+    @if (tab() === 'phrases') {
+      <app-tagline-moderation />
+    } @else if (items() === null) {
       <div class="skeleton" style="height: 420px"></div>
     } @else if (items()!.length === 0) {
       <div class="empty"><app-icon name="check-circle" [size]="36" /><h3>File vide</h3><p>Aucune image en attente de validation.</p></div>
@@ -122,6 +137,9 @@ export class ModerationPage {
   private readonly api = inject(Api);
   private readonly toast = inject(ToastService);
 
+  protected readonly tab = signal<'images' | 'phrases'>(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('onglet') === 'phrases' ? 'phrases' : 'images',
+  );
   protected readonly items = signal<ModerationItem[] | null>(null);
   protected readonly reasons = signal<string[]>([]);
   protected readonly index = signal(0);
@@ -186,6 +204,7 @@ export class ModerationPage {
 
   @HostListener('document:keydown', ['$event'])
   onKey(e: KeyboardEvent) {
+    if (this.tab() !== 'images') return;
     const tag = (e.target as HTMLElement).tagName;
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'a' || e.key === 'A') void this.approve();

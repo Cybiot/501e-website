@@ -24,8 +24,8 @@ Cette première version couvre le **périmètre V1** des spécifications (`speci
 | --- | --- |
 | **Public** | Accueil (hero, chiffres clés animés, membres à l'honneur, « Comment ça marche », valeurs, FAQ) · La communauté · Le 501st PIR (frise interactive) · Rejoindre · Liste des membres filtrable (cartes « dog tag ») · Fiche membre · Pages légales · Sitemap, robots.txt, Open Graph |
 | **Membre** | Connexion Discord · Consentement RGPD granulaire et versionné · Mon profil (phrase, image recadrée 3:4 soumise à validation, visibilité, consentements, export JSON, suppression du compte) · Carte des membres (clustering, recherche, filtres, liste par pays, 2 villes max) |
-| **Admin** | Tableau de bord · Attribution de médailles (idempotence, confirmation des doublons) · Liste « À annoncer » (médailles et promotions détectées sur Discord) et annonce Discord avec aperçu et découpage automatique · Catalogue des médailles · Modération des images (raccourcis clavier) · Notifications et journal d'audit (filtres, export CSV) · Paramètres (rôles, salon, invitation, grades, responsabilités, texte de consentement, test de l'intégration) |
-| **Bot** | Deux usages seulement : **lire** les membres et leurs rôles (événements `guildMemberUpdate`, `guildMemberAdd`, `guildMemberRemove` relayés à l'API, plus resynchronisation périodique) et **poster** les annonces de médailles et de promotions dans le salon d'annonce configuré. Il n'attribue ni ne retire aucun rôle et n'écrit nulle part ailleurs |
+| **Admin** | Tableau de bord · Attribution de médailles (idempotence, confirmation des doublons) · Promotion ou rétrogradation d'un membre (sauts de grade possibles, rôle de grade changé sur Discord) · Liste « À annoncer » (médailles et promotions détectées sur Discord) et annonce Discord avec aperçu et découpage automatique · Catalogue des médailles · Modération des images (raccourcis clavier) · Notifications et journal d'audit (filtres, export CSV) · Paramètres (rôles, salon, invitation, grades, responsabilités, texte de consentement, test de l'intégration) |
+| **Bot** | Trois usages seulement : **lire** les membres et leurs rôles (événements `guildMemberUpdate`, `guildMemberAdd`, `guildMemberRemove` relayés à l'API, plus resynchronisation périodique), **changer le rôle de grade** d'un membre promu ou rétrogradé depuis l'admin, et **poster** les annonces de médailles et de promotions dans le salon d'annonce configuré. Il ne touche à aucun autre rôle et n'écrit nulle part ailleurs |
 
 ## Architecture
 
@@ -39,8 +39,8 @@ docs/    Registre des traitements RGPD
 
 - **Discord est la source de vérité des rôles.** Le statut (Visiteur / Membre / Admin), le grade et les responsabilités sont recalculés à chaque connexion, par le bot en temps réel, et par une resynchronisation périodique (15 min par défaut).
 - **Les permissions sont vérifiées côté serveur** sur chaque route. Le statut est relu en base à chaque requête et revérifié auprès de Discord si la copie locale a plus de 5 minutes.
-- **Le bot est en lecture seule, sauf pour les annonces.** Les lectures (membres, rôles) et l'envoi des annonces passent par l'API REST Discord avec le jeton du bot : retry avec backoff exponentiel, respect des limites de débit, journalisation et notification admin en cas d'échec. Un garde-fou (`apps/api/src/discord/http.ts`) refuse toute autre écriture avec le jeton du bot, et l'envoi vise uniquement le salon d'annonce configuré.
-- **Les médailles vivent sur le site** : elles ne correspondent à aucun rôle Discord. **Les promotions** sont détectées par la synchronisation (nouveau rôle de grade plus élevé) et rejoignent la liste « À annoncer », d'où un admin publie l'annonce groupée ou écarte une promotion.
+- **Le bot est en lecture seule, sauf pour les grades et les annonces.** Les lectures (membres, rôles), le changement de rôle de grade et l'envoi des annonces passent par l'API REST Discord avec le jeton du bot : retry avec backoff exponentiel, respect des limites de débit, journalisation et notification admin en cas d'échec. Un garde-fou (`apps/api/src/discord/http.ts`) refuse toute autre écriture avec le jeton du bot : l'ajout ou le retrait de rôle n'est accepté que pour un rôle associé à un grade, et l'envoi vise uniquement le salon d'annonce configuré.
+- **Les médailles vivent sur le site** : elles ne correspondent à aucun rôle Discord. **Les promotions** sont détectées par la synchronisation (nouveau rôle de grade plus élevé) et rejoignent la liste « À annoncer », d'où un admin publie l'annonce groupée ou écarte une promotion. Un admin peut aussi promouvoir ou rétrograder un membre depuis **Admin > Promotions et grades**, en sautant des grades (Pfc → Sgt, Lt.Col → Sgt) : le bot remplace le rôle de grade sur Discord, puis la promotion suit le même circuit (une rétrogradation n'est pas annoncée).
 - **Mode démo** (`DISCORD_MODE=mock`) : connexion simulée par choix d'un compte fictif, rôles et annonces simulés en base. Permet d'utiliser tout le site sans application Discord.
 
 Bibliothèques principales : `express`, `helmet`, `express-rate-limit`, `zod`, `@prisma/client`, `multer`, `sharp` (réencodage des images), `pino` (logs JSON), `discord.js`, `@angular/ssr`, `leaflet` et `leaflet.markercluster` (carte), `marked` (pages légales), `@fontsource/*` (polices auto-hébergées), `http-proxy-middleware`.
@@ -92,7 +92,8 @@ Toutes les variables sont documentées dans [.env.example](.env.example). Les pl
 | `SESSION_SECRET`, `HASH_SALT`, `INTERNAL_API_TOKEN` | Secrets (32 caractères aléatoires minimum : `openssl rand -hex 32`) |
 | `DISCORD_MODE` | `mock` (démo) ou `live` |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Application et bot Discord |
-| `DISCORD_MEMBER_ROLE_IDS`, `DISCORD_ADMIN_ROLE_IDS`, `DISCORD_ANNOUNCE_CHANNEL_ID`, `DISCORD_INVITE_URL` | Valeurs par défaut, modifiables ensuite dans Admin > Paramètres |
+| `DISCORD_MEMBER_ROLE_ID`, `DISCORD_ADMIN_ROLE_ID` | ID des rôles « 501e » (statut Membre) et « État-major » (statut Admin). Non modifiables depuis l'admin |
+| `DISCORD_ANNOUNCE_CHANNEL_ID`, `DISCORD_INVITE_URL` | Valeurs par défaut, modifiables ensuite dans Admin > Paramètres |
 | `GEOCODER`, `PHOTON_URL` | Recherche de villes : `demo` (liste intégrée) ou `photon` |
 | `MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`, `MAP_TILE_FILTER` | Fond de carte |
 | `NG_ALLOWED_HOSTS` | Hôtes supplémentaires autorisés pour le rendu serveur (l'hôte de `PUBLIC_URL` l'est déjà) |
@@ -104,10 +105,10 @@ Aucun identifiant Discord n'est codé en dur : tout passe par l'environnement ou
 1. Sur https://discord.com/developers/applications, crée une application.
 2. **OAuth2** : ajoute la redirection `https://<ton-domaine>/api/auth/discord/callback` (en local : `http://localhost:4200/api/auth/discord/callback`). Copie le *Client ID* et le *Client Secret*.
 3. **Bot** : crée le bot, copie son jeton, et active l'intent privilégié **Server Members Intent**.
-4. Invite le bot sur le serveur **sans aucune permission de serveur** :
-   `https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot&permissions=0`
-   La lecture des membres et des rôles ne demande que l'intent ci-dessus.
-5. Dans les paramètres du **salon d'annonce uniquement**, ajoute le rôle du bot avec *Voir le salon*, *Envoyer des messages* et *Intégrer des liens*. Ne lui donne aucune permission de gestion (rôles, membres, messages, salons) : « Vérifier l'intégration » signale toute permission superflue.
+4. Invite le bot sur le serveur avec la seule permission **Gérer les rôles** :
+   `https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot&permissions=268435456`
+   La lecture des membres et des rôles ne demande que l'intent ci-dessus. « Gérer les rôles » sert aux promotions : dans *Paramètres du serveur > Rôles*, place le rôle du bot **au-dessus de tous les rôles de grade** (Discord interdit à un bot de gérer un rôle placé au-dessus du sien).
+5. Dans les paramètres du **salon d'annonce uniquement**, ajoute le rôle du bot avec *Voir le salon*, *Envoyer des messages* et *Intégrer des liens*. Ne lui donne aucune autre permission de gestion (membres, pseudos, messages, salons) : « Vérifier l'intégration » signale toute permission superflue et vérifie la position du rôle du bot.
 6. Active le mode développeur de Discord pour copier les identifiants du serveur, des rôles et du salon d'annonce.
 7. Renseigne `.env` avec `DISCORD_MODE=live`, puis lance l'API, le front et le bot (`npm run dev:bot`).
 8. Dans **Admin > Paramètres**, clique sur « Vérifier l'intégration » et associe grades et responsabilités à leurs rôles.

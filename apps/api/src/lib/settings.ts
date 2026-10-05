@@ -8,8 +8,6 @@ import { MOCK_ROLES } from '../discord/mock-data.js';
  * Les variables d'environnement servent de valeurs par défaut.
  */
 export const SettingsSchema = z.object({
-  memberRoleIds: z.array(z.string().min(1)).max(20),
-  adminRoleIds: z.array(z.string().min(1)).max(20),
   announceChannelId: z.string().max(40),
   inviteUrl: z.union([z.url(), z.literal('')]),
   /** Mentionner (@membre) les récipiendaires dans l'annonce Discord. */
@@ -30,22 +28,23 @@ export const DEFAULT_CONSENT_TEXT = [
 
 function defaults(): AppSettings {
   return {
-    memberRoleIds: config.DISCORD_MEMBER_ROLE_IDS.length
-      ? config.DISCORD_MEMBER_ROLE_IDS
-      : isMockDiscord
-        ? [MOCK_ROLES.member.id]
-        : [],
-    adminRoleIds: config.DISCORD_ADMIN_ROLE_IDS.length
-      ? config.DISCORD_ADMIN_ROLE_IDS
-      : isMockDiscord
-        ? [MOCK_ROLES.admin.id]
-        : [],
     announceChannelId:
       config.DISCORD_ANNOUNCE_CHANNEL_ID || (isMockDiscord ? 'mock-channel-annonces' : ''),
     inviteUrl: config.DISCORD_INVITE_URL,
     announceMentions: true,
     consentVersion: '2026-09-v1',
     consentText: DEFAULT_CONSENT_TEXT,
+  };
+}
+
+/**
+ * Rôles Discord donnant un statut, fixés par l'environnement (non modifiables depuis l'admin) :
+ * « État-major » pour Admin, « 501e » pour Membre.
+ */
+export function statusRoles(): { adminRoleId: string; memberRoleId: string } {
+  return {
+    adminRoleId: config.DISCORD_ADMIN_ROLE_ID || (isMockDiscord ? MOCK_ROLES.admin.id : ''),
+    memberRoleId: config.DISCORD_MEMBER_ROLE_ID || (isMockDiscord ? MOCK_ROLES.member.id : ''),
   };
 }
 

@@ -6,11 +6,12 @@ import { SeoService } from '../../core/seo.service';
 import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
 import { IconComponent } from '../../shared/icon.component';
 import { RevealDirective } from '../../shared/reveal.directive';
+import { ValuesListComponent } from '../../shared/values-list.component';
 
 @Component({
   selector: 'app-community-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TPipe, IconComponent, BreadcrumbComponent, RevealDirective],
+  imports: [RouterLink, TPipe, IconComponent, BreadcrumbComponent, RevealDirective, ValuesListComponent],
   template: `
     <div class="container">
       <header class="page-header">
@@ -26,12 +27,20 @@ import { RevealDirective } from '../../shared/reveal.directive';
 
       <section class="section section--tight" aria-labelledby="v-title">
         <h2 id="v-title">Nos valeurs</h2>
-        <div class="grid" style="--min: 240px">
-          @for (v of c.values; track v.title; let i = $index) {
-            <div class="card" [appReveal]="i * 80">
-              <div class="card__icon"><app-icon [name]="v.icon" [size]="22" /></div>
-              <h3>{{ v.title }}</h3>
-              <p class="muted">{{ v.text }}</p>
+        <app-values-list [values]="c.values" />
+      </section>
+
+      <section class="section section--tight" aria-labelledby="g-title">
+        <h2 id="g-title">{{ c.games.title }}</h2>
+        <p class="muted">{{ c.games.text }}</p>
+        <div class="games">
+          @for (g of c.games.items; track g.name) {
+            <div class="card game" appReveal>
+              <app-icon name="gamepad" [size]="22" />
+              <div>
+                <h3>{{ g.name }} <span class="badge">{{ g.tag }}</span></h3>
+                <p class="muted" style="margin: 0">{{ g.text }}</p>
+              </div>
             </div>
           }
         </div>
@@ -121,6 +130,28 @@ import { RevealDirective } from '../../shared/reveal.directive';
     .session p {
       margin: 0;
     }
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+      gap: var(--space-4);
+    }
+    .game {
+      display: flex;
+      gap: var(--space-4);
+      align-items: flex-start;
+    }
+    .game app-icon {
+      color: var(--gold-text);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .game h3 {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
     .staff {
       color: inherit;
       text-decoration: none;
@@ -169,7 +200,7 @@ export class CommunityPage {
   constructor() {
     inject(SeoService).set({
       title: 'La communauté',
-      description: 'Présentation, valeurs, déroulement des sessions, organisation et règlement de la communauté 501e.',
+      description: 'Présentation, valeurs, jeux (Squad 44 et Squad), déroulement des sessions, organisation et règlement de la communauté 501e.',
       path: '/communaute',
     });
   }

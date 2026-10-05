@@ -116,7 +116,7 @@
         <div class="medal-form__preview">
           <p class="eyebrow">Aperçu</p>
           @if (previewCard(); as card) {
-            <app-dog-tag [member]="card" [link]="false" />
+            <app-member-plaque [member]="card" [link]="false" />
           }
           @if (imagePreview() ?? f.currentImageUrl; as img) {
             <img class="medal-img" [src]="img" alt="Aperçu de l'image" width="160" height="80" style="margin-top: var(--space-4)" />

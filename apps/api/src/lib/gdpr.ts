@@ -45,6 +45,7 @@ export async function exportUserData(userId: string) {
     responsibilities: user.responsibilities.map((r) => r.responsibility.name),
     profile: {
       tagline: user.profile?.tagline ?? null,
+      pendingTagline: user.profile?.pendingTagline ?? null,
       publicProfileEnabled: user.publicProfileEnabled,
     },
     consents: {

@@ -10,7 +10,7 @@ import { audit } from '../lib/audit.js';
 import { deterministicUnit } from '../lib/crypto.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { deleteUserData, exportUserData } from '../lib/gdpr.js';
-import { notifyAdmins } from '../lib/notify.js';
+import { notifyAdmins, resolveModerationNotifications } from '../lib/notify.js';
 import { avatarOf, loadCompanyIndex, memberInclude, presentMemberDetail } from '../lib/presenters.js';
 import { getSettings } from '../lib/settings.js';
 import { deleteFile, fileUrl, storeProfileImage } from '../lib/storage.js';
@@ -65,7 +65,15 @@ async function applyConsentWithdrawals(userId: string, c: { customImage: boolean
   if (!c.customImage) {
     const images = await prisma.customImage.findMany({ where: { userId } });
     await prisma.customImage.deleteMany({ where: { userId } });
+    await withdrawImageNotifications(images);
     await Promise.all(images.map((i) => deleteFile(i.storageKey)));
+  }
+}
+
+/** Les images en attente supprimées par le membre ne sont plus « à modérer ». */
+async function withdrawImageNotifications(images: { id: string; status: string }[]) {
+  for (const i of images.filter((i) => i.status === 'pending')) {
+    await resolveModerationNotifications('image_submitted', { imageId: i.id }, { status: 'withdrawn' });
   }
 }
 
@@ -117,6 +125,14 @@ meRouter.get('/profile', async (req, res) => {
         ? { reason: lastRejected.rejectionReason, reviewedAt: lastRejected.reviewedAt }
         : null,
     },
+    taglineModeration: {
+      pending: user.profile?.pendingTagline
+        ? { text: user.profile.pendingTagline, submittedAt: user.profile.pendingTaglineAt }
+        : null,
+      rejected: user.profile?.taglineRejectionReason
+        ? { reason: user.profile.taglineRejectionReason, reviewedAt: user.profile.taglineReviewedAt }
+        : null,
+    },
     locations: user.locations.map((l) => ({ id: l.id, cityLabel: l.cityLabel, country: l.country })),
     // Formations : module V2 (non livré en V1).
   });
@@ -145,13 +161,35 @@ meRouter.patch('/profile', async (req, res) => {
     (body.consentCustomImage !== undefined && body.consentCustomImage !== before.consentCustomImage) ||
     (body.consentLocation !== undefined && body.consentLocation !== before.consentLocation);
 
+  const profile = await prisma.profile.findUnique({ where: { userId } });
+  /**
+   * Une phrase non vide doit être validée par un admin avant d'être affichée : elle est mise
+   * en attente et la phrase actuelle reste visible. Effacer sa phrase, ou revenir à la phrase
+   * déjà validée, s'applique immédiatement et annule la proposition en cours.
+   */
+  const submittedTagline =
+    body.tagline && body.tagline !== profile?.tagline && body.tagline !== profile?.pendingTagline ? body.tagline : null;
+
   const after = await prisma.$transaction(async (tx) => {
-    if (body.tagline !== undefined) {
-      await tx.profile.upsert({
-        where: { userId },
-        create: { userId, tagline: body.tagline || null },
-        update: { tagline: body.tagline || null },
-      });
+    if (submittedTagline) {
+      const data = { pendingTagline: submittedTagline, pendingTaglineAt: new Date(), taglineRejectionReason: null, taglineReviewedAt: null };
+      await tx.profile.upsert({ where: { userId }, create: { userId, ...data }, update: data });
+      if (profile?.pendingTagline) {
+        await resolveModerationNotifications('tagline_submitted', { userId, text: profile.pendingTagline }, { status: 'replaced' }, tx);
+      }
+      await notifyAdmins('tagline_submitted', { userId, displayName: before.displayName, text: submittedTagline }, tx);
+    } else if (body.tagline !== undefined && (!body.tagline || body.tagline === profile?.tagline)) {
+      if (profile?.pendingTagline) {
+        await resolveModerationNotifications('tagline_submitted', { userId, text: profile.pendingTagline }, { status: 'withdrawn' }, tx);
+      }
+      const data = {
+        ...(body.tagline ? {} : { tagline: null }),
+        pendingTagline: null,
+        pendingTaglineAt: null,
+        taglineRejectionReason: null,
+        taglineReviewedAt: null,
+      };
+      await tx.profile.upsert({ where: { userId }, create: { userId, ...data }, update: data });
     }
     const u = await tx.user.update({
       where: { id: userId },
@@ -180,8 +218,9 @@ meRouter.patch('/profile', async (req, res) => {
   if (body.publicProfileEnabled !== undefined && body.publicProfileEnabled !== before.publicProfileEnabled) {
     await audit({ action: 'profile.visibility_changed', req, metadata: { public: body.publicProfileEnabled } });
   }
+  if (submittedTagline) await audit({ action: 'tagline.submitted', req, targetType: 'user', targetId: userId });
   await audit({ action: 'profile.updated', req, metadata: { fields: Object.keys(body) } });
-  res.status(204).end();
+  res.json({ taglinePending: Boolean(submittedTagline) });
 });
 
 // --- Image personnalisée --------------------------------------------------------------------
@@ -207,7 +246,10 @@ meRouter.post('/image', imageLimiter, upload.single('image'), async (req, res) =
       update: { pendingImageId: img.id },
     });
     // Une seule image en attente par membre : la précédente est remplacée.
-    if (previousPending) await tx.customImage.delete({ where: { id: previousPending.id } });
+    if (previousPending) {
+      await tx.customImage.delete({ where: { id: previousPending.id } });
+      await resolveModerationNotifications('image_submitted', { imageId: previousPending.id }, { status: 'replaced' }, tx);
+    }
     return img;
   });
   if (previousPending) await deleteFile(previousPending.storageKey);
@@ -221,6 +263,7 @@ meRouter.delete('/image', async (req, res) => {
   const userId = req.user!.id;
   const images = await prisma.customImage.findMany({ where: { userId, status: { in: ['approved', 'pending'] } } });
   await prisma.customImage.deleteMany({ where: { id: { in: images.map((i) => i.id) } } });
+  await withdrawImageNotifications(images);
   await Promise.all(images.map((i) => deleteFile(i.storageKey)));
   res.status(204).end();
 });

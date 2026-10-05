@@ -9,6 +9,8 @@ interface SettingsResponse {
   discordMode: 'mock' | 'live';
   guildId: string | null;
   settings: AppSettings;
+  /** Rôles « État-major » (Admin) et « 501e » (Membre), fixés par l'environnement. */
+  statusRoles: { adminRoleId: string; memberRoleId: string };
   ranks: AdminRank[];
   responsibilities: AdminResponsibility[];
   companies: AdminCompany[];
@@ -28,7 +30,6 @@ export class SettingsPage {
   protected readonly data = signal<SettingsResponse | null>(null);
   protected readonly roles = signal<DiscordRole[]>([]);
   protected form: AppSettings | null = null;
-  protected readonly roleLists = ['memberRoleIds', 'adminRoleIds'] as const;
   protected readonly saving = signal(false);
   protected readonly checks = signal<{ ok: boolean; checks: { label: string; ok: boolean; detail?: string }[] } | null>(null);
   protected readonly checking = signal(false);
@@ -73,20 +74,6 @@ export class SettingsPage {
 
   protected roleName(id: string) {
     return this.roles().find((r) => r.id === id)?.name ?? id;
-  }
-
-  protected toggleRole(list: 'memberRoleIds' | 'adminRoleIds', id: string, checked: boolean) {
-    if (!this.form) return;
-    const current = new Set(this.form[list]);
-    if (checked) current.add(id);
-    else current.delete(id);
-    this.form[list] = [...current];
-  }
-
-  protected addRoleId(list: 'memberRoleIds' | 'adminRoleIds', input: HTMLInputElement) {
-    const id = input.value.trim();
-    if (id && this.form && !this.form[list].includes(id)) this.form[list] = [...this.form[list], id];
-    input.value = '';
   }
 
   protected async save() {

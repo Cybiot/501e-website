@@ -42,7 +42,7 @@
 
           <div class="profile__body">
             <p class="eyebrow">Fiche individuelle</p>
-            <h1>{{ m.displayName }}</h1>
+            <h1>{{ rankedName(m) }}</h1>
             <div class="row" style="margin-bottom: var(--space-4)">
               @if (m.rank; as rank) {
                 <span class="badge badge--gold">

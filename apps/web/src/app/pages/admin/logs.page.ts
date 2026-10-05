@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
-import { AuditLogItem, NotificationItem, Page } from '../../core/models';
+import { AuditLogItem, ModerationOutcome, NotificationItem, Page } from '../../core/models';
 import { NotificationsService } from '../../core/notifications.service';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
@@ -66,6 +66,25 @@ export class LogsPage {
     }
   }
 
+  /** Notifications liées à une demande à modérer (image ou phrase). */
+  protected isModerationRequest(n: NotificationItem) {
+    return n.type === 'image_submitted' || n.type === 'tagline_submitted';
+  }
+
+  protected moderationOf(n: NotificationItem): ModerationOutcome | null {
+    return (n.payload['moderation'] as ModerationOutcome | undefined) ?? null;
+  }
+
+  protected outcomeLabel(m: ModerationOutcome): string {
+    const labels: Record<ModerationOutcome['status'], string> = {
+      approved: 'Approuvée',
+      rejected: 'Refusée',
+      replaced: 'Remplacée par le membre',
+      withdrawn: 'Retirée par le membre',
+    };
+    return labels[m.status];
+  }
+
   protected describe(n: NotificationItem): string {
     const p = n.payload as Record<string, unknown>;
     switch (n.type) {
@@ -73,6 +92,8 @@ export class LogsPage {
         return `${p['count'] ?? 1} clic(s) sur le bouton${(p['discordIds'] as string[] | undefined)?.length ? ` dont ${(p['discordIds'] as string[]).length} utilisateur(s) connecté(s)` : ' (anonyme)'}.`;
       case 'image_submitted':
         return `${p['displayName']} a envoyé une nouvelle image.`;
+      case 'tagline_submitted':
+        return `${p['displayName']} propose la phrase « ${p['text']} ».`;
       case 'new_member':
         return `${p['displayName']} s'est connecté pour la première fois.`;
       case 'discord_error':

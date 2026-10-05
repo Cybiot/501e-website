@@ -11,6 +11,7 @@ interface Dashboard {
     admins: number;
     hiddenProfiles: number;
     pendingImages: number;
+    pendingTaglines: number;
     unreadNotifications: number;
     pendingAwards: number;
     pendingPromotions: number;
@@ -35,6 +36,9 @@ interface Dashboard {
         </a>
         <a class="card card--interactive kpi" routerLink="/admin/moderation" [class.kpi--alert]="d.counts.pendingImages > 0">
           <app-icon name="image" [size]="20" /><strong>{{ d.counts.pendingImages }}</strong><span>images à modérer</span>
+        </a>
+        <a class="card card--interactive kpi" routerLink="/admin/moderation" [queryParams]="{ onglet: 'phrases' }" [class.kpi--alert]="d.counts.pendingTaglines > 0">
+          <app-icon name="message" [size]="20" /><strong>{{ d.counts.pendingTaglines }}</strong><span>phrases à modérer</span>
         </a>
         <a class="card card--interactive kpi" routerLink="/admin/medailles" [class.kpi--alert]="d.counts.pendingAwards + d.counts.pendingPromotions > 0">
           <app-icon name="send" [size]="20" /><strong>{{ d.counts.pendingAwards + d.counts.pendingPromotions }}</strong><span>médailles et promotions à annoncer</span>

@@ -19,6 +19,7 @@ import {
 /**
  * Discord simulé : les rôles d'un utilisateur sont lus dans la colonne `discordRoleIds`.
  * Permet de tester tout le site (connexion, médailles, promotions, annonces) sans application Discord.
+ * Un changement de grade écrit directement dans `discordRoleIds`.
  */
 export class MockDiscordGateway implements DiscordGateway {
   readonly mode = 'mock' as const;
@@ -72,6 +73,26 @@ export class MockDiscordGateway implements DiscordGateway {
       ...MOCK_PLATOON_ROLES.map((r) => ({ id: r.id, name: r.name, color: 0x8a6a4f })),
     ].map((r) => ({ ...r, position: position--, managed: false }));
     return base.filter((r, i) => base.findIndex((x) => x.id === r.id) === i);
+  }
+
+  async setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]) {
+    this.maybeFail();
+    const u = await prisma.user.findUnique({ where: { discordId } });
+    if (!u) throw new DiscordError('Membre inconnu', 404);
+    const roles = u.discordRoleIds.filter((r) => r !== addRoleId && !removeRoleIds.includes(r));
+    await prisma.user.update({ where: { discordId }, data: { discordRoleIds: [...roles, addRoleId] } });
+    logger.info({ discordId, addRoleId, removeRoleIds }, '[discord mock] rôle de grade changé');
+  }
+
+  /** Rôles « créés » (consultables dans les tests). */
+  readonly createdRoles: { id: string; name: string }[] = [];
+
+  async createRole(name: string) {
+    this.maybeFail();
+    const id = `mock-role-${Date.now().toString(36)}-${this.createdRoles.length}`;
+    this.createdRoles.push({ id, name });
+    logger.info({ id, name }, '[discord mock] rôle créé');
+    return id;
   }
 
   async postAnnouncement(payload: DiscordMessagePayload) {

@@ -73,12 +73,6 @@
       }
     </p>
     <div class="row">
-      @if (currentSort() === 'rank') {
-        <label class="switch small">
-          <input type="checkbox" role="switch" [checked]="grouped()" (change)="grouped.set(!grouped())" />
-          {{ 'members.groupByRank' | t }}
-        </label>
-      }
       @if (hasFilters()) {
         <button type="button" class="btn btn--ghost btn--sm" (click)="reset()">
           <app-icon name="x" [size]="14" /> {{ 'members.reset' | t }}

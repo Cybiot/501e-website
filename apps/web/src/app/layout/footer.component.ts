@@ -31,7 +31,6 @@ import { InsigniaComponent } from '../shared/insignia.component';
         <nav aria-label="Informations légales">
           <h2 class="footer__title">Informations</h2>
           <ul>
-            <li><a routerLink="/mentions-legales">{{ 'footer.legal' | t }}</a></li>
             <li><a routerLink="/confidentialite">{{ 'footer.privacy' | t }}</a></li>
             <li><a routerLink="/cookies">{{ 'footer.cookies' | t }}</a></li>
           </ul>

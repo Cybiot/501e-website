@@ -8,7 +8,7 @@ import { discord } from '../../discord/index.js';
 import { audit } from '../../lib/audit.js';
 import { conflict, notFound } from '../../lib/errors.js';
 import { refreshRankPrefixes } from '../../lib/rank-prefix.js';
-import { getSettings, SettingsSchema, updateSettings } from '../../lib/settings.js';
+import { getSettings, SettingsSchema, statusRoles, updateSettings } from '../../lib/settings.js';
 import { parse } from '../../lib/validate.js';
 
 export const settingsAdminRouter = Router();
@@ -24,6 +24,7 @@ settingsAdminRouter.get('/settings', async (_req, res) => {
     discordMode: config.DISCORD_MODE,
     guildId: config.DISCORD_GUILD_ID || null,
     settings,
+    statusRoles: statusRoles(),
     ranks: ranks.map(({ _count, ...r }) => ({ ...r, usersCount: _count.users })),
     responsibilities: responsibilities.map(({ _count, ...r }) => ({ ...r, usersCount: _count.users })),
     companies,
@@ -43,11 +44,12 @@ settingsAdminRouter.put('/settings', async (req, res) => {
 
 settingsAdminRouter.post('/settings/check-integration', async (_req, res) => {
   const settings = await getSettings();
+  const { adminRoleId, memberRoleId } = statusRoles();
   const result = await discord().checkIntegration();
   const checks = [
     ...result.checks,
-    { label: 'Rôle(s) Membre configuré(s)', ok: settings.memberRoleIds.length > 0 },
-    { label: 'Rôle(s) Admin configuré(s)', ok: settings.adminRoleIds.length > 0 },
+    { label: 'Rôle « 501e » (Membre) configuré (DISCORD_MEMBER_ROLE_ID)', ok: Boolean(memberRoleId) },
+    { label: 'Rôle « État-major » (Admin) configuré (DISCORD_ADMIN_ROLE_ID)', ok: Boolean(adminRoleId) },
     { label: "Salon d'annonce configuré", ok: Boolean(settings.announceChannelId) },
     { label: "Lien d'invitation configuré", ok: Boolean(settings.inviteUrl) },
   ];

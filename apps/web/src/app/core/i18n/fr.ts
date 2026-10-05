@@ -35,7 +35,8 @@ export const fr = {
     dashboard: 'Tableau de bord',
     awards: 'Attribution des médailles',
     catalog: 'Catalogue des médailles',
-    moderation: 'Modération des images',
+    ranks: 'Promotions et grades',
+    moderation: 'Modération',
     logs: 'Logs et notifications',
     settings: 'Paramètres',
   },
@@ -74,7 +75,6 @@ export const fr = {
     sortRank: 'Par grade',
     sortSeniority: 'Par ancienneté',
     sortAlpha: 'Alphabétique',
-    groupByRank: 'Grouper par grade',
     empty: 'Aucun membre ne correspond à ces critères.',
     reset: 'Réinitialiser les filtres',
     count: '{n} membre(s)',
@@ -88,7 +88,6 @@ export const fr = {
     notFound: 'Ce membre est introuvable ou son profil n’est pas public.',
   },
   footer: {
-    legal: 'Mentions légales',
     privacy: 'Confidentialité',
     cookies: 'Cookies',
     disclaimer:

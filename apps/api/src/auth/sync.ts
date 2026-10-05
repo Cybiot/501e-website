@@ -5,12 +5,12 @@ import { prisma } from '../db.js';
 import { audit } from '../lib/audit.js';
 import { logger } from '../lib/logger.js';
 import { notifyAdmins } from '../lib/notify.js';
-import { getSettings, type AppSettings } from '../lib/settings.js';
+import { statusRoles } from '../lib/settings.js';
 
-/** Statut calculé à partir des rôles Discord. Admin > Membre > aucun. */
-export function computeStatus(roles: string[], settings: Pick<AppSettings, 'memberRoleIds' | 'adminRoleIds'>): UserStatus {
-  if (roles.some((r) => settings.adminRoleIds.includes(r))) return 'admin';
-  if (roles.some((r) => settings.memberRoleIds.includes(r))) return 'member';
+/** Statut calculé à partir des rôles Discord : État-major > 501e > aucun. */
+export function computeStatus(roles: string[], { adminRoleId, memberRoleId } = statusRoles()): UserStatus {
+  if (adminRoleId && roles.includes(adminRoleId)) return 'admin';
+  if (memberRoleId && roles.includes(memberRoleId)) return 'member';
   return 'none';
 }
 
@@ -23,9 +23,8 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user || user.deletedAt) return null;
 
-  const settings = await getSettings();
   const roles = info?.roles ?? [];
-  const status = computeStatus(roles, settings);
+  const status = computeStatus(roles);
 
   const ranks = await prisma.rank.findMany({ where: { discordRoleId: { in: roles } }, orderBy: { order: 'desc' } });
   const responsibilities = await prisma.responsibility.findMany({ where: { discordRoleId: { in: roles } } });

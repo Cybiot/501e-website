@@ -99,6 +99,7 @@ export class AdminLayout {
     { path: '/admin', icon: 'dashboard', label: 'admin.dashboard' },
     { path: '/admin/medailles', icon: 'award', label: 'admin.awards' },
     { path: '/admin/medailles/catalogue', icon: 'list', label: 'admin.catalog' },
+    { path: '/admin/grades', icon: 'shield', label: 'admin.ranks' },
     { path: '/admin/moderation', icon: 'image', label: 'admin.moderation' },
     { path: '/admin/logs', icon: 'bell', label: 'admin.logs' },
     { path: '/admin/parametres', icon: 'settings', label: 'admin.settings' },

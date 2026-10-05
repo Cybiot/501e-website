@@ -30,7 +30,7 @@ import { IconComponent } from '../../shared/icon.component';
               [attr.aria-selected]="i === active()"
               [attr.aria-controls]="'panel-' + i"
               [attr.tabindex]="i === active() ? 0 : -1"
-              (click)="active.set(i)"
+              (click)="select(i)"
             >
               <span class="tl__dot"><app-icon [name]="e.icon" [size]="16" /></span>
               <span class="tl__period mono">{{ e.period }}</span>
@@ -43,11 +43,17 @@ import { IconComponent } from '../../shared/icon.component';
           <article class="tl__panel card" role="tabpanel" [id]="'panel-' + active()" [attr.aria-labelledby]="'tab-' + active()">
             <p class="eyebrow">{{ e.period }} · {{ e.place }}</p>
             <h3>{{ e.title }}</h3>
-            <p>{{ e.text }}</p>
+            @for (p of e.paragraphs; track $index) {
+              <p>{{ p }}</p>
+            }
+            @if (e.quote) {
+              <blockquote class="tl__quote">{{ e.quote }}</blockquote>
+            }
             <div class="row">
               <button type="button" class="btn btn--sm" (click)="move(-1)" [disabled]="active() === 0">
                 <app-icon name="chevron-left" [size]="16" /> Précédent
               </button>
+              <span class="muted mono tl__count">{{ active() + 1 }} / {{ c.timeline.length }}</span>
               <button type="button" class="btn btn--sm" (click)="move(1)" [disabled]="active() === c.timeline.length - 1">
                 Suivant <app-icon name="chevron-right" [size]="16" />
               </button>
@@ -56,37 +62,46 @@ import { IconComponent } from '../../shared/icon.component';
         }
       </section>
 
-      <section class="section section--tight" aria-labelledby="src-title">
+      <section class="section section--tight prose" aria-labelledby="motto-title">
+        <h2 id="motto-title">{{ c.motto.title }}</h2>
+        @for (p of c.motto.paragraphs; track $index) {
+          <p>{{ p }}</p>
+        }
+      </section>
+
+      <section class="section section--tight prose" aria-labelledby="src-title">
         <h2 id="src-title">Sources et crédits</h2>
-        <ul class="muted">
-          @for (s of c.sources; track s) {
-            <li>{{ s }}</li>
+        <p>{{ c.credit }}</p>
+        <h3>Sources</h3>
+        <ul>
+          @for (s of c.sources; track s.url + s.label) {
+            <li><a [href]="s.url" target="_blank" rel="noopener noreferrer">{{ s.label }}</a></li>
           }
         </ul>
+        <h3>Vidéos</h3>
+        <ul>
+          @for (v of c.videos; track v.url) {
+            <li><a [href]="v.url" target="_blank" rel="noopener noreferrer">{{ v.label }}</a></li>
+          }
+        </ul>
+        <p class="muted">{{ c.visualCredit }}</p>
       </section>
     </div>
   `,
   styles: `
     .tl {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: var(--space-2);
-      position: relative;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      /* marge pour le cercle agrandi (scale 1.1) : overflow-x:auto rogne aussi en vertical */
+      padding: var(--space-2) 0;
       margin-bottom: var(--space-5);
     }
-    @media (min-width: 900px) {
-      .tl::before {
-        content: '';
-        position: absolute;
-        left: 8%;
-        right: 8%;
-        top: 21px;
-        height: 2px;
-        background: linear-gradient(90deg, var(--olive), var(--gold));
-        opacity: 0.5;
-      }
-    }
     .tl__stop {
+      flex: 0 0 120px;
+      scroll-snap-align: center;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -100,7 +115,18 @@ import { IconComponent } from '../../shared/icon.component';
       cursor: pointer;
       border-radius: var(--radius-sm);
     }
+    .tl__stop:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      width: 100%;
+      top: 21px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--olive), var(--gold));
+      opacity: 0.5;
+    }
     .tl__dot {
+      position: relative;
       width: 44px;
       height: 44px;
       display: grid;
@@ -130,6 +156,20 @@ import { IconComponent } from '../../shared/icon.component';
       color: var(--on-accent);
       transform: scale(1.1);
     }
+    .tl__quote {
+      margin: var(--space-4) 0;
+      padding-left: var(--space-4);
+      border-left: 3px solid var(--gold);
+      font-style: italic;
+      color: var(--text-muted);
+    }
+    .tl__count {
+      font-size: var(--fs-xs);
+      align-self: center;
+    }
+    .prose {
+      max-width: 820px;
+    }
     .tl__panel {
       animation: pop-in var(--dur) var(--ease);
       max-width: 820px;
@@ -144,15 +184,20 @@ export class RegimentPage {
   constructor() {
     inject(SeoService).set({
       title: 'Le 501st PIR',
-      description: 'Le contexte historique du 501st Parachute Infantry Regiment : frise chronologique de la Normandie à Bastogne.',
+      description: "L'histoire du 501st Parachute Infantry Regiment de 1942 à 1945 : Toccoa, la Normandie, la Hollande, Bastogne, l'Alsace et la devise Geronimo.",
       path: '/communaute/regiment',
     });
   }
 
+  select(i: number) {
+    this.active.set(i);
+    document.getElementById(`tab-${i}`)?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }
+
   move(delta: number) {
     const next = Math.max(0, Math.min(this.c.timeline.length - 1, this.active() + delta));
-    this.active.set(next);
-    document.getElementById(`tab-${next}`)?.focus();
+    this.select(next);
+    document.getElementById(`tab-${next}`)?.focus({ preventScroll: true });
   }
 
   onKey(e: KeyboardEvent) {

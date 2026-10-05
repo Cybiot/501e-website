@@ -1,52 +1,217 @@
 {
-  "intro": "Le 501st Parachute Infantry Regiment est l'une des unités parachutistes de l'armée américaine ayant combattu en Europe au sein de la 101st Airborne Division pendant la Seconde Guerre mondiale. Cette page en propose un aperçu général ; elle n'a pas vocation à être une référence historique. [Texte à compléter et à sourcer par la communauté.]",
+  "intro": "Le 501st Parachute Infantry Regiment est un régiment parachutiste de l'armée américaine. Pendant la Seconde Guerre mondiale, il a combattu en Europe avec la 101st Airborne Division, de la Normandie jusqu'à l'Alsace en passant par la Hollande et Bastogne. Cette frise en retrace les grandes étapes, d'après le travail de recherche de l'officier Klaus Fritz pour la communauté.",
   "timeline": [
     {
-      "period": "1942",
-      "title": "Création et entraînement",
-      "place": "États-Unis",
-      "text": "Activation du régiment et entraînement intensif des volontaires parachutistes, réputé pour sa dureté physique. [Détails et dates à vérifier.]",
-      "icon": "flag"
+      "period": "Nov. 1942",
+      "title": "Toccoa",
+      "place": "Camp Toccoa, Géorgie (États-Unis)",
+      "icon": "flag",
+      "paragraphs": [
+        "Le 501st Parachute Infantry Regiment est activé le 15 novembre 1942 au Camp Toccoa. Son premier commandant, le colonel Howard R. Johnson, choisit lui-même ses officiers.",
+        "L'entraînement est réputé pour sa dureté. Les hommes courent sur le mont Currahee, qui domine le camp (« 3 miles up, 3 miles down »). Johnson, surnommé « Jumping Johnson », y établit un record d'ascension et défie le régiment de le battre.",
+        "Tous les hommes sont volontaires pour le parachutisme, mais peu d'entre eux sont alors brevetés."
+      ],
+      "quote": ""
     },
     {
-      "period": "1943 – début 1944",
-      "title": "Traversée et préparation en Angleterre",
-      "place": "Royaume-Uni",
-      "text": "Arrivée en Angleterre, intégration à la 101st Airborne Division et répétitions en vue de l'invasion du continent. [À compléter.]",
-      "icon": "compass"
+      "period": "1943",
+      "title": "Brevets et manœuvres",
+      "place": "Fort Benning, Camp Mackall (États-Unis)",
+      "icon": "graduation",
+      "paragraphs": [
+        "En mars 1943, une fois l'instruction terminée à Toccoa, le régiment rejoint Fort Benning, où tous les hommes qui ne le sont pas encore passent leur brevet de parachutiste.",
+        "Le régiment est ensuite affecté à l'Airborne Command du Camp Mackall, en Caroline du Nord. Il en part pour de longues manœuvres en Caroline du Nord, dans le Tennessee et en Louisiane."
+      ],
+      "quote": ""
     },
     {
-      "period": "Juin 1944",
-      "title": "Normandie",
-      "place": "France",
-      "text": "Largage dans la nuit précédant le débarquement, combats dans le Cotentin et autour de Carentan pour sécuriser les accès aux plages. [À compléter et sourcer.]",
-      "icon": "plane"
+      "period": "Janv. 1944",
+      "title": "Angleterre",
+      "place": "Berkshire (Royaume-Uni)",
+      "icon": "compass",
+      "paragraphs": [
+        "Le régiment embarque pour l'Angleterre en janvier 1944, via le Camp Myles Standish (Massachusetts). Il y est rattaché à la 101st Airborne Division, avec laquelle il fera toute la guerre.",
+        "L'entraînement, de plus en plus réaliste, prépare un assaut aéroporté sur le continent : l'opération Overlord. Quelques jours avant le jour J, les hommes sont isolés dans des camps gardés, où chacun apprend enfin sa mission."
+      ],
+      "quote": ""
     },
     {
-      "period": "Septembre 1944",
-      "title": "Market Garden",
-      "place": "Pays-Bas",
-      "text": "Opération aéroportée visant à s'emparer d'une série de ponts ; le régiment combat dans le secteur attribué à la 101st. [À compléter et sourcer.]",
-      "icon": "crosshair"
+      "period": "6 juin 1944",
+      "title": "Jour J",
+      "place": "Cotentin, Normandie",
+      "icon": "plane",
+      "paragraphs": [
+        "Le régiment décolle d'Angleterre le 5 juin vers 22 h 45 : de Merryfield pour la majeure partie, de Welford pour le 3e bataillon. Les missions sont les suivantes : le 1er bataillon et l'état-major prennent l'écluse de la Barquette sur la Douve, le 2e bataillon détruit les ponts sur la Douve vers Saint-Côme-du-Mont, et le 3e bataillon reste en réserve de la division, près de Hiesville.",
+        "Les nuages, la Flak et les manœuvres d'évitement des pilotes dispersent les largages sur des kilomètres. De petits groupes improvisés remplissent pourtant la plupart des objectifs. Le lieutenant-colonel Robert C. Carroll, chef du 1er bataillon, est tué le 6 juin.",
+        "Autour du lieutenant-colonel Julian J. Ewell (3e bataillon), une centaine d'hommes, parmi lesquels les généraux Taylor et McAuliffe, s'emparent de Pouppeville. Ils tiennent ainsi la sortie n° 1 d'Utah Beach et font vers midi l'une des premières jonctions avec la 4th Infantry Division débarquée."
+      ],
+      "quote": "« Jamais si peu d'hommes n'ont été commandés par autant d'officiers. » (général Maxwell D. Taylor, à propos de la colonne de Pouppeville)"
     },
     {
-      "period": "Hiver 1944 – 1945",
-      "title": "Bastogne",
-      "place": "Belgique",
-      "text": "Défense de la ville encerclée pendant la bataille des Ardennes, dans des conditions hivernales extrêmes. [À compléter et sourcer.]",
-      "icon": "shield"
+      "period": "7 – 8 juin 1944",
+      "title": "Hell's Corner",
+      "place": "La Barquette – Pénême, Normandie",
+      "icon": "crosshair",
+      "paragraphs": [
+        "Le colonel Johnson tient l'écluse de la Barquette avec quelques centaines d'hommes venus d'unités différentes. Le 7 juin, le 1er bataillon du Fallschirmjäger-Regiment 6 avance à travers les marais vers le carrefour de Pénême, qui prendra le nom de « Hell's Corner ».",
+        "Après un violent échange de tirs, alors que ses munitions s'épuisent, Johnson tente de parlementer à deux reprises sous drapeau. Il obtient la reddition d'environ 350 parachutistes allemands. Les sources ne s'accordent pas sur l'identité des hommes qui l'accompagnaient.",
+        "Le 8 juin, Saint-Côme-du-Mont tombe, avec l'appui des canons de marine du croiseur USS Quincy."
+      ],
+      "quote": ""
     },
     {
-      "period": "1945",
-      "title": "Fin de la guerre",
-      "place": "Europe",
-      "text": "Dernières opérations jusqu'à la fin du conflit en Europe. [À compléter.]",
-      "icon": "award"
+      "period": "10 – 27 juin 1944",
+      "title": "Carentan",
+      "place": "Carentan, Normandie",
+      "icon": "shield",
+      "paragraphs": [
+        "Le régiment franchit la Douve à Brévands le 10 juin et participe à l'encerclement de Carentan par l'est. Le 12 juin, le 3e bataillon enlève à la baïonnette la colline 30, au sud de la ville. Le 13, les parachutistes repoussent la contre-attaque des Fallschirmjäger et de la 17. SS-Panzergrenadier-Division.",
+        "La 101st est relevée fin juin. En Normandie, le 501st a perdu environ 900 hommes (tués, blessés, disparus ou prisonniers). Le régiment reçoit une citation présidentielle d'unité pour ces combats."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "Juil. – août 1944",
+      "title": "Reconstitution",
+      "place": "Angleterre",
+      "icon": "refresh",
+      "paragraphs": [
+        "De retour en Angleterre à la mi-juillet, le régiment intègre de nombreux remplaçants et reprend un entraînement intensif.",
+        "Plusieurs opérations aéroportées en France sont préparées, puis annulées parce que l'avance alliée a déjà dépassé les objectifs."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "17 sept. 1944",
+      "title": "Veghel",
+      "place": "Brabant-Septentrional, Pays-Bas",
+      "icon": "plane",
+      "paragraphs": [
+        "Market Garden doit ouvrir aux blindés du XXX Corps britannique une route jusqu'au Rhin à Arnhem. La 101st doit tenir la partie sud de cette route.",
+        "Le régiment saute de jour, avec une précision bien meilleure qu'en Normandie, près d'Eerde. Seul le 1er bataillon, celui du lieutenant-colonel Harry Kinnard, est largué à plusieurs kilomètres de sa zone, près du château de Heeswijk.",
+        "En trois heures environ, les quatre ponts routiers et ferroviaires de Veghel, sur l'Aa et le Zuid-Willemsvaart, sont pris intacts. Un détachement laissé à Heeswijk avec les blessés du saut est encerclé et capturé."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "19 – 26 sept. 1944",
+      "title": "Hell's Highway",
+      "place": "Eerde, Schijndel, Koevering (Pays-Bas)",
+      "icon": "map",
+      "paragraphs": [
+        "Les Allemands attaquent sans relâche le couloir, que les parachutistes surnomment « Hell's Highway ». Le 501st y retrouve le Fallschirmjäger-Regiment 6 du colonel von der Heydte, déjà affronté en Normandie.",
+        "Le 20 septembre, le 1er bataillon nettoie le secteur entre Veghel et Heeswijk et fait plus de 400 prisonniers. Schijndel est prise les 21 et 22 septembre avec l'appui de chars britanniques. Le 24, à Eerde, le régiment reprend les dunes après de durs combats, pendant que la route est coupée au Koevering pendant deux jours."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "Oct. – nov. 1944",
+      "title": "« L'Île »",
+      "place": "Betuwe, entre le Waal et le Rhin (Pays-Bas)",
+      "icon": "target",
+      "paragraphs": [
+        "Début octobre, la division prend position sur « l'Île », la Betuwe. C'est une guerre statique de patrouilles, de mortiers et d'artillerie, peu adaptée à des troupes aéroportées.",
+        "Le 8 octobre, le colonel Johnson est mortellement blessé par un obus de mortier lors d'une visite au front. Le lieutenant-colonel Julian J. Ewell prend le commandement du régiment.",
+        "Dans la nuit du 29 au 30 octobre, le lieutenant Hugo S. Sims et cinq volontaires traversent le Rhin à Heteren. Ils passent une journée cachés derrière les lignes ennemies et reviennent avec 32 prisonniers. On l'appelle « l'incroyable patrouille ».",
+        "Après 72 jours en ligne, la 101st est relevée fin novembre et envoyée au repos à Mourmelon-le-Grand."
+      ],
+      "quote": "« Prenez soin de mes garçons. » (dernières paroles du colonel Johnson au lieutenant-colonel Ewell)"
+    },
+    {
+      "period": "18 – 19 déc. 1944",
+      "title": "Vers Bastogne",
+      "place": "Bastogne, Belgique",
+      "icon": "alert-triangle",
+      "paragraphs": [
+        "Le 16 décembre, l'offensive allemande des Ardennes enfonce le front du VIIIe Corps. La 101st, au repos et incomplète, part en camions de Mourmelon le 18 décembre. Beaucoup d'hommes n'ont ni manteau d'hiver ni munitions en quantité suffisante.",
+        "Le 501st arrive le premier. À minuit, c'est le seul régiment prêt du général McAuliffe. Ewell, qui connaît le terrain pour y être venu en permission en novembre, reçoit la mission de partir vers l'est à 6 heures.",
+        "Le 19 décembre, le 1er bataillon est arrêté devant Neffe, le 2e prend Bizory, et le 3e atteint Mont. À Wardin, la compagnie I tombe sur des chars et l'infanterie de la Panzer-Lehr. Elle perd 45 hommes et 4 officiers. Le soir, Ewell resserre sa ligne sur les hauteurs de Bizory, Neffe et Mont."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "20 – 26 déc. 1944",
+      "title": "Le siège",
+      "place": "Bastogne, Belgique",
+      "icon": "shield",
+      "paragraphs": [
+        "La ville est encerclée à partir du 21 décembre. Le 501st tient le secteur est du périmètre, entre le 506th au nord et le 327th au sud. Il est retranché à l'orée des bois, face à des champs enneigés que les assaillants doivent traverser à découvert.",
+        "Le 22 décembre, des parlementaires allemands apportent une demande de reddition, à laquelle McAuliffe répond par un seul mot : « NUTS! ». Le convoi de ravitaillement du régiment, envoyé vers Sibret, est intercepté et détruit. L'aumônier du régiment, le père Francis L. Sampson, est capturé en cherchant les lignes dans le brouillard.",
+        "Le ciel se dégage enfin le 23 décembre : les C-47 larguent vivres et munitions. La veille de Noël, des bombardiers allemands touchent Bastogne. Le 26 décembre, les blindés de la 3e armée de Patton font la jonction au sud."
+      ],
+      "quote": "« Au commandant allemand : NUTS! Le commandant américain. » (22 décembre 1944)"
+    },
+    {
+      "period": "Janv. 1945",
+      "title": "Fin des Ardennes",
+      "place": "Bastogne, Belgique",
+      "icon": "award",
+      "paragraphs": [
+        "Les dernières attaques allemandes au nord-est de Bastogne, les 3 et 4 janvier, sont repoussées. La division passe ensuite à l'offensive vers Noville et Bourcy à la mi-janvier.",
+        "Du 19 décembre au 6 janvier, la 101st perd 341 tués, 1 691 blessés et 516 disparus. Pour la défense de Bastogne, la division reçoit une citation présidentielle d'unité, la première décernée à une division entière, et la Croix de guerre belge 1940 avec palme."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "Fin janv. – fév. 1945",
+      "title": "Alsace",
+      "place": "Rivière Moder, secteur de Haguenau (France)",
+      "icon": "compass",
+      "paragraphs": [
+        "Fin janvier, la 101st rejoint la 7e armée américaine en Alsace. Le 501st y tient une ligne défensive le long de la Moder.",
+        "Fin février, la division est relevée et repart vers la Champagne."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "Mars – avr. 1945",
+      "title": "En réserve",
+      "place": "Joigny et Auxerre (France)",
+      "icon": "radio",
+      "paragraphs": [
+        "Au printemps 1945, le 501st est détaché de la 101st et cantonné dans l'Yonne, autour de Joigny et d'Auxerre. Il se tient prêt à sauter sur des camps de prisonniers de guerre alliés si le commandement le juge nécessaire. L'opération n'a finalement pas lieu.",
+        "Pendant ce temps, le reste de la 101st combat dans la Ruhr, puis atteint la Bavière et Berchtesgaden."
+      ],
+      "quote": ""
+    },
+    {
+      "period": "Mai – août 1945",
+      "title": "Geronimo Day",
+      "place": "« Quelque part en France »",
+      "icon": "heart",
+      "paragraphs": [
+        "Le 15 mai 1945, le colonel Robert A. Ballard, qui commande le régiment, organise le premier « Geronimo Field Day ». C'est une journée sans entraînement qui fête l'anniversaire du régiment, reportée par la guerre : compétitions de softball, de volley-ball, d'athlétisme et d'ordre serré, dîner d'anniversaire, et la troupe du Bal Tabarin venue de Paris en C-47. Le Stars and Stripes du 11 mai titre « Geronimo Field Day for 501st ».",
+        "Le 501st Parachute Infantry Regiment est inactivé en France le 20 août 1945. La 101st Airborne Division l'est à son tour à Auxerre le 30 novembre 1945."
+      ],
+      "quote": ""
     }
   ],
+  "motto": {
+    "title": "Geronimo !",
+    "paragraphs": [
+      "La devise du régiment remonte à 1940, à Fort Benning, avant même la création du 501st PIR. La veille de leur premier saut en masse, des hommes du 501st Parachute Battalion, issu du célèbre peloton d'essai parachutiste, vont voir le film « Geronimo » (1939). Le soldat Aubrey Eberhardt annonce qu'il criera « Geronimo ! » en sautant, pour prouver qu'il n'a pas peur. Il tient parole, et le cri se répand dans toute l'unité.",
+      "Le 501st Parachute Infantry Regiment, héritier de ce bataillon (numéro, lignée et héraldique), en fait sa devise officielle. Son insigne et son drapeau, conçus par le colonel Johnson, portent l'emblème Geronimo sur fond blanc bordé d'or. Les couleurs du régiment ont disparu pendant la guerre et on ignore toujours où elles se trouvent.",
+      "L'insigne de la 101st Airborne Division, la « division Aigle », représente une tête d'aigle blanc au bec d'or sur un écu noir. Elle rappelle « Old Abe », l'aigle mascotte d'un régiment de l'Iron Brigade pendant la guerre de Sécession. L'onglet « Airborne » est ajouté à l'activation de la division en 1942."
+    ]
+  },
+  "credit": "Contenu rédigé d'après l'« Histoire de notre 501e Régiment » (tomes 1 à 3), dossier réalisé par l'officier Klaus Fritz pour la communauté. Certaines dates et attributions ont été vérifiées et corrigées. Pour proposer une correction ou un complément, contactez Klaus Fritz.",
   "sources": [
-    "[À compléter] Ouvrages de référence et archives consultées.",
-    "[À compléter] Sites de musées et d'associations de mémoire (liens).",
-    "Crédits visuels : illustrations originales générées pour ce site (aucun visuel protégé)."
-  ]
+    { "label": "S. L. A. Marshall, « Bastogne: The First Eight Days », U.S. Army Center of Military History", "url": "https://history.army.mil/" },
+    { "label": "U.S. Army Center of Military History — lignée du 501st Infantry", "url": "https://history.army.mil/html/forcestruc/lineages/branches/inf/0501in001bn.htm" },
+    { "label": "501stpir.com — histoire du régiment", "url": "http://www.501stpir.com/501st_history/501stpir_history.html" },
+    { "label": "501stpir.com — Wardin, 19 décembre 1944", "url": "http://www.501stpir.com/item_501st_parachute_infantry/wardin.html" },
+    { "label": "WW2 Airborne — 501st Parachute Infantry Regiment", "url": "https://www.ww2-airborne.us/units/501/501.html" },
+    { "label": "US Airborne in Belgium — 501st PIR", "url": "http://www.usairborne.be/101/101_501.htm" },
+    { "label": "HistoryNet — l'incroyable patrouille de six hommes (32 prisonniers)", "url": "https://www.historynet.com/the-incredible-6-man-patrol-who-captured-32-pows-in-a-single-day.htm" },
+    { "label": "D-Day Overlord — la 101st Airborne en Normandie", "url": "https://www.dday-overlord.com/en/battle-of-normandy/forces/usa/101st-airborne-division" },
+    { "label": "Imperial War Museums — Market Garden en photos", "url": "https://www.iwm.org.uk/history/the-story-of-operation-market-garden-in-photos" }
+  ],
+  "videos": [
+    { "label": "Camp Toccoa", "url": "https://www.youtube.com/watch?v=sbWsqUx4L1Q" },
+    { "label": "Le 501st PIR (vidéo citée dans les tomes 1 et 2)", "url": "https://www.youtube.com/watch?v=pNn8UE7AhQU" },
+    { "label": "La compagnie I à Wardin", "url": "https://www.youtube.com/watch?v=Vtgjn97iBew" },
+    { "label": "Témoignage de Tom Rice (C/501st)", "url": "https://www.youtube.com/watch?v=XNdBsyNS3X0" },
+    { "label": "Témoignage de Vince Speranza (H/501st)", "url": "https://www.youtube.com/watch?v=lDHp9-kWd2g" }
+  ],
+  "visualCredit": "Crédits visuels : illustrations originales générées pour ce site (aucun visuel protégé)."
 }
