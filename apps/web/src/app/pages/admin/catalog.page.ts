@@ -64,6 +64,7 @@ export class CatalogPage {
   protected readonly tiers = MEDAL_TIERS;
   protected readonly tierLabels = TIER_LABELS;
   protected readonly saving = signal(false);
+  protected readonly importing = signal(false);
   protected readonly roles = signal<DiscordRole[]>([]);
   protected readonly newRole = NEW_ROLE;
   /** Récipiendaires de la médaille ouverte (null : liste en cours de chargement). */
@@ -219,6 +220,29 @@ export class CatalogPage {
       this.toast.error((err as ApiError).message);
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  /** Crée les attributions des médailles déjà portées en rôle Discord (officielles, sans annonce). */
+  protected async importFromRoles() {
+    if (
+      !confirm(
+        "Relire les rôles Discord des membres et leur attribuer les médailles dont ils portent le rôle ?\n\n" +
+          "Les attributions sont officielles tout de suite, sans annonce sur Discord. Un membre qui a déjà (ou a eu) la médaille sur le site n'est pas modifié.",
+      )
+    )
+      return;
+    this.importing.set(true);
+    try {
+      const r = await this.api.post<{ awards: number; members: number }>('/admin/medals/import-roles');
+      this.toast.success(
+        r.awards ? `${r.awards} attribution(s) importée(s) pour ${r.members} membre(s).` : 'Aucune nouvelle médaille à importer.',
+      );
+      await this.load();
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    } finally {
+      this.importing.set(false);
     }
   }
 

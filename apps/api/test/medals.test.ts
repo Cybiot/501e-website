@@ -91,6 +91,46 @@ describe('Attribution de médailles et annonce Discord', () => {
     ]);
   });
 
+  it('importe les médailles portées en rôle Discord, au plus haut palier, sans doublon', async () => {
+    const { a, member } = await setup();
+    const dsc = await prisma.medal.create({
+      data: {
+        name: 'Distinguished Service Cross',
+        description: 'Bravoure.',
+        category: 'Bravoure',
+        imageUrl: '/m.png',
+        imageBronzeUrl: '/b.png',
+        imageSilverUrl: '/s.png',
+        imageGoldUrl: '/g.png',
+        discordRoleId: 'role-dsc',
+        discordRoleBronzeId: 'role-dsc-bronze',
+        discordRoleSilverId: 'role-dsc-silver',
+        discordRoleGoldId: 'role-dsc-gold',
+      },
+    });
+    const [base, revoked] = await Promise.all([createUser('member'), createUser('member')]);
+    const give = (id: string, roles: string[]) => prisma.user.update({ where: { id }, data: { discordRoleIds: { push: roles } } });
+    await give(member.id, ['role-dsc', 'role-dsc-bronze', 'role-dsc-silver']);
+    await give(base.id, ['role-dsc']);
+    await give(revoked.id, ['role-dsc-gold']);
+    // Médaille retirée sur le site : le rôle resté sur Discord ne la fait pas revenir.
+    await prisma.medalAward.create({ data: { userId: revoked.id, medalId: dsc.id, reason: 'x', revokedAt: new Date() } });
+
+    const res = await a.post('/api/admin/medals/import-roles');
+    expect(res.status).toBe(200);
+    const awards = await prisma.medalAward.findMany({ where: { medalId: dsc.id, revokedAt: null } });
+    expect(awards.map((w) => [w.userId, w.tier, !!w.announcedAt]).sort()).toEqual(
+      [
+        [member.id, 'silver', true],
+        [base.id, null, true],
+      ].sort(),
+    );
+    expect(mockDiscord().sentMessages).toHaveLength(0);
+
+    // Deuxième import : rien de nouveau.
+    expect((await a.post('/api/admin/medals/import-roles')).body.awards).toBe(0);
+  });
+
   it("n'enregistre pas la médaille si Discord ne peut pas créer le rôle", async () => {
     const { a } = await setup();
     mockDiscord().failNext = 1;

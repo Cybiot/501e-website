@@ -4,12 +4,14 @@ import multer from 'multer';
 import { z } from 'zod';
 import { config } from '../../config.js';
 import { prisma } from '../../db.js';
+import { syncAllMembers } from '../../auth/sync.js';
 import { discord } from '../../discord/index.js';
 import { MEDAL_CATEGORIES } from '../../data/medals.js';
 import { buildAnnouncementMessages } from '../../lib/announcement.js';
 import { audit } from '../../lib/audit.js';
 import { badRequest, conflict, HttpError, notFound } from '../../lib/errors.js';
 import { logger } from '../../lib/logger.js';
+import { importMedalsFromRoles } from '../../lib/medal-import.js';
 import { notifyAdmins } from '../../lib/notify.js';
 import { avatarOf, isTiered, officialAward, presentMedal, presentRank } from '../../lib/presenters.js';
 import { getSettings } from '../../lib/settings.js';
@@ -251,6 +253,22 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
   }
   await audit({ action: 'medal.updated', req, targetType: 'medal', targetId: id, metadata: { fields: Object.keys(body) } });
   res.json(presentMedal(updated));
+});
+
+/**
+ * Import des médailles déjà portées en rôle Discord : rôles des membres relus d'abord, puis une
+ * attribution (officielle, sans annonce) par médaille portée et pas encore attribuée sur le site.
+ */
+medalsAdminRouter.post('/medals/import-roles', async (req, res) => {
+  try {
+    await syncAllMembers();
+  } catch (err) {
+    throw await discordFailure(err, 'import_medal_roles', req);
+  }
+  const created = await importMedalsFromRoles(req.user!.id);
+  const members = new Set(created.map((c) => c.userId)).size;
+  await audit({ action: 'medal.imported', req, metadata: { awards: created.length, members } });
+  res.json({ awards: created.length, members });
 });
 
 /** Suppression uniquement si la médaille n'a jamais été attribuée (sinon : désactivation). */

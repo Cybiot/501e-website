@@ -27,6 +27,7 @@ export type AuditAction =
   | 'medal.updated'
   | 'medal.deleted'
   | 'medal.awarded'
+  | 'medal.imported'
   | 'medal.revoked'
   | 'promotion.dismissed'
   | 'announcement.published'

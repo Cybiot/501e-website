@@ -1,6 +1,18 @@
 <div class="row row--between">
   <h1 class="admin-title">Catalogue des médailles</h1>
   <div class="row">
+    <button
+      type="button"
+      class="btn btn--sm"
+      (click)="importFromRoles()"
+      [disabled]="importing()"
+      title="Attribue à chaque membre les médailles dont il porte le rôle Discord (sans annonce)"
+    >
+      @if (importing()) {
+        <app-icon name="loader" class="spin" [size]="14" />
+      }
+      Importer depuis Discord
+    </button>
     <a routerLink="/admin/medailles" class="btn btn--sm"><app-icon name="award" [size]="14" /> Attribuer</a>
     <button type="button" class="btn btn--primary btn--sm" (click)="create()"><app-icon name="plus" [size]="14" /> Nouvelle médaille</button>
   </div>

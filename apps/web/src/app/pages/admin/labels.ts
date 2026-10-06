@@ -21,6 +21,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'medal.updated': 'Médaille modifiée',
   'medal.deleted': 'Médaille supprimée',
   'medal.awarded': 'Médaille attribuée',
+  'medal.imported': 'Médailles importées depuis Discord',
   'medal.revoked': 'Médaille retirée',
   'promotion.dismissed': 'Promotion non annoncée',
   'announcement.published': 'Annonce publiée',
