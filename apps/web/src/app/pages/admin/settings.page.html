@@ -140,9 +140,13 @@
 
   <section class="card" style="margin-top: var(--space-5)" aria-labelledby="resp-title">
     <h2 id="resp-title" class="card-title">Responsabilités ↔ rôles Discord</h2>
+    <p class="small muted">
+      Une responsabilité est donnée par son rôle Discord, ou d'office aux grades d'une branche (ex. « Platoon Leader » : Sgt, S/Sgt, Sfc).
+      Un changement est appliqué aux membres à la prochaine synchronisation des rôles.
+    </p>
     <div class="table-wrap">
       <table class="table table--stack">
-        <thead><tr><th>Nom</th><th>Catégorie</th><th>Description</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>
+        <thead><tr><th>Nom</th><th>Catégorie</th><th>Description</th><th>Rôle Discord</th><th>D'office pour la branche</th><th>Membres</th><th></th></tr></thead>
         <tbody>
           @for (r of d.responsibilities; track r.id) {
             <tr>
@@ -162,6 +166,14 @@
                   }
                   @if (r.discordRoleId && !roles().some(x => x.id === r.discordRoleId)) {
                     <option [ngValue]="r.discordRoleId">{{ r.discordRoleId }}</option>
+                  }
+                </select>
+              </td>
+              <td data-label="D'office pour la branche">
+                <select class="select" [(ngModel)]="r.rankBranch" aria-label="Attribuée d'office aux grades de la branche">
+                  <option [ngValue]="null">— Aucune —</option>
+                  @for (b of branches; track b.id) {
+                    <option [ngValue]="b.id">{{ b.label }}</option>
                   }
                 </select>
               </td>
@@ -186,6 +198,14 @@
                 <option value="">— Aucun —</option>
                 @for (role of roles(); track role.id) {
                   <option [value]="role.id">{{ role.name }}</option>
+                }
+              </select>
+            </td>
+            <td data-label="D'office pour la branche">
+              <select class="select" [(ngModel)]="newResp.rankBranch" aria-label="Attribuée d'office aux grades de la branche">
+                <option [ngValue]="null">— Aucune —</option>
+                @for (b of branches; track b.id) {
+                  <option [ngValue]="b.id">{{ b.label }}</option>
                 }
               </select>
             </td>

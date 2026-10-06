@@ -38,15 +38,15 @@ const RANKS = [
 ] as const;
 
 const RESPONSIBILITIES = [
-  ['EM - État-major', 'Direction de la communauté : décisions, organisation générale et arbitrages.', 'hierarchy'],
-  ['CO - Commanding Officer', 'Commande le régiment et fixe les orientations en opération.', 'hierarchy'],
-  ['XO - Executive Officer', 'Seconde le CO et le remplace en son absence.', 'hierarchy'],
-  ['PL - Platoon Leader', 'Commande un peloton lors des opérations.', 'hierarchy'],
-  ['Staff Toccoa', 'Encadre la formation des recrues au camp Toccoa.', 'pole'],
-  ['Recruteur', 'Accueille les candidats, mène les entretiens et les accompagne jusqu’à la formation initiale.', 'pole'],
-  ['Organisateur Event', 'Prépare et anime les événements et opérations spéciales.', 'pole'],
-  ['Komité des médailles', 'Étudie les propositions de décorations et prépare les attributions.', 'pole'],
-  ['Police militaire', 'Veille au respect du règlement sur le Discord et en jeu.', 'pole'],
+  ['em', 'EM - État-major', 'Direction de la communauté : décisions, organisation générale et arbitrages.', 'hierarchy'],
+  ['co', 'CO - Commanding Officer', 'Commande le régiment et fixe les orientations en opération.', 'hierarchy'],
+  ['xo', 'XO - Executive Officer', 'Seconde le CO et le remplace en son absence.', 'hierarchy'],
+  ['pl', 'PL - Platoon Leader', 'Commande un peloton lors des opérations.', 'hierarchy'],
+  ['toccoa', 'Staff Toccoa', 'Encadre la formation des recrues au camp Toccoa.', 'pole'],
+  ['recr', 'Recruteur', 'Accueille les candidats, mène les entretiens et les accompagne jusqu’à la formation initiale.', 'pole'],
+  ['event', 'Organisateur Event', 'Prépare et anime les événements et opérations spéciales.', 'pole'],
+  ['medailles', 'Komité des médailles', 'Étudie les propositions de décorations et prépare les attributions.', 'pole'],
+  ['mp', 'Police militaire', 'Veille au respect du règlement sur le Discord et en jeu.', 'pole'],
 ] as const;
 
 /** Palier tiré au hasard pour les médailles à paliers (null : image de base). */
@@ -135,8 +135,18 @@ async function main() {
     ),
   );
   const resps = await Promise.all(
-    RESPONSIBILITIES.map(([name, description, kind], i) =>
-      prisma.responsibility.create({ data: { name, description, kind, order: i, discordRoleId: MOCK_RESPONSIBILITY_ROLES[i]!.id } }),
+    RESPONSIBILITIES.map(([key, name, description, kind], i) =>
+      prisma.responsibility.create({
+        data: {
+          name,
+          description,
+          kind,
+          order: i,
+          discordRoleId: MOCK_RESPONSIBILITY_ROLES.find((r) => r.key === key)?.id ?? null,
+          // Pas de rôle Discord « Platoon Leader » : donné d'office aux Sgt, S/Sgt et Sfc.
+          rankBranch: key === 'pl' ? 'platoon_leader' : null,
+        },
+      }),
     ),
   );
   const medals = await Promise.all(
@@ -192,8 +202,8 @@ async function main() {
     { discordId: 'demo-membre', name: 'Pvt. Blithe (démo membre)', rank: 0, consent: false },
     { discordId: 'demo-visiteur', name: 'Curieux (démo non-membre)', rank: -1, member: false },
   ];
-  const RESP = Object.fromEntries(MOCK_RESPONSIBILITY_ROLES.map((r, i) => [r.key, i])) as Record<
-    (typeof MOCK_RESPONSIBILITY_ROLES)[number]['key'],
+  const RESP = Object.fromEntries(RESPONSIBILITIES.map(([key], i) => [key, i])) as Record<
+    (typeof RESPONSIBILITIES)[number][0],
     number
   >;
   const POLES = [RESP.recr, RESP.event, RESP.medailles, RESP.mp];
@@ -251,7 +261,7 @@ async function main() {
           MOCK_ROLES.member.id,
           ...(u.admin ? [MOCK_ROLES.admin.id] : []),
           ...(u.rank >= 0 ? [MOCK_RANK_ROLES[u.rank]!.id] : []),
-          ...(u.resp ?? []).map((r) => MOCK_RESPONSIBILITY_ROLES[r]!.id),
+          ...(u.resp ?? []).flatMap((r) => MOCK_RESPONSIBILITY_ROLES.find((m) => m.key === RESPONSIBILITIES[r]![0])?.id ?? []),
           ...(u.roles ?? []),
         ]
       : [];

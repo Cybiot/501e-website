@@ -74,10 +74,12 @@ const nullableRole = z
   // Absent (PATCH partiel) : on ne touche pas au rôle ; vide : on le retire.
   .transform((v) => (v === undefined ? undefined : v || null));
 
+const RankBranch = z.enum(['toccoa', 'enlisted', 'platoon_leader', 'xo', 'co', 'staff']);
+
 const RankBody = z.object({
   name: z.string().trim().min(2).max(60),
   abbreviation: z.string().trim().min(1).max(12),
-  branch: z.enum(['toccoa', 'enlisted', 'platoon_leader', 'xo', 'co', 'staff']),
+  branch: RankBranch,
   order: z.number().int().min(0).max(999),
   discordRoleId: nullableRole,
 });
@@ -90,11 +92,14 @@ const ResponsibilityPatch = z.object({
   kind: z.enum(['hierarchy', 'pole']),
   order: z.number().int().min(0).max(999),
   discordRoleId: nullableRole,
+  /** Attribuée d'office aux grades de cette branche (null : par rôle Discord seulement). */
+  rankBranch: RankBranch.nullable(),
 });
 const ResponsibilityBody = ResponsibilityPatch.extend({
   description: ResponsibilityPatch.shape.description.default(''),
   kind: ResponsibilityPatch.shape.kind.default('pole'),
   order: ResponsibilityPatch.shape.order.default(0),
+  rankBranch: ResponsibilityPatch.shape.rankBranch.default(null),
 });
 
 const uniqueGuard = (err: unknown): never => {

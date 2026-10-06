@@ -3,6 +3,13 @@ import { z } from 'zod';
 const secret = (name: string) =>
   z.string().min(16, `${name} doit contenir au moins 16 caractères`);
 
+/** Pays francophones (outre-mer compris : GeoNames leur donne un code pays propre). */
+const DEFAULT_COUNTRIES = [
+  ...['FR', 'BE', 'CH', 'LU', 'MC', 'CA'],
+  ...['GP', 'MQ', 'GF', 'RE', 'YT', 'PM', 'BL', 'MF', 'NC', 'PF', 'WF'],
+  ...['MA', 'DZ', 'TN', 'SN', 'CI'],
+];
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PUBLIC_URL: z.url().default('http://localhost:4200'),
@@ -29,7 +36,16 @@ const EnvSchema = z.object({
 
   STORAGE_DIR: z.string().default('./storage'),
 
-  GEOCODER: z.enum(['demo', 'photon']).default('demo'),
+  GEOCODER: z.enum(['demo', 'db', 'photon']).default('demo'),
+  /** GEOCODER=db : pays importés en entier depuis GeoNames (codes ISO séparés par des virgules). */
+  GEOCODER_COUNTRIES: z
+    .string()
+    .trim()
+    .default('')
+    .transform((s) => (s ? s.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean) : DEFAULT_COUNTRIES))
+    .pipe(z.array(z.string().regex(/^[A-Z]{2}$/, 'codes pays ISO à 2 lettres attendus'))),
+  /** GEOCODER=db : ajoute les villes de plus de 15 000 habitants du reste du monde. */
+  GEOCODER_WORLD_CITIES: z.stringbool().default(true),
   PHOTON_URL: z.string().default('http://localhost:2322'),
   MAP_TILE_URL: z.string().default('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
   MAP_TILE_ATTRIBUTION: z.string().default('&copy; OpenStreetMap contributors'),

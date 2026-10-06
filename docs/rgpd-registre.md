@@ -13,7 +13,7 @@
 | [Hébergeur] | Hébergement du site, de la base et des images | Union européenne | [DPA / contrat] |
 | Discord Inc. | Authentification OAuth2, lecture des rôles, annonces (médailles, promotions) | États-Unis | Clauses contractuelles types / Data Privacy Framework (à vérifier) |
 | Fondation OpenStreetMap (ou fournisseur configuré) | Tuiles du fond de carte, chargées par le navigateur des membres sur la page Carte | Royaume-Uni / UE | Politique d'usage des tuiles |
-| Photon (auto-hébergé) | Géocodage des villes | Même serveur que le site | Aucun transfert |
+| Référentiel de villes GeoNames (dans la base du site) | Géocodage des villes | Même serveur que le site | Aucun transfert : seul le fichier public GeoNames est téléchargé, aucune recherche n'est envoyée |
 
 ## Traitements
 

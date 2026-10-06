@@ -342,6 +342,8 @@ export interface AdminResponsibility {
   kind: ResponsibilityKind;
   order: number;
   discordRoleId: string | null;
+  /** Attribuée d'office aux grades de cette branche (ex. PL : Sgt, S/Sgt, Sfc). */
+  rankBranch: RankBranch | null;
   usersCount: number;
 }
 

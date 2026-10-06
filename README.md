@@ -11,7 +11,7 @@ Cette première version couvre le **périmètre V1** des spécifications (`speci
 3. [Démarrage rapide (mode démo)](#démarrage-rapide-mode-démo)
 4. [Variables d'environnement](#variables-denvironnement)
 5. [Créer l'application et le bot Discord](#créer-lapplication-et-le-bot-discord)
-6. [Géocodage Photon auto-hébergé](#géocodage-photon-auto-hébergé)
+6. [Géocodage auto-hébergé](#géocodage-auto-hébergé)
 7. [Tests et qualité](#tests-et-qualité)
 8. [Déploiement](#déploiement)
 9. [Sécurité et RGPD](#sécurité-et-rgpd)
@@ -79,7 +79,7 @@ npm install && npm run db:seed                # données de démo (facultatif, d
 
 Le site est servi sur http://localhost:4000. Les migrations sont appliquées au démarrage du conteneur `api`.
 
-Services optionnels : `docker compose --profile discord up -d bot` (bot Discord, mode `live`) et `docker compose --profile geocoding up -d photon` (géocodeur).
+Service optionnel : `docker compose --profile discord up -d bot` (bot Discord, mode `live`).
 
 ## Variables d'environnement
 
@@ -94,7 +94,8 @@ Toutes les variables sont documentées dans [.env.example](.env.example). Les pl
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Application et bot Discord |
 | `DISCORD_MEMBER_ROLE_ID`, `DISCORD_ADMIN_ROLE_ID` | ID des rôles « 501e » (statut Membre) et « État-major » (statut Admin). Non modifiables depuis l'admin |
 | `DISCORD_ANNOUNCE_CHANNEL_ID`, `DISCORD_INVITE_URL` | Valeurs par défaut, modifiables ensuite dans Admin > Paramètres |
-| `GEOCODER`, `PHOTON_URL` | Recherche de villes : `demo` (liste intégrée) ou `photon` |
+| `GEOCODER` | Recherche de villes : `demo` (liste intégrée), `db` (GeoNames dans la base, recommandé) ou `photon` |
+| `GEOCODER_COUNTRIES`, `GEOCODER_WORLD_CITIES` | `GEOCODER=db` : pays importés en entier (francophones par défaut) et grandes villes du reste du monde |
 | `MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`, `MAP_TILE_FILTER` | Fond de carte |
 | `NG_ALLOWED_HOSTS` | Hôtes supplémentaires autorisés pour le rendu serveur (l'hôte de `PUBLIC_URL` l'est déjà) |
 
@@ -115,16 +116,22 @@ Aucun identifiant Discord n'est codé en dur : tout passe par l'environnement ou
 
 Scopes OAuth demandés : `identify` et `guilds.members.read`. Aucun e-mail n'est collecté, et le jeton utilisateur est révoqué juste après la connexion.
 
-## Géocodage Photon auto-hébergé
+## Géocodage auto-hébergé
 
-En production, la recherche de villes utilise [Photon](https://github.com/komoot/photon) auto-hébergé (données OpenStreetMap), appelé uniquement par l'API :
+En production (`GEOCODER=db`), la recherche de villes interroge une table `City` de la base, remplie depuis [GeoNames](https://www.geonames.org/) (licence CC BY 4.0, créditée dans la politique de confidentialité). Aucune recherche ne quitte le serveur.
+
+- Pays de `GEOCODER_COUNTRIES` importés en entier, jusqu'au plus petit village, avec noms français et codes postaux. Par défaut : France et outre-mer, Belgique, Suisse, Luxembourg, Monaco, Canada, Maroc, Algérie, Tunisie, Sénégal, Côte d'Ivoire.
+- Reste du monde : villes de plus de 15 000 habitants (`GEOCODER_WORLD_CITIES=false` pour s'en passer).
+- Environ 240 000 villes, **~55 Mo** dans la base (index compris). L'import télécharge ~40 Mo, traités en mémoire sans rien écrire sur le disque.
+
+Au premier démarrage, l'API importe le référentiel toute seule si la table est vide (moins d'une minute). Pour le remettre à jour (GeoNames évolue peu, une fois par an suffit) :
 
 ```bash
-docker compose --profile geocoding up -d photon   # PHOTON_REGION=europe par défaut
-# puis dans .env : GEOCODER=photon
+npm run db:cities                                            # dev
+docker compose exec api node dist/scripts/import-cities.js   # production
 ```
 
-Le premier démarrage télécharge l'index de la région choisie, soit plusieurs Go pour l'Europe. L'image `rtuszik/photon-docker` est une image communautaire : vérifie ses variables (`REGION`, `UPDATE_STRATEGY`) dans sa documentation avant la mise en production. En développement, `GEOCODER=demo` utilise une liste intégrée d'environ 70 villes francophones.
+En développement, `GEOCODER=demo` utilise une liste intégrée d'environ 70 villes francophones. `GEOCODER=photon` reste possible (`docker compose --profile geocoding up -d photon`) mais demande plusieurs dizaines de Go de disque.
 
 ## Tests et qualité
 
@@ -148,7 +155,7 @@ La base de test se crée avec `CREATE DATABASE "501e_test";`, ou via `TEST_DATAB
 1. Hébergement dans l'UE (VPS avec Docker recommandé).
 2. Reverse proxy HTTPS (Caddy, Traefik ou Nginx) vers le conteneur `web:4000`. Seul ce conteneur est exposé.
 3. `PUBLIC_URL=https://<domaine>` : active les cookies `Secure`, HSTS et la CSP stricte.
-4. Secrets forts, `DISCORD_MODE=live`, `GEOCODER=photon`.
+4. Secrets forts, `DISCORD_MODE=live`, `GEOCODER=db`.
 5. Sauvegardes quotidiennes chiffrées de la base et du volume `storage`, stockées dans l'UE. Exemple :
 
 ```bash

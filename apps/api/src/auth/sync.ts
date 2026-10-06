@@ -27,11 +27,16 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
   const status = computeStatus(roles);
 
   const ranks = await prisma.rank.findMany({ where: { discordRoleId: { in: roles } }, orderBy: { order: 'desc' } });
-  const responsibilities = await prisma.responsibility.findMany({ where: { discordRoleId: { in: roles } } });
 
   const wasMember = user.status !== 'none';
   const isMember = status !== 'none';
   const newRank = ranks[0] ?? null;
+  // Par rôle Discord, ou d'office par la branche du grade (PL : Sgt, S/Sgt, Sfc).
+  const responsibilities = await prisma.responsibility.findMany({
+    where: {
+      OR: [{ discordRoleId: { in: roles } }, ...(newRank ? [{ rankBranch: newRank.branch }] : [])],
+    },
+  });
 
   const updated = await prisma.$transaction(async (tx) => {
     if (newRank && newRank.id !== user.lastKnownRankId) await trackPromotion(tx, user, newRank, isMember);

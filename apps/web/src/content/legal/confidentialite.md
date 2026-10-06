@@ -38,7 +38,7 @@ La communauté 501e attache une grande importance à la protection de tes donné
 - **Hébergeur** : [nom], hébergement dans l'Union européenne.
 - **Discord** (connexion OAuth2, rôles, annonces) : les avatars sont chargés depuis les serveurs de Discord. Consulte la politique de confidentialité de Discord.
 - **Fond de carte** : tuiles OpenStreetMap (ou du fournisseur configuré) chargées par ton navigateur sur la page Carte (espace membre uniquement).
-- **Recherche de villes** : service Photon **auto-hébergé** ; la recherche passe par notre serveur, jamais directement depuis ton navigateur vers un tiers.
+- **Recherche de villes** : liste de villes **hébergée sur notre serveur** (données [GeoNames](https://www.geonames.org/), licence CC BY 4.0) ; ta recherche ne quitte jamais notre serveur et n'est transmise à aucun tiers.
 
 Aucune donnée n'est vendue ni utilisée à des fins publicitaires. Aucun traceur tiers.
 

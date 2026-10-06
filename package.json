@@ -13,6 +13,7 @@
     "db:migrate": "npm run migrate -w apps/api",
     "db:seed": "npm run seed -w apps/api",
     "db:reset": "npm run reset -w apps/api",
+    "db:cities": "npm run cities:import -w apps/api",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run start -w apps/web",
     "dev:bot": "npm run dev -w apps/bot",

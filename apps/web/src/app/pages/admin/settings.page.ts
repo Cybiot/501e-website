@@ -43,12 +43,13 @@ export class SettingsPage {
     order: 10,
     discordRoleId: '',
   };
-  protected newResp: { name: string; description: string; kind: ResponsibilityKind; order: number; discordRoleId: string } = {
+  protected newResp: { name: string; description: string; kind: ResponsibilityKind; order: number; discordRoleId: string; rankBranch: RankBranch | null } = {
     name: '',
     description: '',
     kind: 'pole',
     order: 0,
     discordRoleId: '',
+    rankBranch: null,
   };
 
   /** Ligne « nouveau platoon » de chaque compagnie, par id de compagnie. */
@@ -154,7 +155,7 @@ export class SettingsPage {
 
   protected async saveResp(r: AdminResponsibility) {
     try {
-      await this.api.patch(`/admin/responsibilities/${r.id}`, { name: r.name, description: r.description, kind: r.kind, order: Number(r.order), discordRoleId: r.discordRoleId || null });
+      await this.api.patch(`/admin/responsibilities/${r.id}`, { name: r.name, description: r.description, kind: r.kind, order: Number(r.order), discordRoleId: r.discordRoleId || null, rankBranch: r.rankBranch });
       this.toast.success(`Responsabilité « ${r.name} » enregistrée.`);
     } catch (err) {
       this.toast.error((err as ApiError).message);
@@ -165,7 +166,7 @@ export class SettingsPage {
   protected async addResp() {
     try {
       await this.api.post('/admin/responsibilities', { ...this.newResp, order: Number(this.newResp.order), discordRoleId: this.newResp.discordRoleId || null });
-      this.newResp = { name: '', description: '', kind: 'pole', order: 0, discordRoleId: '' };
+      this.newResp = { name: '', description: '', kind: 'pole', order: 0, discordRoleId: '', rankBranch: null };
       this.toast.success('Responsabilité ajoutée.');
       await this.load();
     } catch (err) {

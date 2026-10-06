@@ -12,6 +12,7 @@
     "migrate": "node --env-file-if-exists=../../.env ../../node_modules/prisma/build/index.js migrate dev",
     "migrate:deploy": "node --env-file-if-exists=../../.env ../../node_modules/prisma/build/index.js migrate deploy",
     "seed": "tsx --env-file-if-exists=../../.env prisma/seed.ts",
+    "cities:import": "tsx --env-file-if-exists=../../.env src/scripts/import-cities.ts",
     "reset": "node --env-file-if-exists=../../.env ../../node_modules/prisma/build/index.js migrate reset --force",
     "test": "vitest run",
     "postinstall": "prisma generate"

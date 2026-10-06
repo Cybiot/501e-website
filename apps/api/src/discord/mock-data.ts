@@ -32,7 +32,6 @@ export const MOCK_RESPONSIBILITY_ROLES = [
   { key: 'em', id: 'mock-resp-em', name: 'EM - État-major' },
   { key: 'co', id: 'mock-resp-co', name: 'CO - Commanding Officer' },
   { key: 'xo', id: 'mock-resp-xo', name: 'XO - Executive Officer' },
-  { key: 'pl', id: 'mock-resp-pl', name: 'PL - Platoon Leader' },
   { key: 'toccoa', id: 'mock-resp-toccoa', name: 'Staff Toccoa' },
   { key: 'recr', id: 'mock-resp-recruteur', name: 'Recruteur' },
   { key: 'event', id: 'mock-resp-event', name: 'Organisateur Event' },

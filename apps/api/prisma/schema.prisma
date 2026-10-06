@@ -124,6 +124,8 @@ model Responsibility {
   description   String
   kind          ResponsibilityKind @default(pole)
   discordRoleId String?            @unique
+  /// Attribuée d'office aux grades de cette branche (ex. PL : Sgt, S/Sgt, Sfc), en plus du rôle Discord.
+  rankBranch    RankBranch?
   order         Int                @default(0)
 
   users UserResponsibility[]
@@ -314,6 +316,27 @@ model MemberLocation {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// Référentiel des villes (GeoNames) pour la recherche de villes auto-hébergée (GEOCODER=db).
+/// Rempli par src/geocoding/geonames.ts : jamais modifié à la main.
+model City {
+  /// Identifiant GeoNames.
+  id          Int     @id
+  /// Nom affiché (français si GeoNames en connaît un).
+  name        String
+  /// Département, province ou district : sert à distinguer les homonymes d'une même région.
+  district    String?
+  region      String?
+  countryCode String  @db.Char(2)
+  lat         Float
+  lng         Float
+  population  Int     @default(0)
+  /// Noms normalisés (sans accents, minuscules) séparés par « | », nom affiché en premier,
+  /// suivis des noms alternatifs et codes postaux : recherche par début de mot.
+  search      String
+
+  @@index([search(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Notification {

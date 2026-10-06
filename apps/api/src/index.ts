@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { prisma } from './db.js';
+import { ensureCities } from './geocoding/index.js';
 import { startJobs } from './jobs/index.js';
 import { logger } from './lib/logger.js';
 import { refreshRankPrefixes } from './lib/rank-prefix.js';
@@ -13,6 +14,7 @@ const server = app.listen(config.API_PORT, () => {
   );
 });
 void refreshRankPrefixes();
+void ensureCities();
 const stopJobs = startJobs();
 
 const shutdown = async (signal: string) => {

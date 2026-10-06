@@ -1,6 +1,7 @@
 .hero {
   position: relative;
-  min-height: calc(100svh - var(--header-h));
+  /* Plein écran (le hero passe sous l'en-tête) : la section suivante reste sous la ligne de flottaison. */
+  min-height: 100svh;
   display: grid;
   align-items: center;
   /* Pas de coupure verticale : les parachutistes descendent par-dessus la section suivante. */

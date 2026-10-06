@@ -1,8 +1,10 @@
-# 501e — pile complète : base PostGIS, API, front SSR Angular, bot Discord, géocodeur Photon.
+# 501e — pile complète : base PostGIS, API, front SSR Angular, bot Discord.
 #
 #   docker compose up -d --build                     # db + api + web (mode démo par défaut)
 #   docker compose --profile discord up -d           # + bot Discord (DISCORD_MODE=live)
-#   docker compose --profile geocoding up -d photon  # + géocodeur Photon auto-hébergé
+#   docker compose --profile geocoding up -d photon  # + Photon, seulement si GEOCODER=photon
+#
+# Recherche de villes en production : GEOCODER=db (villes GeoNames dans la base, voir README).
 #
 # Toutes les variables viennent du fichier .env (voir .env.example).
 
@@ -30,6 +32,8 @@ x-app-env: &app-env
   ROLE_SYNC_INTERVAL_MINUTES: ${ROLE_SYNC_INTERVAL_MINUTES:-15}
   STORAGE_DIR: /data/storage
   GEOCODER: ${GEOCODER:-demo}
+  GEOCODER_COUNTRIES: ${GEOCODER_COUNTRIES:-}
+  GEOCODER_WORLD_CITIES: ${GEOCODER_WORLD_CITIES:-true}
   PHOTON_URL: http://photon:2322
   MAP_TILE_URL: ${MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
   MAP_TILE_ATTRIBUTION: ${MAP_TILE_ATTRIBUTION:-&copy; OpenStreetMap contributors}
@@ -104,8 +108,8 @@ services:
       api:
         condition: service_healthy
 
-  # Géocodeur Photon auto-hébergé (données OpenStreetMap). Premier démarrage long :
-  # téléchargement de l'index de la région choisie (plusieurs Go pour l'Europe).
+  # Alternative à GEOCODER=db : Photon auto-hébergé (données OpenStreetMap). Premier démarrage
+  # long : téléchargement de l'index de la région choisie (dizaines de Go pour l'Europe).
   photon:
     profiles: ['geocoding']
     image: rtuszik/photon-docker:latest

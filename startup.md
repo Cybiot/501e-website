@@ -73,7 +73,7 @@ SESSION_SECRET=...                       # 32 caractères aléatoires minimum
 HASH_SALT=...                            # 32 caractères aléatoires minimum
 INTERNAL_API_TOKEN=...                   # 32 caractères aléatoires minimum
 DISCORD_MODE=live                        # + les identifiants DISCORD_* (voir README)
-GEOCODER=photon
+GEOCODER=db                              # villes importées dans la base au 1er démarrage
 ```
 
 Pour générer un secret aléatoire : `openssl rand -hex 32`
@@ -90,7 +90,7 @@ Le site est servi sur **http://localhost:4000**. Les tables de la base sont cré
 
 ```powershell
 docker compose --profile discord up -d bot         # le bot Discord
-docker compose --profile geocoding up -d photon    # la recherche de villes (long au 1er lancement)
+docker compose exec api node dist/scripts/import-cities.js   # remettre à jour la liste des villes (rarement utile)
 ```
 
 ### Commandes utiles en production
