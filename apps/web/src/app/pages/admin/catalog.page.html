@@ -35,7 +35,14 @@
           </div>
         </div>
         <p class="small muted">{{ m.description }}</p>
-        <p class="small muted" style="margin: 0 0 var(--space-1)">Rôle Discord : {{ m.discordRoleId ? roleName(m.discordRoleId) : 'aucun' }}</p>
+        <p class="small muted" style="margin: 0 0 var(--space-1)">
+          Rôle Discord : {{ m.discordRoleId ? roleName(m.discordRoleId) : 'aucun' }}
+          @if (m.tierRoles; as tr) {
+            @for (t of tiers; track t) {
+              <br />{{ tierLabels[t] }} : {{ tr[t] ? roleName(tr[t]!) : 'aucun' }}
+            }
+          }
+        </p>
         <p class="small muted" style="margin: 0">
           Ordre {{ m.order }} ·
           @if (m.awardsCount) {
@@ -109,12 +116,21 @@
             <input id="mf-img" class="input" type="file" accept="image/png,image/webp,image/svg+xml" (change)="onImage($event)" />
           </div>
           <fieldset class="field">
-            <legend class="label">Paliers (facultatif : les trois images ou aucune)</legend>
+            <legend class="label">Paliers (facultatif : les trois images ou aucune), chacun avec son rôle Discord</legend>
             @for (t of tiers; track t) {
-              <label class="row small" style="flex-wrap: nowrap; margin-bottom: var(--space-2)">
+              <div class="row small" style="margin-bottom: var(--space-2)">
                 <span style="width: 56px">{{ tierLabels[t] }}</span>
-                <input class="input" type="file" accept="image/png,image/webp,image/svg+xml" [disabled]="f.removeTiers" (change)="onTierImage(t, $event)" />
-              </label>
+                <input class="input" style="flex: 1; min-width: 180px" type="file" accept="image/png,image/webp,image/svg+xml" [disabled]="f.removeTiers" (change)="onTierImage(t, $event)" [attr.aria-label]="'Image du palier ' + tierLabels[t]" />
+                <select class="select" style="flex: 1; min-width: 180px" [ngModel]="f.tierRoles[t]" (ngModelChange)="patchTierRole(t, $event)" [name]="'tierRole-' + t" [disabled]="f.removeTiers" [attr.aria-label]="'Rôle Discord du palier ' + tierLabels[t]">
+                  <option [ngValue]="null">— Aucun rôle —</option>
+                  @for (role of roles(); track role.id) {
+                    <option [ngValue]="role.id">{{ role.name }}</option>
+                  }
+                  @if (isUnlistedRole(f.tierRoles[t])) {
+                    <option [ngValue]="f.tierRoles[t]">{{ f.tierRoles[t] }}</option>
+                  }
+                </select>
+              </div>
             }
             @if (f.currentTierImages) {
               <label class="check-inline"

@@ -233,8 +233,12 @@ model Medal {
   isActive       Boolean  @default(true)
   /// Un membre peut-il recevoir plusieurs fois cette médaille ?
   repeatable     Boolean  @default(true)
-  /// Rôle Discord créé par le bot (sans permission) à la création de la médaille.
+  /// Rôle Discord de la médaille : rôle existant choisi, ou créé par le bot (sans permission).
   discordRoleId  String?
+  /// Rôles Discord des paliers (médaille à paliers uniquement).
+  discordRoleBronzeId String?
+  discordRoleSilverId String?
+  discordRoleGoldId   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

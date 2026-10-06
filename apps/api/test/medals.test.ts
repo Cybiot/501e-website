@@ -57,6 +57,40 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect((await prisma.medal.findUniqueOrThrow({ where: { id: medal.id } })).discordRoleId).toBeNull();
   });
 
+  it('associe un rôle Discord à chaque palier, retiré avec les paliers', async () => {
+    const { a } = await setup();
+    const res = await postMedal(a, 'Distinguished Service Cross')
+      .field({
+        discordRoleId: 'role-dsc',
+        discordRoleBronzeId: 'role-dsc-bronze',
+        discordRoleSilverId: 'role-dsc-silver',
+        discordRoleGoldId: 'role-dsc-gold',
+      })
+      .attach('imageBronze', png, 'b.png')
+      .attach('imageSilver', png, 's.png')
+      .attach('imageGold', png, 'g.png');
+    expect(res.status).toBe(201);
+    const list = await a.get('/api/admin/medals');
+    const dsc = list.body.items.find((m: { name: string }) => m.name === 'Distinguished Service Cross');
+    expect(dsc.tierRoles).toEqual({ bronze: 'role-dsc-bronze', silver: 'role-dsc-silver', gold: 'role-dsc-gold' });
+
+    // Un rôle de palier ne peut pas servir à une autre médaille.
+    expect((await postMedal(a, 'Silver Star').field({ discordRoleId: 'role-dsc-gold' })).status).toBe(409);
+    const patch = (body: Record<string, string>) =>
+      a.agent.patch(`/api/admin/medals/${dsc.id}`).set('X-XSRF-TOKEN', a.xsrf).field(body);
+    // Ni deux fois dans la même médaille.
+    expect((await patch({ discordRoleSilverId: 'role-dsc-bronze' })).status).toBe(409);
+
+    expect((await patch({ removeTiers: 'true' })).status).toBe(200);
+    const after = await prisma.medal.findUniqueOrThrow({ where: { id: dsc.id } });
+    expect([after.discordRoleId, after.discordRoleBronzeId, after.discordRoleSilverId, after.discordRoleGoldId]).toEqual([
+      'role-dsc',
+      null,
+      null,
+      null,
+    ]);
+  });
+
   it("n'enregistre pas la médaille si Discord ne peut pas créer le rôle", async () => {
     const { a } = await setup();
     mockDiscord().failNext = 1;

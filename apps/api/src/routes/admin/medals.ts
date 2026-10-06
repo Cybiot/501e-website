@@ -33,6 +33,15 @@ const medalUpload = upload.fields([{ name: 'image', maxCount: 1 }, ...TIER_IMAGE
 const fileOf = (req: Request, field: ImageField) =>
   (req.files as Partial<Record<ImageField, Express.Multer.File[]>> | undefined)?.[field]?.[0];
 
+/** Un rôle Discord par palier, en plus du rôle de la médaille. */
+const TIER_ROLE_FIELDS = [
+  { tier: 'bronze', column: 'discordRoleBronzeId' },
+  { tier: 'silver', column: 'discordRoleSilverId' },
+  { tier: 'gold', column: 'discordRoleGoldId' },
+] as const;
+const ROLE_COLUMNS = ['discordRoleId', ...TIER_ROLE_FIELDS.map((t) => t.column)] as const;
+type RoleColumn = (typeof ROLE_COLUMNS)[number];
+
 const imageUrlsOf = (m: Pick<Medal, ImageColumn>) =>
   [m.imageUrl, m.imageBronzeUrl, m.imageSilverUrl, m.imageGoldUrl].filter((u): u is string => !!u);
 
@@ -78,6 +87,9 @@ medalsAdminRouter.get('/medals', async (_req, res) => {
       isActive: m.isActive,
       repeatable: m.repeatable,
       discordRoleId: m.discordRoleId,
+      tierRoles: isTiered(m)
+        ? { bronze: m.discordRoleBronzeId, silver: m.discordRoleSilverId, gold: m.discordRoleGoldId }
+        : null,
       awardsCount: m._count.awards,
       deletable: !used.has(m.id),
     })),
@@ -85,6 +97,13 @@ medalsAdminRouter.get('/medals', async (_req, res) => {
 });
 
 const boolField = z.preprocess((v) => (typeof v === 'string' ? v === 'true' : v), z.boolean());
+
+const roleField = z
+  .string()
+  .trim()
+  .max(40)
+  .optional()
+  .transform((v) => (v === undefined ? undefined : v || null));
 
 const MedalFields = z.object({
   name: z.string().trim().min(2).max(80),
@@ -99,18 +118,27 @@ const MedalFields = z.object({
    * Rôle Discord existant associé à la médaille ; vide : aucun rôle. Absent à la création : un
    * rôle sans permission est créé au nom de la médaille ; absent en modification : inchangé.
    */
-  discordRoleId: z
-    .string()
-    .trim()
-    .max(40)
-    .optional()
-    .transform((v) => (v === undefined ? undefined : v || null)),
+  discordRoleId: roleField,
+  /** Rôles des paliers (vide : aucun ; absent : inchangé). Retirés avec les paliers. */
+  discordRoleBronzeId: roleField,
+  discordRoleSilverId: roleField,
+  discordRoleGoldId: roleField,
 });
 
-/** Un rôle Discord ne désigne qu'une seule médaille. */
-async function assertRoleFree(discordRoleId: string | null | undefined, medalId?: string) {
-  if (!discordRoleId) return;
-  const other = await prisma.medal.findFirst({ where: { discordRoleId, NOT: medalId ? { id: medalId } : undefined } });
+/**
+ * Un rôle Discord ne désigne qu'une seule médaille, ou un seul palier : ni deux fois dans la
+ * même médaille, ni déjà pris par une autre (rôle de base ou de palier).
+ */
+async function assertRolesFree(roles: Partial<Record<RoleColumn, string | null>>, medalId?: string) {
+  const ids = Object.values(roles).filter((r): r is string => !!r);
+  if (new Set(ids).size !== ids.length) throw conflict('Un même rôle Discord est choisi deux fois pour cette médaille.');
+  if (!ids.length) return;
+  const other = await prisma.medal.findFirst({
+    where: {
+      OR: ROLE_COLUMNS.map((c) => ({ [c]: { in: ids } })),
+      NOT: medalId ? { id: medalId } : undefined,
+    },
+  });
   if (other) throw conflict(`Ce rôle Discord est déjà associé à la médaille « ${other.name} ».`);
 }
 
@@ -143,7 +171,11 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
   if (await prisma.medal.findUnique({ where: { name: body.name } })) {
     throw conflict('Une médaille porte déjà ce nom.');
   }
-  await assertRoleFree(body.discordRoleId);
+  // Rôles de palier : seulement pour une médaille à paliers (les trois images envoyées).
+  const tierRoles = Object.fromEntries(
+    TIER_ROLE_FIELDS.map(({ column }) => [column, tierFiles ? (body[column] ?? null) : null]),
+  ) as Record<(typeof TIER_ROLE_FIELDS)[number]['column'], string | null>;
+  await assertRolesFree({ discordRoleId: body.discordRoleId, ...tierRoles });
   const { stored, cleanup } = await storeImages(req);
   // Rôle Discord de la médaille : rôle existant choisi, aucun, ou créé sans aucune permission.
   let discordRoleId = body.discordRoleId ?? null;
@@ -159,6 +191,7 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
     data: {
       name: body.name,
       discordRoleId,
+      ...tierRoles,
       description: body.description,
       category: body.category,
       order: body.order,
@@ -179,12 +212,19 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
   const medal = await prisma.medal.findUnique({ where: { id } });
   if (!medal) throw notFound('Médaille introuvable.');
   const body = parse(MedalFields.partial(), req.body);
-  await assertRoleFree(body.discordRoleId, id);
   // Paliers : retirés tous ensemble, ou remplacés image par image (les trois restent renseignées).
-  if (!body.removeTiers) {
-    const tiersAfter = TIER_IMAGE_FIELDS.filter((t) => fileOf(req, t.field) || medal[t.column]).length;
-    if (tiersAfter !== 0 && tiersAfter !== TIER_IMAGE_FIELDS.length) throw badRequest(PARTIAL_TIERS);
-  }
+  const tiersAfter = body.removeTiers
+    ? 0
+    : TIER_IMAGE_FIELDS.filter((t) => fileOf(req, t.field) || medal[t.column]).length;
+  if (tiersAfter !== 0 && tiersAfter !== TIER_IMAGE_FIELDS.length) throw badRequest(PARTIAL_TIERS);
+  // Rôles après modification : ceux envoyés, sinon les actuels ; ceux des paliers seulement s'il y en a.
+  const roles = Object.fromEntries(
+    ROLE_COLUMNS.map((c) => [
+      c,
+      !tiersAfter && c !== 'discordRoleId' ? null : body[c] === undefined ? medal[c] : body[c],
+    ]),
+  ) as Record<RoleColumn, string | null>;
+  await assertRolesFree(roles, id);
   const { stored } = await storeImages(req);
   const tierData = Object.fromEntries(
     TIER_IMAGE_FIELDS.map(({ column }) => [column, body.removeTiers ? null : (stored[column] ?? medal[column])]),
@@ -198,7 +238,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
       order: body.order,
       repeatable: body.repeatable,
       isActive: body.isActive,
-      discordRoleId: body.discordRoleId,
+      ...roles,
       ...(stored.imageUrl ? { imageUrl: stored.imageUrl } : {}),
       ...tierData,
     },

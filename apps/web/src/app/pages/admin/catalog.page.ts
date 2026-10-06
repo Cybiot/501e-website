@@ -21,6 +21,7 @@ interface MedalForm {
   removeTiers: boolean;
   /** Rôle Discord : identifiant d'un rôle existant, null (aucun) ou NEW_ROLE (création seulement). */
   discordRoleId: string | null;
+  tierRoles: Record<MedalTier, string | null>;
 }
 
 /** Création : un rôle sans permission est créé au nom de la médaille. */
@@ -38,6 +39,7 @@ const empty = (): MedalForm => ({
   currentTierImages: null,
   removeTiers: false,
   discordRoleId: NEW_ROLE,
+  tierRoles: { bronze: null, silver: null, gold: null },
 });
 
 @Component({
@@ -136,11 +138,16 @@ export class CatalogPage {
       currentTierImages: m.tierImages,
       removeTiers: false,
       discordRoleId: m.discordRoleId,
+      tierRoles: m.tierRoles ?? { bronze: null, silver: null, gold: null },
     });
   }
 
   protected patch(p: Partial<MedalForm>) {
     this.editing.update((f) => (f ? { ...f, ...p } : f));
+  }
+
+  protected patchTierRole(tier: MedalTier, roleId: string | null) {
+    this.editing.update((f) => (f ? { ...f, tierRoles: { ...f.tierRoles, [tier]: roleId } } : f));
   }
 
   protected onImage(e: Event) {
@@ -196,6 +203,9 @@ export class CatalogPage {
       if (tierFiles.bronze) form.append('imageBronze', tierFiles.bronze);
       if (tierFiles.silver) form.append('imageSilver', tierFiles.silver);
       if (tierFiles.gold) form.append('imageGold', tierFiles.gold);
+      form.append('discordRoleBronzeId', f.tierRoles.bronze ?? '');
+      form.append('discordRoleSilverId', f.tierRoles.silver ?? '');
+      form.append('discordRoleGoldId', f.tierRoles.gold ?? '');
     }
 
     this.saving.set(true);

@@ -159,6 +159,8 @@ export interface AdminMedal extends Medal {
   isActive: boolean;
   repeatable: boolean;
   discordRoleId: string | null;
+  /** Rôles Discord des paliers (médaille à paliers uniquement). */
+  tierRoles: Record<MedalTier, string | null> | null;
   /** Attributions officielles (annoncées, non retirées). */
   awardsCount: number;
   /** Aucune attribution, même en attente ou retirée : la médaille peut être supprimée. */
