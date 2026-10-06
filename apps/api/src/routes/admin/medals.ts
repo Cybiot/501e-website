@@ -77,6 +77,7 @@ medalsAdminRouter.get('/medals', async (_req, res) => {
       order: m.order,
       isActive: m.isActive,
       repeatable: m.repeatable,
+      discordRoleId: m.discordRoleId,
       awardsCount: m._count.awards,
       deletable: !used.has(m.id),
     })),
@@ -94,7 +95,24 @@ const MedalFields = z.object({
   isActive: boolField.default(true),
   /** Retire les images de palier : la médaille redevient sans palier. */
   removeTiers: boolField.default(false),
+  /**
+   * Rôle Discord existant associé à la médaille ; vide : aucun rôle. Absent à la création : un
+   * rôle sans permission est créé au nom de la médaille ; absent en modification : inchangé.
+   */
+  discordRoleId: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v || null)),
 });
+
+/** Un rôle Discord ne désigne qu'une seule médaille. */
+async function assertRoleFree(discordRoleId: string | null | undefined, medalId?: string) {
+  if (!discordRoleId) return;
+  const other = await prisma.medal.findFirst({ where: { discordRoleId, NOT: medalId ? { id: medalId } : undefined } });
+  if (other) throw conflict(`Ce rôle Discord est déjà associé à la médaille « ${other.name} ».`);
+}
 
 /** Stocke les images envoyées ; `cleanup` les supprime si la suite de l'opération échoue. */
 async function storeImages(req: Request) {
@@ -125,14 +143,17 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
   if (await prisma.medal.findUnique({ where: { name: body.name } })) {
     throw conflict('Une médaille porte déjà ce nom.');
   }
+  await assertRoleFree(body.discordRoleId);
   const { stored, cleanup } = await storeImages(req);
-  // Rôle Discord de la médaille, créé sans aucune permission.
-  let discordRoleId: string;
-  try {
-    discordRoleId = await discord().createRole(body.name);
-  } catch (err) {
-    await cleanup();
-    throw await discordFailure(err, 'create_medal_role', req);
+  // Rôle Discord de la médaille : rôle existant choisi, aucun, ou créé sans aucune permission.
+  let discordRoleId = body.discordRoleId ?? null;
+  if (body.discordRoleId === undefined) {
+    try {
+      discordRoleId = await discord().createRole(body.name);
+    } catch (err) {
+      await cleanup();
+      throw await discordFailure(err, 'create_medal_role', req);
+    }
   }
   const medal = await prisma.medal.create({
     data: {
@@ -158,6 +179,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
   const medal = await prisma.medal.findUnique({ where: { id } });
   if (!medal) throw notFound('Médaille introuvable.');
   const body = parse(MedalFields.partial(), req.body);
+  await assertRoleFree(body.discordRoleId, id);
   // Paliers : retirés tous ensemble, ou remplacés image par image (les trois restent renseignées).
   if (!body.removeTiers) {
     const tiersAfter = TIER_IMAGE_FIELDS.filter((t) => fileOf(req, t.field) || medal[t.column]).length;
@@ -176,6 +198,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
       order: body.order,
       repeatable: body.repeatable,
       isActive: body.isActive,
+      discordRoleId: body.discordRoleId,
       ...(stored.imageUrl ? { imageUrl: stored.imageUrl } : {}),
       ...tierData,
     },

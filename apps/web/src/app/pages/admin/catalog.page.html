@@ -35,6 +35,7 @@
           </div>
         </div>
         <p class="small muted">{{ m.description }}</p>
+        <p class="small muted" style="margin: 0 0 var(--space-1)">Rôle Discord : {{ m.discordRoleId ? roleName(m.discordRoleId) : 'aucun' }}</p>
         <p class="small muted" style="margin: 0">
           Ordre {{ m.order }} ·
           @if (m.awardsCount) {
@@ -87,6 +88,21 @@
               <label for="mf-order">Ordre</label>
               <input id="mf-order" class="input" type="number" min="0" [ngModel]="f.order" (ngModelChange)="patch({ order: +$event })" name="order" />
             </div>
+          </div>
+          <div class="field">
+            <label for="mf-role">Rôle Discord</label>
+            <select id="mf-role" class="select" [ngModel]="f.discordRoleId" (ngModelChange)="patch({ discordRoleId: $event })" name="discordRoleId">
+              @if (!f.id) {
+                <option [ngValue]="newRole">Créer un rôle « {{ f.name || 'nom de la médaille' }} »</option>
+              }
+              <option [ngValue]="null">— Aucun —</option>
+              @for (role of roles(); track role.id) {
+                <option [ngValue]="role.id">{{ role.name }}</option>
+              }
+              @if (f.discordRoleId && f.discordRoleId !== newRole && !roles().some((x) => x.id === f.discordRoleId)) {
+                <option [ngValue]="f.discordRoleId">{{ f.discordRoleId }}</option>
+              }
+            </select>
           </div>
           <div class="field">
             <label for="mf-img">Image / ruban (PNG, WebP ou SVG · 1 Mo max)</label>

@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminAward, AdminMedal, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
+import { AdminAward, AdminMedal, DiscordRole, MEDAL_TIERS, MedalTier, MemberCard, TIER_LABELS } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { MemberPlaqueComponent } from '../../shared/member-plaque.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -19,7 +19,12 @@ interface MedalForm {
   currentImageUrl: string | null;
   currentTierImages: Record<MedalTier, string> | null;
   removeTiers: boolean;
+  /** Rôle Discord : identifiant d'un rôle existant, null (aucun) ou NEW_ROLE (création seulement). */
+  discordRoleId: string | null;
 }
+
+/** Création : un rôle sans permission est créé au nom de la médaille. */
+const NEW_ROLE = '__new__';
 
 const empty = (): MedalForm => ({
   id: null,
@@ -32,6 +37,7 @@ const empty = (): MedalForm => ({
   currentImageUrl: null,
   currentTierImages: null,
   removeTiers: false,
+  discordRoleId: NEW_ROLE,
 });
 
 @Component({
@@ -56,6 +62,8 @@ export class CatalogPage {
   protected readonly tiers = MEDAL_TIERS;
   protected readonly tierLabels = TIER_LABELS;
   protected readonly saving = signal(false);
+  protected readonly roles = signal<DiscordRole[]>([]);
+  protected readonly newRole = NEW_ROLE;
   /** Récipiendaires de la médaille ouverte (null : liste en cours de chargement). */
   protected readonly recipients = signal<{ medal: AdminMedal; items: AdminAward[] | null } | null>(null);
 
@@ -80,6 +88,11 @@ export class CatalogPage {
 
   constructor() {
     void this.load();
+    this.api.get<DiscordRole[]>('/admin/discord/roles').then((r) => this.roles.set(r)).catch(() => undefined);
+  }
+
+  protected roleName(id: string) {
+    return this.roles().find((r) => r.id === id)?.name ?? id;
   }
 
   protected async load() {
@@ -117,6 +130,7 @@ export class CatalogPage {
       currentImageUrl: m.imageUrl,
       currentTierImages: m.tierImages,
       removeTiers: false,
+      discordRoleId: m.discordRoleId,
     });
   }
 
@@ -168,6 +182,7 @@ export class CatalogPage {
     form.append('order', String(f.order));
     form.append('repeatable', String(f.repeatable));
     form.append('isActive', String(f.isActive));
+    if (f.discordRoleId !== NEW_ROLE) form.append('discordRoleId', f.discordRoleId ?? '');
     const file = this.imageFile();
     if (file) form.append('image', file);
     if (f.removeTiers) form.append('removeTiers', 'true');

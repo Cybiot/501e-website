@@ -158,6 +158,7 @@ export interface AdminMedal extends Medal {
   order: number;
   isActive: boolean;
   repeatable: boolean;
+  discordRoleId: string | null;
   /** Attributions officielles (annoncées, non retirées). */
   awardsCount: number;
   /** Aucune attribution, même en attente ou retirée : la médaille peut être supprimée. */

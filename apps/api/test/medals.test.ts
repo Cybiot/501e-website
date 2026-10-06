@@ -35,6 +35,28 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(medal.discordRoleId).toBe(mockDiscord().createdRoles[0]!.id);
   });
 
+  it('associe un rôle Discord existant (ou aucun) sans en créer, un rôle par médaille', async () => {
+    const { a } = await setup();
+    const withRole = await postMedal(a, 'Étoile de bronze').field({ discordRoleId: 'role-existant' });
+    expect(withRole.status).toBe(201);
+    const without = await postMedal(a, 'Purple Heart').field({ discordRoleId: '' });
+    expect(without.status).toBe(201);
+    expect(mockDiscord().createdRoles).toEqual([]);
+    const medal = await prisma.medal.findUniqueOrThrow({ where: { name: 'Étoile de bronze' } });
+    expect(medal.discordRoleId).toBe('role-existant');
+    expect((await prisma.medal.findUniqueOrThrow({ where: { name: 'Purple Heart' } })).discordRoleId).toBeNull();
+
+    // Le même rôle ne peut pas désigner deux médailles.
+    expect((await postMedal(a, 'Silver Star').field({ discordRoleId: 'role-existant' })).status).toBe(409);
+    const patch = (body: Record<string, string>) =>
+      a.agent.patch(`/api/admin/medals/${medal.id}`).set('X-XSRF-TOKEN', a.xsrf).field(body);
+    expect((await patch({ discordRoleId: 'role-autre' })).status).toBe(200);
+    expect((await patch({ name: 'Étoile de bronze' })).status).toBe(200);
+    expect((await prisma.medal.findUniqueOrThrow({ where: { id: medal.id } })).discordRoleId).toBe('role-autre');
+    expect((await patch({ discordRoleId: '' })).status).toBe(200);
+    expect((await prisma.medal.findUniqueOrThrow({ where: { id: medal.id } })).discordRoleId).toBeNull();
+  });
+
   it("n'enregistre pas la médaille si Discord ne peut pas créer le rôle", async () => {
     const { a } = await setup();
     mockDiscord().failNext = 1;
