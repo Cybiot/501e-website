@@ -47,13 +47,16 @@ export const MOCK_COMPANY_ROLES = [
   { slug: 'camp-toccoa', id: 'mock-company-camp-toccoa', name: 'Camp Toccoa' },
 ] as const;
 
-/** Rôles de platoon (compagnie par slug). Les instructeurs Toccoa réutilisent le rôle Staff Toccoa. */
+/**
+ * Rôles de platoon (compagnie par slug). « 1st Platoon » et « 2nd Platoon » sont partagés entre
+ * compagnies, comme sur le serveur. Les instructeurs Toccoa réutilisent le rôle Staff Toccoa.
+ */
 export const MOCK_PLATOON_ROLES = [
   { slug: 'steel-hawk', platoon: "Platoon d'assaut", id: 'mock-platoon-sh-assaut', name: "Steel Hawk - Platoon d'assaut" },
   { slug: 'steel-hawk', platoon: 'Platoon de soutien', id: 'mock-platoon-sh-soutien', name: 'Steel Hawk - Platoon de soutien' },
-  { slug: 'blood-wall', platoon: '1st Platoon', id: 'mock-platoon-bw-1', name: 'Blood Wall - 1st Platoon' },
-  { slug: 'blood-wall', platoon: '2nd Platoon', id: 'mock-platoon-bw-2', name: 'Blood Wall - 2nd Platoon' },
-  { slug: 'sledge-hammer', platoon: '1st Platoon', id: 'mock-platoon-sledge-1', name: 'Sledge Hammer - 1st Platoon' },
-  { slug: 'sledge-hammer', platoon: '2nd Platoon', id: 'mock-platoon-sledge-2', name: 'Sledge Hammer - 2nd Platoon' },
+  { slug: 'blood-wall', platoon: '1st Platoon', id: 'mock-platoon-1', name: '1st Platoon' },
+  { slug: 'blood-wall', platoon: '2nd Platoon', id: 'mock-platoon-2', name: '2nd Platoon' },
+  { slug: 'sledge-hammer', platoon: '1st Platoon', id: 'mock-platoon-1', name: '1st Platoon' },
+  { slug: 'sledge-hammer', platoon: '2nd Platoon', id: 'mock-platoon-2', name: '2nd Platoon' },
   { slug: 'camp-toccoa', platoon: 'Recrues', id: 'mock-platoon-toccoa-recrues', name: 'Toccoa - Recrues' },
 ] as const;

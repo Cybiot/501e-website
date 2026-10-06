@@ -74,6 +74,37 @@ export type CompanyIndex = {
   platoons: { name: string; discordRoleId: string | null }[];
 }[];
 
+/** Rôles de platoon utilisés par plusieurs compagnies (ex. « 1st Platoon » chez Blood Wall et Steel Hawk). */
+export function sharedPlatoonRoles(platoons: { discordRoleId: string | null }[]): Set<string> {
+  const seen = new Set<string>();
+  const shared = new Set<string>();
+  for (const { discordRoleId: r } of platoons) {
+    if (!r) continue;
+    if (seen.has(r)) shared.add(r);
+    seen.add(r);
+  }
+  return shared;
+}
+
+export const loadSharedPlatoonRoles = async () =>
+  sharedPlatoonRoles(await prisma.platoon.findMany({ where: { discordRoleId: { not: null } }, select: { discordRoleId: true } }));
+
+/**
+ * Le membre est-il dans ce platoon ? Il doit avoir le rôle du platoon. Un rôle partagé entre
+ * plusieurs compagnies (« 1st Platoon ») ne désigne le platoon qu'avec le rôle de la compagnie ;
+ * un rôle propre au platoon suffit seul (ex. « Staff Toccoa » pour les instructeurs du camp).
+ */
+export function inPlatoon(
+  roleIds: string[],
+  company: { discordRoleId: string | null },
+  platoon: { discordRoleId: string | null },
+  shared: Set<string>,
+) {
+  const r = platoon.discordRoleId;
+  if (!r || !roleIds.includes(r)) return false;
+  return !shared.has(r) || (!!company.discordRoleId && roleIds.includes(company.discordRoleId));
+}
+
 export const loadCompanyIndex = (): Promise<CompanyIndex> =>
   prisma.company.findMany({
     orderBy: { order: 'asc' },
@@ -90,17 +121,18 @@ export const loadCompanyIndex = (): Promise<CompanyIndex> =>
 export const isStaffRank = (rank: { branch: string } | null | undefined) => rank?.branch === 'staff';
 
 /**
- * Compagnie d'un membre : rôle de la compagnie ou de l'un de ses platoons (même règle que la page
- * compagnie). Si plusieurs correspondent, la première dans l'ordre l'emporte (le camp Toccoa,
+ * Compagnie d'un membre : rôle de la compagnie ou de l'un de ses platoons (cf. `inPlatoon`, même
+ * règle que la page compagnie). Si plusieurs correspondent, la première dans l'ordre l'emporte (le camp Toccoa,
  * dernier, ne s'affiche que pour qui n'est dans aucune compagnie de combat). L'état-major passe
  * après toutes les autres : un chef de pôle affiche sa compagnie, l'état-major ne s'affiche que
  * pour qui n'en a pas (Lt.Col, Col…).
  */
 export function companyOf(roleIds: string[], rank: { branch: string } | null, companies: CompanyIndex) {
   const has = (id: string | null) => !!id && roleIds.includes(id);
+  const shared = sharedPlatoonRoles(companies.flatMap((c) => c.platoons));
   const ordered = [...companies.filter((c) => !c.headquarters), ...companies.filter((c) => c.headquarters)];
   for (const c of ordered) {
-    const platoon = c.platoons.find((p) => has(p.discordRoleId));
+    const platoon = c.platoons.find((p) => inPlatoon(roleIds, c, p, shared));
     if (platoon || has(c.discordRoleId) || (c.headquarters && isStaffRank(rank))) {
       return { slug: c.slug, name: c.name, platoon: platoon?.name ?? null };
     }

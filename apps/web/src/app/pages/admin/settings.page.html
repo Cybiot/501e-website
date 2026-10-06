@@ -220,7 +220,7 @@
   <section class="card" style="margin-top: var(--space-5)" aria-labelledby="companies-title">
     <h2 id="companies-title" class="card-title">Compagnies et platoons ↔ rôles Discord</h2>
     <p class="small muted">
-      Un membre apparaît sur la page d'une compagnie s'il a le rôle de la compagnie ou celui de l'un de ses platoons.
+      Un membre apparaît sur la page d'une compagnie s'il a le rôle de la compagnie ou celui de l'un de ses platoons. Un même rôle de platoon peut servir à plusieurs compagnies (ex. « 1st Platoon ») : il ne compte alors qu'avec le rôle de la compagnie.
       Les responsables « Commanding Officer » et « Executive Officer » sont affichés dans « Commandement », au-dessus des platoons ; les « Platoon Leader » en tête de leur platoon. Les membres sans platoon sont rangés dans « Hors platoon ».
     </p>
     @for (c of d.companies; track c.id) {

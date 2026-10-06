@@ -10,7 +10,9 @@ import { notifyAdmins } from '../lib/notify.js';
 import {
   avatarOf,
   isStaffRank,
+  inPlatoon,
   loadCompanyIndex,
+  loadSharedPlatoonRoles,
   medalImageFor,
   memberInclude,
   officialAward,
@@ -158,9 +160,13 @@ publicRouter.get('/companies/:slug', async (req, res) => {
   });
   if (!company) throw notFound('Compagnie introuvable.');
 
-  const roleIds = [company.discordRoleId, ...company.platoons.map((p) => p.discordRoleId)].filter(
-    (r): r is string => !!r,
-  );
+  // Un rôle de platoon partagé avec d'autres compagnies ne compte qu'avec le rôle de la compagnie,
+  // déjà dans la liste : seuls les rôles propres à un platoon y sont ajoutés.
+  const shared = await loadSharedPlatoonRoles();
+  const roleIds = [
+    company.discordRoleId,
+    ...company.platoons.map((p) => p.discordRoleId).filter((r) => !r || !shared.has(r)),
+  ].filter((r): r is string => !!r);
   // État-major : en plus de son rôle (chefs de pôle), les grades « staff » (Lt.Col, Col) d'office.
   const membership: Prisma.UserWhereInput[] = [
     ...(roleIds.length ? [{ discordRoleIds: { hasSome: roleIds } }] : []),
@@ -212,9 +218,7 @@ publicRouter.get('/companies/:slug', async (req, res) => {
       continue;
     }
     const command = commandOf(u);
-    const platoon = company.platoons.find(
-      (p) => p.discordRoleId && u.discordRoleIds.includes(p.discordRoleId),
-    );
+    const platoon = company.platoons.find((p) => inPlatoon(u.discordRoleIds, company, p, shared));
     const groupId = command === 'co' || command === 'xo' ? 'command' : (platoon?.id ?? 'other');
     groups.find((g) => g.id === groupId)!.members.push(u);
   }

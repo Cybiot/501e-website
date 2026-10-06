@@ -132,7 +132,8 @@ model Responsibility {
 }
 
 /// Compagnie (et camp Toccoa). Textes et logo : apps/web/src/content/compagnies.json, par slug.
-/// L'appartenance se lit dans User.discordRoleIds : rôle de la compagnie ou de l'un de ses platoons.
+/// L'appartenance se lit dans User.discordRoleIds : rôle de la compagnie ou de l'un de ses platoons
+/// (un rôle de platoon partagé entre compagnies, ex. « 1st Platoon », exige aussi le rôle de la compagnie).
 model Company {
   id            String  @id @default(cuid())
   slug          String  @unique
@@ -151,11 +152,13 @@ model Platoon {
   companyId     String
   name          String
   order         Int     @default(0)
-  discordRoleId String? @unique
+  /// Peut être partagé entre compagnies (« 1st Platoon »), pas entre deux platoons d'une compagnie.
+  discordRoleId String?
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, name])
+  @@unique([companyId, discordRoleId])
   @@index([companyId])
 }
 

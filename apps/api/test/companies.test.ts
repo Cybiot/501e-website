@@ -111,6 +111,44 @@ describe('Compagnies', () => {
     expect(members.map((m: { id: string }) => m.id)).not.toContain(outsider!.id);
   });
 
+  it('rôle de platoon partagé entre compagnies : le platoon se déduit du rôle de la compagnie', async () => {
+    await prisma.company.create({
+      data: {
+        slug: 'blood-wall',
+        name: 'Blood Wall',
+        order: 10,
+        discordRoleId: 'role-bw',
+        platoons: { create: [{ name: '1st Platoon', discordRoleId: 'role-1st' }] },
+      },
+    });
+    await prisma.company.create({
+      data: {
+        slug: 'steel-hawk',
+        name: 'Steel Hawk',
+        order: 20,
+        discordRoleId: 'role-sh',
+        platoons: { create: [{ name: '1st Platoon', discordRoleId: 'role-1st' }] },
+      },
+    });
+    const [bw, sh, platoonOnly] = await Promise.all(Array.from({ length: 3 }, () => createUser('member')));
+    await giveRoles(bw!.id, ['role-bw', 'role-1st']);
+    await giveRoles(sh!.id, ['role-sh', 'role-1st']);
+    // Sans rôle de compagnie, « 1st Platoon » ne désigne aucune compagnie.
+    await giveRoles(platoonOnly!.id, ['role-1st']);
+
+    const list = await request(app).get('/api/members');
+    const companyOf = (id: string) => list.body.items.find((m: { id: string }) => m.id === id).company;
+    expect(companyOf(bw!.id)).toEqual({ slug: 'blood-wall', name: 'Blood Wall', platoon: '1st Platoon' });
+    expect(companyOf(sh!.id)).toEqual({ slug: 'steel-hawk', name: 'Steel Hawk', platoon: '1st Platoon' });
+    expect(companyOf(platoonOnly!.id)).toBeNull();
+
+    const page = await request(app).get('/api/companies/steel-hawk');
+    type Group = { name: string; members: { id: string }[] };
+    expect(page.body.groups.map((g: Group) => [g.name, g.members.map((m) => m.id)])).toEqual([
+      ['1st Platoon', [sh!.id]],
+    ]);
+  });
+
   it('respecte les profils masqués pour les visiteurs', async () => {
     await createCompany();
     const hidden = await createUser('member', { publicProfile: false });
