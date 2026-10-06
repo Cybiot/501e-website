@@ -14,6 +14,8 @@ import {
 export interface ApiGuildMember {
   user?: { id: string; username: string; global_name?: string | null; avatar?: string | null };
   nick?: string | null;
+  /** Avatar propre au serveur (hash), prioritaire sur l'avatar global. */
+  avatar?: string | null;
   roles: string[];
   joined_at?: string | null;
 }
@@ -23,7 +25,7 @@ export const toMemberInfo = (m: ApiGuildMember): GuildMemberInfo | null => {
   return {
     discordId: m.user.id,
     displayName: m.nick || m.user.global_name || m.user.username,
-    avatarUrl: avatarUrlFor(m.user.id, m.user.avatar),
+    avatarUrl: avatarUrlFor(m.user.id, m.user.avatar, { guildId: config.DISCORD_GUILD_ID, hash: m.avatar }),
     roles: m.roles,
     joinedAt: m.joined_at ? new Date(m.joined_at) : null,
   };

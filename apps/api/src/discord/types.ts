@@ -61,7 +61,19 @@ export class DiscordError extends Error {
   }
 }
 
-export const avatarUrlFor = (discordId: string, avatarHash: string | null | undefined): string => {
+/**
+ * URL de l'avatar : l'avatar propre au serveur de la communauté s'il existe (`guildAvatar`),
+ * sinon l'avatar Discord global, sinon l'avatar par défaut de Discord.
+ */
+export const avatarUrlFor = (
+  discordId: string,
+  avatarHash: string | null | undefined,
+  guildAvatar?: { guildId: string; hash: string | null | undefined },
+): string => {
+  if (guildAvatar?.hash) {
+    const ext = guildAvatar.hash.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/guilds/${guildAvatar.guildId}/users/${discordId}/avatars/${guildAvatar.hash}.${ext}?size=256`;
+  }
   if (avatarHash) {
     const ext = avatarHash.startsWith('a_') ? 'gif' : 'png';
     return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${ext}?size=256`;

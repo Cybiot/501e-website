@@ -74,7 +74,7 @@ export async function fetchIdentity(accessToken: string): Promise<OAuthIdentity>
   return {
     discordId: user.id,
     displayName: member?.displayName ?? user.global_name ?? user.username,
-    avatarUrl: avatarUrlFor(user.id, user.avatar),
+    avatarUrl: member?.avatarUrl ?? avatarUrlFor(user.id, user.avatar),
     member,
   };
 }

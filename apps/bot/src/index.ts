@@ -45,7 +45,8 @@ async function relay(discordId: string, member: GuildMember | null) {
     member: member
       ? {
           displayName: member.displayName,
-          avatarUrl: member.user.displayAvatarURL({ size: 256, extension: 'png' }),
+          // GuildMember#displayAvatarURL : avatar du serveur s'il existe, sinon avatar global.
+          avatarUrl: member.displayAvatarURL({ size: 256, extension: 'png' }),
           roles: member.roles.cache.filter((r) => r.id !== GUILD_ID).map((r) => r.id),
           joinedAt: member.joinedAt?.toISOString() ?? null,
         }
