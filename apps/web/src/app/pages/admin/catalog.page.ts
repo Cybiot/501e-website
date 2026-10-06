@@ -95,6 +95,11 @@ export class CatalogPage {
     return this.roles().find((r) => r.id === id)?.name ?? id;
   }
 
+  /** Rôle associé absent de la liste Discord (supprimé, ou liste indisponible) : affiché par son identifiant. */
+  protected isUnlistedRole(id: string | null) {
+    return !!id && id !== NEW_ROLE && !this.roles().some((r) => r.id === id);
+  }
+
   protected async load() {
     try {
       const r = await this.api.get<{ categories: string[]; items: AdminMedal[] }>('/admin/medals');

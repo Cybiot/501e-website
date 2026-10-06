@@ -99,7 +99,7 @@
               @for (role of roles(); track role.id) {
                 <option [ngValue]="role.id">{{ role.name }}</option>
               }
-              @if (f.discordRoleId && f.discordRoleId !== newRole && !roles().some((x) => x.id === f.discordRoleId)) {
+              @if (isUnlistedRole(f.discordRoleId)) {
                 <option [ngValue]="f.discordRoleId">{{ f.discordRoleId }}</option>
               }
             </select>
