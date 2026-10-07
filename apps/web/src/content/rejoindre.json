@@ -1,10 +1,10 @@
 {
-  "intro": "Tu veux sauter avec nous ? Voici le parcours d'une recrue, de la découverte à la première opération. Compte en général une à deux semaines. [Durée indicative à adapter.]",
+  "intro": "Tu veux sauter avec nous ? Voici le parcours d'une recrue, de la découverte à la première opération. Compte en général quelques jours ou une semaine.",
   "steps": [
     {
       "icon": "check",
       "title": "Prérequis",
-      "text": "Être francophone, majeur [à confirmer], posséder un micro et avoir l'envie de jouer en équipe dans un cadre RP.",
+      "text": "Être francophone, être âgé d'au moins 16 ans, posséder un micro et avoir l'envie de jouer en équipe dans un cadre RP.",
       "items": ["Micro fonctionnel", "Disponibilité pour les opérations", "Respect du règlement"]
     },
     {
@@ -33,9 +33,9 @@
     }
   ],
   "faq": [
-    { "q": "Combien de temps dure le recrutement ?", "a": "En général une à deux semaines, selon tes disponibilités et celles des recruteurs." },
+    { "q": "Combien de temps dure le recrutement ?", "a": "Nous proposons un entretien de 30 minutes à 1h qui permet de te montrer notre fonctionnement et de parler de tes attentes. Si tu es toujours intéressé, tu pourras intégrer la 501e." },
     { "q": "Puis-je d'abord venir voir ?", "a": "Bien sûr : rejoins le Discord et discute avec nous avant de te décider." },
-    { "q": "Je joue déjà dans une autre communauté, est-ce un problème ?", "a": "[À compléter] Précise ici votre politique concernant la double appartenance." },
-    { "q": "Mes données sont-elles protégées ?", "a": "Oui. Le site ne collecte que ton identifiant et ton pseudo Discord ; aucune adresse e-mail. Consulte la politique de confidentialité." }
+    { "q": "Je joue déjà dans une autre communauté, est-ce un problème ?", "a": "Il n'est pas possible de faire partie de plusieurs communautés sur le jeu Squad 44 en même temps." },
+    { "q": "Mes données sont-elles protégées ?", "a": "Oui. Le site ne collecte que ton identifiant et ton pseudo Discord ; aucune adresse e-mail.", "link": { "label": "Consulte la politique de confidentialité.", "path": "/confidentialite" } }
   ]
 }

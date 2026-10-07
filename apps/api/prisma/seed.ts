@@ -1,7 +1,7 @@
 /**
  * Données de démonstration (entièrement fictives).
  * Comptes de connexion démo : demo-admin (Admin), demo-membre (Membre, consentement à donner),
- * demo-visiteur (connecté sans rôle membre → traité comme un visiteur).
+ * demo-visiteur (connecté sans rôle membre → traité comme un visiteur), demo-veteran (Vétéran : accès membre).
  */
 import { PrismaClient, type MedalTier } from '@prisma/client';
 import { MEDAL_CATALOG, medalImages } from '../src/data/medals.js';
@@ -134,6 +134,10 @@ async function main() {
       }),
     ),
   );
+  // Anciens membres, sous le Private ; leur rôle « Vétéran » remplace le rôle « 501e ».
+  const veteranRank = await prisma.rank.create({
+    data: { name: 'Vétéran', abbreviation: 'Vet.', branch: 'veteran', order: 0, discordRoleId: MOCK_ROLES.veteran.id },
+  });
   const resps = await Promise.all(
     RESPONSIBILITIES.map(([key, name, description, kind], i) =>
       prisma.responsibility.create({
@@ -195,12 +199,14 @@ async function main() {
     roles?: string[];
     consent?: boolean;
     member?: boolean;
+    veteran?: boolean;
     hidden?: boolean;
   };
   const users: SeedUser[] = [
     { discordId: 'demo-admin', name: 'Cpt. Winters (démo admin)', rank: 13, admin: true, resp: [0] },
     { discordId: 'demo-membre', name: 'Pvt. Blithe (démo membre)', rank: 0, consent: false },
     { discordId: 'demo-visiteur', name: 'Curieux (démo non-membre)', rank: -1, member: false },
+    { discordId: 'demo-veteran', name: 'Vet. Nixon (démo vétéran)', rank: -1, veteran: true },
   ];
   const RESP = Object.fromEntries(RESPONSIBILITIES.map(([key], i) => [key, i])) as Record<
     (typeof RESPONSIBILITIES)[number][0],
@@ -220,7 +226,7 @@ async function main() {
     users.push({
       discordId: `demo-${String(n).padStart(3, '0')}`,
       // Format Discord : « Grade Prénom(s) Nom "Surnom" », ex. « T/4. Walter J. Cabezas "Actif" ».
-      name: `${RANKS[rank]![2]} ${first}${middle} ${last}${nickname}`,
+      name: `${extra.veteran ? veteranRank.abbreviation : RANKS[rank]![2]} ${first}${middle} ${last}${nickname}`,
       rank,
       ...extra,
     });
@@ -253,12 +259,16 @@ async function main() {
     addUser(0, { roles: [companyRole('camp-toccoa'), recruits], hidden: i === 2 || i === 5 });
   }
 
+  // Vétérans : anciens membres, sans rôle « 501e » ni grade actif.
+  for (let i = 0; i < 3; i++) addUser(-1, { veteran: true });
+
   let created = 0;
   for (const [idx, u] of users.entries()) {
     const isMember = u.member !== false;
+    const rankId = u.veteran ? veteranRank.id : u.rank >= 0 ? ranks[u.rank]!.id : null;
     const roles = isMember
       ? [
-          MOCK_ROLES.member.id,
+          u.veteran ? MOCK_ROLES.veteran.id : MOCK_ROLES.member.id,
           ...(u.admin ? [MOCK_ROLES.admin.id] : []),
           ...(u.rank >= 0 ? [MOCK_RANK_ROLES[u.rank]!.id] : []),
           ...(u.resp ?? []).flatMap((r) => MOCK_RESPONSIBILITY_ROLES.find((m) => m.key === RESPONSIBILITIES[r]![0])?.id ?? []),
@@ -274,8 +284,8 @@ async function main() {
         discordAvatarUrl: null,
         status: !isMember ? 'none' : u.admin ? 'admin' : 'member',
         discordRoleIds: roles,
-        rankId: isMember && u.rank >= 0 ? ranks[u.rank]!.id : null,
-        lastKnownRankId: isMember && u.rank >= 0 ? ranks[u.rank]!.id : null,
+        rankId: isMember ? rankId : null,
+        lastKnownRankId: isMember ? rankId : null,
         joinedAt: isMember ? joinedAt : null,
         rolesSyncedAt: new Date(),
         publicProfileEnabled: !u.hidden,
@@ -343,7 +353,7 @@ async function main() {
   await prisma.notification.create({ data: { type: 'join_click', payload: { count: 3, discordIds: [] } } });
   await prisma.auditLog.create({ data: { action: 'settings.updated', metadata: { seed: true } } });
 
-  console.log(`Seed terminé : ${created} utilisateurs, ${medals.length} médailles, ${ranks.length} grades.`);
+  console.log(`Seed terminé : ${created} utilisateurs, ${medals.length} médailles, ${ranks.length + 1} grades.`);
 }
 
 main()

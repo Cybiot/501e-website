@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import content from '../../../content/rejoindre.json';
 import { TPipe } from '../../core/i18n';
 import { SeoService } from '../../core/seo.service';
@@ -6,10 +7,16 @@ import { BreadcrumbComponent } from '../../shared/breadcrumb.component';
 import { IconComponent } from '../../shared/icon.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 
+interface FaqItem {
+  q: string;
+  a: string;
+  link?: { label: string; path: string };
+}
+
 @Component({
   selector: 'app-join-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TPipe, IconComponent, BreadcrumbComponent, RevealDirective],
+  imports: [TPipe, IconComponent, BreadcrumbComponent, RevealDirective, RouterLink],
   template: `
     <div class="container">
       <header class="page-header">
@@ -56,7 +63,12 @@ import { RevealDirective } from '../../shared/reveal.directive';
         @for (f of c.faq; track f.q) {
           <details class="card" style="margin-bottom: var(--space-3)">
             <summary style="cursor: pointer; font-weight: 600">{{ f.q }}</summary>
-            <p class="muted" style="margin: var(--space-3) 0 0">{{ f.a }}</p>
+            <p class="muted" style="margin: var(--space-3) 0 0">
+              {{ f.a }}
+              @if (f.link; as l) {
+                <a [routerLink]="l.path">{{ l.label }}</a>
+              }
+            </p>
           </details>
         }
       </section>
@@ -91,10 +103,12 @@ import { RevealDirective } from '../../shared/reveal.directive';
     .join-steps ul li {
       display: flex;
       gap: var(--space-2);
-      align-items: center;
+      align-items: flex-start;
       color: var(--text-muted);
     }
     .join-steps ul app-icon {
+      flex-shrink: 0;
+      margin-top: 0.2em;
       color: var(--olive-text);
     }
     .join-cta {
@@ -117,7 +131,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
   `,
 })
 export class JoinPage {
-  protected readonly c = content;
+  protected readonly c: Omit<typeof content, 'faq'> & { faq: FaqItem[] } = content;
   readonly invitation = input<string>();
   constructor() {
     inject(SeoService).set({

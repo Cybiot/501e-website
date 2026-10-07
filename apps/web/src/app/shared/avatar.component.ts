@@ -57,7 +57,7 @@ export class AvatarComponent {
 }
 
 /** Grade en tête de pseudo (« T/4. », « Lt.Col. »…), au cas où le préfixe n'a pas été retiré. */
-const RANK_PREFIX = /^(?:Pvt|Pfc|Cpl|T\/[345]|Sgt|S\/Sgt|SSgt|Sfc|1\/Sgt|M\/Sgt|2Lt|1Lt|Lt|Cpt|Capt|Mjr|Maj|Lt\.?\s?Col|Col)\.?\s+/i;
+const RANK_PREFIX = /^(?:Pvt|Pfc|Cpl|T\/[345]|Sgt|S\/Sgt|SSgt|Sfc|1\/Sgt|M\/Sgt|2Lt|1Lt|Lt|Cpt|Capt|Mjr|Maj|Lt\.?\s?Col|Col|Vet)\.?\s+/i;
 
 /**
  * Initiales d'un pseudo « Grade Prénom(s) Nom "Surnom" » : première lettre du prénom et du nom de

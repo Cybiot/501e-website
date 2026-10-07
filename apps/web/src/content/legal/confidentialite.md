@@ -1,12 +1,10 @@
 # Politique de confidentialité
 
-> Version 2026-09-v1. Les éléments entre crochets sont à compléter par le responsable de traitement.
-
 La communauté 501e attache une grande importance à la protection de tes données. Ce site applique le Règlement général sur la protection des données (RGPD) avec un principe simple : **collecter le strict nécessaire**.
 
 ## Responsable du traitement
 
-**[Nom de l'association ou du responsable]** — contact / référent données : **[adresse de contact]**.
+La communauté **501e** — contact / référent données : **Warbonds501e@gmail.com**.
 
 ## Données collectées
 
@@ -35,7 +33,7 @@ La communauté 501e attache une grande importance à la protection de tes donné
 
 ## Destinataires et sous-traitants
 
-- **Hébergeur** : [nom], hébergement dans l'Union européenne.
+- **Hébergeur** : **OVHcloud** (OVH SAS, 2 rue Kellermann, 59100 Roubaix, France), hébergement en France, dans l'Union européenne.
 - **Discord** (connexion OAuth2, rôles, annonces) : les avatars sont chargés depuis les serveurs de Discord. Consulte la politique de confidentialité de Discord.
 - **Fond de carte** : tuiles OpenStreetMap (ou du fournisseur configuré) chargées par ton navigateur sur la page Carte (espace membre uniquement).
 - **Recherche de villes** : liste de villes **hébergée sur notre serveur** (données [GeoNames](https://www.geonames.org/), licence CC BY 4.0) ; ta recherche ne quitte jamais notre serveur et n'est transmise à aucun tiers.
@@ -60,7 +58,7 @@ Depuis **Mon profil**, tu peux à tout moment :
 - **masquer** ton profil au public (limitation) ;
 - **supprimer ton compte** et tes données (effacement). Le journal d'audit est alors anonymisé. Les rôles Discord relèvent de Discord et de l'état-major.
 
-Pour toute autre demande : **[adresse de contact]**. Tu peux également introduire une réclamation auprès de la **CNIL** (www.cnil.fr).
+Pour toute autre demande : **Warbonds501e@gmail.com**. Tu peux également introduire une réclamation auprès de la **CNIL** (www.cnil.fr).
 
 ## Sécurité
 

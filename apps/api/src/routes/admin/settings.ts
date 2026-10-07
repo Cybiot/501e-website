@@ -74,7 +74,7 @@ const nullableRole = z
   // Absent (PATCH partiel) : on ne touche pas au rôle ; vide : on le retire.
   .transform((v) => (v === undefined ? undefined : v || null));
 
-const RankBranch = z.enum(['toccoa', 'enlisted', 'platoon_leader', 'xo', 'co', 'staff']);
+const RankBranch = z.enum(['toccoa', 'enlisted', 'platoon_leader', 'xo', 'co', 'staff', 'veteran']);
 
 const RankBody = z.object({
   name: z.string().trim().min(2).max(60),

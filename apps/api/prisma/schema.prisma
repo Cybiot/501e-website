@@ -95,6 +95,8 @@ enum RankBranch {
   xo
   co
   staff
+  /// Anciens membres : rôle Discord « Vétéran » au lieu de « 501e », mêmes accès qu'un membre.
+  veteran
 }
 
 model Rank {

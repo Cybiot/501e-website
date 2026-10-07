@@ -6,6 +6,8 @@ export const MOCK_ROLES = {
   member: { id: 'mock-role-membre', name: '501e', color: 0x6b7f3a },
   admin: { id: 'mock-role-etat-major', name: 'État-major', color: 0xc9a24b },
   recruit: { id: 'mock-role-recrue', name: 'Recrue', color: 0x8a8f80 },
+  /** Anciens membres : associé au grade « Vet. », donne les mêmes accès que « 501e ». */
+  veteran: { id: 'mock-role-veteran', name: 'Vétéran', color: 0x7a6a4f },
 } as const;
 
 export const MOCK_RANK_ROLES = [

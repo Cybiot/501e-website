@@ -9,8 +9,9 @@ export interface Me {
   consent?: { version: string; text: string } | null;
 }
 
-/** Branches de progression, du plus bas au plus haut. */
+/** Branches de progression, du plus bas au plus haut (les vétérans, anciens membres, sous le Pvt). */
 export const RANK_BRANCHES = [
+  { id: 'veteran', label: 'Vétérans' },
   { id: 'toccoa', label: 'Toccoa Bootcamp' },
   { id: 'enlisted', label: 'Homme du rang' },
   { id: 'platoon_leader', label: 'Platoon Leader' },

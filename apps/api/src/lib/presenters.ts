@@ -119,6 +119,11 @@ export const loadCompanyIndex = (): Promise<CompanyIndex> =>
 
 /** Grades rattachés d'office à l'état-major (Lt.Col, Col). */
 export const isStaffRank = (rank: { branch: string } | null | undefined) => rank?.branch === 'staff';
+export const isVeteranRank = (rank: { branch: string } | null | undefined) => rank?.branch === 'veteran';
+
+/** Clé de tri par grade (décroissante) : les vétérans tout en bas, sous les membres sans grade. */
+export const rankSortKey = (rank: { branch: string; order: number } | null | undefined) =>
+  isVeteranRank(rank) ? -2 : (rank?.order ?? -1);
 
 /**
  * Compagnie d'un membre : rôle de la compagnie ou de l'un de ses platoons (cf. `inPlatoon`, même

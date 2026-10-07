@@ -18,7 +18,9 @@ import { ValuesListComponent } from '../../shared/values-list.component';
         <app-breadcrumb [items]="[{ label: 'La communauté' }]" />
         <p class="eyebrow" style="margin-top: var(--space-5)">Qui sommes-nous</p>
         <h1>La communauté</h1>
-        <p>{{ c.intro }}</p>
+        @for (p of c.intro; track $index) {
+          <p>{{ p }}</p>
+        }
         <div class="row">
           <a class="btn btn--primary" href="/api/join" target="_blank" rel="nofollow noopener noreferrer"><app-icon name="message" [size]="16" /> {{ 'cta.join' | t }}</a>
           <a class="btn" routerLink="/communaute/regiment"><app-icon name="book" [size]="16" /> Le 501st PIR dans l'histoire</a>

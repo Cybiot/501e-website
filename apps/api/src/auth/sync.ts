@@ -1,16 +1,25 @@
-import type { Prisma, UserStatus } from '@prisma/client';
+import type { Prisma, RankBranch, UserStatus } from '@prisma/client';
 import { discord } from '../discord/index.js';
 import type { GuildMemberInfo } from '../discord/types.js';
 import { prisma } from '../db.js';
 import { audit } from '../lib/audit.js';
 import { logger } from '../lib/logger.js';
 import { notifyAdmins } from '../lib/notify.js';
+import { isVeteranRank } from '../lib/presenters.js';
 import { statusRoles } from '../lib/settings.js';
 
-/** Statut calculé à partir des rôles Discord : État-major > 501e > aucun. */
-export function computeStatus(roles: string[], { adminRoleId, memberRoleId } = statusRoles()): UserStatus {
+/**
+ * Statut calculé à partir des rôles Discord : État-major > 501e ou Vétéran > aucun.
+ * Les vétérans (anciens membres) n'ont pas le rôle « 501e » mais celui du grade « Vet. ».
+ */
+export function computeStatus(
+  roles: string[],
+  { adminRoleId, memberRoleId } = statusRoles(),
+  veteranRoleIds: string[] = [],
+): UserStatus {
   if (adminRoleId && roles.includes(adminRoleId)) return 'admin';
   if (memberRoleId && roles.includes(memberRoleId)) return 'member';
+  if (veteranRoleIds.some((r) => roles.includes(r))) return 'member';
   return 'none';
 }
 
@@ -24,13 +33,14 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
   if (!user || user.deletedAt) return null;
 
   const roles = info?.roles ?? [];
-  const status = computeStatus(roles);
-
   const ranks = await prisma.rank.findMany({ where: { discordRoleId: { in: roles } }, orderBy: { order: 'desc' } });
+  const veteranRank = ranks.find(isVeteranRank);
+  const status = computeStatus(roles, statusRoles(), veteranRank ? [veteranRank.discordRoleId!] : []);
 
   const wasMember = user.status !== 'none';
   const isMember = status !== 'none';
-  const newRank = ranks[0] ?? null;
+  // Un vétéran qui aurait gardé son ancien rôle de grade reste affiché « Vet. ».
+  const newRank = veteranRank ?? ranks[0] ?? null;
   // Par rôle Discord, ou d'office par la branche du grade (PL : Sgt, S/Sgt, Sfc).
   const responsibilities = await prisma.responsibility.findMany({
     where: {
@@ -89,12 +99,14 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
 async function trackPromotion(
   tx: Prisma.TransactionClient,
   user: { id: string; lastKnownRankId: string | null },
-  newRank: { id: string; order: number },
+  newRank: { id: string; order: number; branch: RankBranch },
   isMember: boolean,
 ) {
   const pending = await tx.rankPromotion.findFirst({ where: { userId: user.id, announcedAt: null }, include: { fromRank: true } });
   const base = pending ? pending.fromRank : user.lastKnownRankId ? await tx.rank.findUnique({ where: { id: user.lastKnownRankId } }) : null;
-  const promoted = isMember && base !== null && newRank.order > base.order;
+  // Départ en vétéran ou retour d'un vétéran : pas une promotion à annoncer.
+  const promoted =
+    isMember && base !== null && !isVeteranRank(base) && !isVeteranRank(newRank) && newRank.order > base.order;
   if (!promoted) {
     if (pending) await tx.rankPromotion.delete({ where: { id: pending.id } });
     return;

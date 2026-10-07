@@ -111,6 +111,35 @@ describe('Compagnies', () => {
     expect(members.map((m: { id: string }) => m.id)).not.toContain(outsider!.id);
   });
 
+  it('camp Toccoa : CO/XO avec les instructeurs, membres sans platoon avec les recrues', async () => {
+    await prisma.company.create({
+      data: {
+        slug: 'camp-toccoa',
+        name: 'Camp Toccoa',
+        discordRoleId: 'role-toccoa',
+        platoons: {
+          create: [
+            { name: 'Instructeurs', order: 10, discordRoleId: 'role-staff-toccoa' },
+            { name: 'Recrues', order: 20, discordRoleId: 'role-recrues' },
+          ],
+        },
+      },
+    });
+    const [co, xo, instructor, recruit, loose] = await Promise.all(Array.from({ length: 5 }, () => createUser('member')));
+    await giveRoles(co!.id, ['role-toccoa'], { responsibility: 'CO - Commanding Officer' });
+    await giveRoles(xo!.id, ['role-toccoa'], { responsibility: 'XO - Executive Officer' });
+    await giveRoles(instructor!.id, ['role-staff-toccoa']);
+    await giveRoles(recruit!.id, ['role-toccoa', 'role-recrues']);
+    await giveRoles(loose!.id, ['role-toccoa']);
+
+    const res = await request(app).get('/api/companies/camp-toccoa');
+    type Group = { name: string; members: { id: string }[] };
+    expect(res.body.groups.map((g: Group) => [g.name, g.members.map((m) => m.id)])).toEqual([
+      ['Instructeurs', [co!.id, xo!.id, instructor!.id]],
+      ['Recrues', expect.arrayContaining([recruit!.id, loose!.id])],
+    ]);
+  });
+
   it('rôle de platoon partagé entre compagnies : le platoon se déduit du rôle de la compagnie', async () => {
     await prisma.company.create({
       data: {

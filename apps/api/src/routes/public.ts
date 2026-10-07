@@ -19,6 +19,7 @@ import {
   presentMemberCard,
   presentMemberDetail,
   presentRank,
+  rankSortKey,
 } from '../lib/presenters.js';
 import { stripRankPrefix } from '../lib/rank-prefix.js';
 import { getSettings } from '../lib/settings.js';
@@ -92,7 +93,7 @@ publicRouter.get('/members', async (req, res) => {
       const d = (a.joinedAt?.getTime() ?? Infinity) - (b.joinedAt?.getTime() ?? Infinity);
       return d || byName(a, b);
     }
-    const d = (b.rank?.order ?? -1) - (a.rank?.order ?? -1);
+    const d = rankSortKey(b.rank) - rankSortKey(a.rank);
     return d || byName(a, b);
   });
   // Pas de pagination : tous les membres visibles sont affichés sur une seule page.
@@ -147,6 +148,9 @@ const COMMAND_ROLES = [
 ] as const;
 type CommandRole = (typeof COMMAND_ROLES)[number]['key'];
 
+/** Le camp Toccoa n'a pas de « Commandement » : ses CO/XO sont rangés avec les instructeurs. */
+const TOCCOA_SLUG = 'camp-toccoa';
+
 /**
  * Effectif d'une compagnie, groupé pour la barre latérale : commandement (CO puis XO, toujours
  * au-dessus des platoons), puis chaque platoon dans l'ordre (PL en tête), puis les membres sans
@@ -196,7 +200,7 @@ publicRouter.get('/companies/:slug', async (req, res) => {
   users.sort(
     (a, b) =>
       commandRank(a) - commandRank(b) ||
-      (b.rank?.order ?? -1) - (a.rank?.order ?? -1) ||
+      rankSortKey(b.rank) - rankSortKey(a.rank) ||
       stripRankPrefix(a.displayName).localeCompare(stripRankPrefix(b.displayName), 'fr', {
         sensitivity: 'base',
       }),
@@ -211,6 +215,12 @@ publicRouter.get('/companies/:slug', async (req, res) => {
       members: [] as typeof users,
     },
   ];
+  // Camp Toccoa : seulement « Instructeurs » (CO, XO et PL compris) et « Recrues » (membres sans platoon compris).
+  const toccoa = company.slug === TOCCOA_SLUG;
+  const platoonNamed = (name: string) =>
+    company.platoons.find((p) => p.name.localeCompare(name, 'fr', { sensitivity: 'base' }) === 0);
+  const instructors = toccoa ? platoonNamed('Instructeurs') : undefined;
+  const recruits = toccoa ? platoonNamed('Recrues') : undefined;
   for (const u of users) {
     if (company.headquarters) {
       // État-major : le commandement (Lt.Col, Col), puis les chefs de pôle.
@@ -219,7 +229,12 @@ publicRouter.get('/companies/:slug', async (req, res) => {
     }
     const command = commandOf(u);
     const platoon = company.platoons.find((p) => inPlatoon(u.discordRoleIds, company, p, shared));
-    const groupId = command === 'co' || command === 'xo' ? 'command' : (platoon?.id ?? 'other');
+    const groupId =
+      command && instructors
+        ? instructors.id
+        : command === 'co' || command === 'xo'
+          ? 'command'
+          : (platoon?.id ?? recruits?.id ?? 'other');
     groups.find((g) => g.id === groupId)!.members.push(u);
   }
 

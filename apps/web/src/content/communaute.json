@@ -1,5 +1,11 @@
 {
-  "intro": "La 501e est une communauté francophone qui fait vivre sur Squad 44 l'esprit des parachutistes du 501st PIR. Nous jouons ensemble, avec une organisation inspirée de celle d'un régiment aéroporté, dans le respect de l'histoire et de chacun. [Texte de présentation à compléter par l'état-major.]",
+  "intro": [
+    "Régiment français créé peu après la sortie du jeu, et toujours actif depuis, venez vivre l'aventure d'un parachutiste américain de la WW2 !",
+    "Survivez à votre formation initiale au sein du Toccoa Boot Camp, apprenez à nous connaître et faites-vous une place !",
+    "Rejoignez l'une des compagnies de combat : chaque compagnie a sa propre identité, ses traditions et ses tactiques !",
+    "Vivez votre baptême du feu aux côtés de vos nouveaux camarades lors de l'un de nos événements réalistes hebdomadaires !",
+    "Montez les échelons grâce à votre engagement, menez vos hommes au feu dans des combats intenses !"
+  ],
   "values": [
     { "icon": "target", "title": "Sérieux", "text": "En opération, on écoute le briefing, on respecte la chaîne de commandement et on joue l'objectif." },
     { "icon": "heart", "title": "Camaraderie", "text": "Personne n'est laissé derrière : entraide, pédagogie et bonne humeur avant tout." },
