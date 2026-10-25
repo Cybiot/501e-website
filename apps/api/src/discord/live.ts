@@ -5,6 +5,7 @@ import { discordFetch } from './http.js';
 import {
   avatarUrlFor,
   DiscordError,
+  type DiscordChannel,
   type DiscordGateway,
   type DiscordMessagePayload,
   type DiscordRole,
@@ -103,6 +104,21 @@ export class LiveDiscordGateway implements DiscordGateway {
       .filter((r) => r.id !== this.guild) // @everyone
       .map(({ id, name, color, position, managed }) => ({ id, name, color, position, managed }))
       .sort((a, b) => b.position - a.position);
+  }
+
+  async listTextChannels(): Promise<DiscordChannel[]> {
+    const channels =
+      (await discordFetch<{ id: string; name: string; type: number; position: number; parent_id?: string | null }[]>(
+        `/guilds/${this.guild}/channels`,
+        { authorization: this.auth },
+      )) ?? [];
+    // 0 : salon textuel, 5 : salon d'annonces, 4 : catégorie.
+    const categories = new Map(channels.filter((c) => c.type === 4).map((c) => [c.id, c]));
+    const categoryPosition = (c: (typeof channels)[number]) => (c.parent_id ? (categories.get(c.parent_id)?.position ?? -1) : -1);
+    return channels
+      .filter((c) => c.type === 0 || c.type === 5)
+      .sort((a, b) => categoryPosition(a) - categoryPosition(b) || a.position - b.position)
+      .map((c) => ({ id: c.id, name: c.name, category: (c.parent_id && categories.get(c.parent_id)?.name) || null }));
   }
 
   async setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]) {

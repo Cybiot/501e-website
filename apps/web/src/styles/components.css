@@ -700,4 +700,6 @@
 .medal-img {
   object-fit: contain;
   flex-shrink: 0;
+  /* Échelle propre à chaque médaille (réglée dans le catalogue), sans changer la mise en page. */
+  transform: scale(var(--medal-scale, 1));
 }

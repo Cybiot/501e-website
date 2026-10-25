@@ -57,6 +57,51 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect((await prisma.medal.findUniqueOrThrow({ where: { id: medal.id } })).discordRoleId).toBeNull();
   });
 
+  it("règle l'échelle de l'image sans toucher aux champs absents d'une modification", async () => {
+    const { a, member } = await setup();
+    expect((await postMedal(a, 'Grande étoile').field({ imageScale: '400' })).status).toBe(400);
+    const created = await postMedal(a, 'Grande étoile').field({ order: '7', imageScale: '180', repeatable: 'false' });
+    expect(created.status).toBe(201);
+    expect(created.body.imageScale).toBe(180);
+
+    // (Dés)activer n'envoie que isActive : ordre, échelle et cumul sont conservés.
+    const patch = (body: Record<string, string>) =>
+      a.agent.patch(`/api/admin/medals/${created.body.id}`).set('X-XSRF-TOKEN', a.xsrf).field(body);
+    expect((await patch({ isActive: 'false' })).status).toBe(200);
+    expect(await prisma.medal.findUniqueOrThrow({ where: { id: created.body.id } })).toMatchObject({
+      isActive: false,
+      order: 7,
+      imageScale: 180,
+      repeatable: false,
+    });
+    expect((await patch({ isActive: 'true', imageScale: '75' })).status).toBe(200);
+
+    // L'échelle accompagne la médaille sur la fiche du membre.
+    await a.post('/api/admin/awards', { userId: member.id, medalId: created.body.id, reason: 'Assaut.', idempotencyKey: randomUUID() });
+    await a.post('/api/admin/announcements', {});
+    const card = await a.get(`/api/members/${member.id}`);
+    expect(card.body.medals).toEqual([expect.objectContaining({ medal: expect.objectContaining({ imageScale: 75 }) })]);
+  });
+
+  it("modifie le motif d'une attribution, même annoncée, et journalise l'ancien motif", async () => {
+    const { member, medal, a } = await setup();
+    const award = await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Motif initial', idempotencyKey: randomUUID() });
+    expect((await a.post('/api/admin/announcements', {})).status).toBe(201);
+
+    expect((await a.patch(`/api/admin/awards/${award.body.id}`, { reason: 'x' })).status).toBe(400);
+    const res = await a.patch(`/api/admin/awards/${award.body.id}`, { reason: '  Motif corrigé  ' });
+    expect(res.status).toBe(200);
+    expect(res.body.reason).toBe('Motif corrigé');
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { action: 'medal.award_updated' } });
+    expect(log.metadata).toMatchObject({ awardId: award.body.id, before: 'Motif initial', after: 'Motif corrigé' });
+
+    // Une attribution désattribuée ne se modifie plus ; un membre ne peut rien modifier.
+    expect((await a.delete(`/api/admin/awards/${award.body.id}`)).status).toBe(204);
+    expect((await a.patch(`/api/admin/awards/${award.body.id}`, { reason: 'Autre motif' })).status).toBe(404);
+    const m = await loginAs(member.discordId);
+    expect((await m.patch(`/api/admin/awards/${award.body.id}`, { reason: 'Autre motif' })).status).toBe(403);
+  });
+
   it('associe un rôle Discord à chaque palier, retiré avec les paliers', async () => {
     const { a } = await setup();
     const res = await postMedal(a, 'Distinguished Service Cross')
@@ -221,6 +266,21 @@ describe('Attribution de médailles et annonce Discord', () => {
     const again = await a.post('/api/admin/announcements', {});
     expect(again.body.error.code).toBe('NOTHING_TO_ANNOUNCE');
     expect(await prisma.auditLog.count({ where: { action: 'announcement.published' } })).toBe(1);
+  });
+
+  it("publie dans le salon d'annonce choisi par l'admin", async () => {
+    const { member, medal, a } = await setup();
+    const channels = await a.get('/api/admin/discord/channels');
+    expect(channels.status).toBe(200);
+    expect(channels.body).toContainEqual({ id: 'mock-channel-medailles', name: 'médailles', category: '501e' });
+
+    expect((await a.put('/api/admin/settings', { announceChannelId: 'mock-channel-medailles' })).status).toBe(200);
+    await a.post('/api/admin/awards', { userId: member.id, medalId: medal.id, reason: 'Assaut.', idempotencyKey: randomUUID() });
+
+    const preview = await a.get('/api/admin/announcements/preview');
+    expect(preview.body).toMatchObject({ channelId: 'mock-channel-medailles', channelName: 'médailles' });
+    expect((await a.post('/api/admin/announcements', {})).status).toBe(201);
+    expect(mockDiscord().sentMessages[0]!.channelId).toBe('mock-channel-medailles');
   });
 
   it('enregistre le palier choisi et affiche le plus haut palier obtenu', async () => {

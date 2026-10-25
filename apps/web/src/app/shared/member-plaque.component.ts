@@ -78,6 +78,7 @@ import { AvatarComponent } from './avatar.component';
                     <img
                       class="medal-img"
                       [src]="m.medal.imageUrl"
+                      [style.--medal-scale]="m.medal.imageScale / 100"
                       [alt]="label(m.medal)"
                       width="38"
                       height="15"

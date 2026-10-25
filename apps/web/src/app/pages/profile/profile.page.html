@@ -176,7 +176,7 @@
             <ul class="awards">
               @for (a of p.awards; track a.id) {
                 <li>
-                  <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="56" height="28" />
+                  <img class="medal-img" [src]="a.medal.imageUrl" [style.--medal-scale]="a.medal.imageScale / 100" alt="" width="56" height="28" />
                   <div>
                     <strong>{{ label(a.medal) }}</strong> <span class="small muted">· {{ a.awardedAt | date: 'd MMM yyyy' }}</span>
                     <p class="small muted" style="margin: 0">{{ a.reason }}</p>

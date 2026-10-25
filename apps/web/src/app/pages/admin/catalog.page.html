@@ -29,7 +29,7 @@
     @for (m of medals(); track m.id) {
       <article class="card medal-card" [class.inactive]="!m.isActive">
         <div class="row" style="flex-wrap: nowrap">
-          <img class="medal-img" [src]="m.imageUrl" alt="" width="80" height="40" />
+          <img class="medal-img" [src]="m.imageUrl" [style.--medal-scale]="m.imageScale / 100" alt="" width="80" height="40" />
           <div style="min-width: 0">
             <h2 class="card-title" style="margin: 0">{{ m.name }}</h2>
             <div class="row" style="gap: var(--space-1); margin-top: var(--space-1)">
@@ -127,6 +127,14 @@
             <label for="mf-img">Image / ruban (PNG, WebP ou SVG · 1 Mo max)</label>
             <input id="mf-img" class="input" type="file" accept="image/png,image/webp,image/svg+xml" (change)="onImage($event)" />
           </div>
+          <div class="field">
+            <label for="mf-scale">Taille de l'image : {{ f.imageScale }} %</label>
+            <div class="row" style="flex-wrap: nowrap">
+              <input id="mf-scale" type="range" style="flex: 1" [min]="scale.min" [max]="scale.max" step="5" [ngModel]="f.imageScale" (ngModelChange)="patch({ imageScale: +$event })" name="imageScale" />
+              <button type="button" class="btn btn--ghost btn--sm" (click)="patch({ imageScale: 100 })" [disabled]="f.imageScale === 100">Réinitialiser</button>
+            </div>
+            <span class="field__hint">Agrandit ou réduit la médaille partout où elle s'affiche (paliers compris), sans modifier le fichier.</span>
+          </div>
           <fieldset class="field">
             <legend class="label">Paliers (facultatif : les trois images ou aucune), chacun avec son rôle Discord</legend>
             @for (t of tiers; track t) {
@@ -163,13 +171,13 @@
             <app-member-plaque [member]="card" [link]="false" />
           }
           @if (imagePreview() ?? f.currentImageUrl; as img) {
-            <img class="medal-img" [src]="img" alt="Aperçu de l'image" width="160" height="80" style="margin-top: var(--space-4)" />
+            <img class="medal-img" [src]="img" [style.--medal-scale]="f.imageScale / 100" alt="Aperçu de l'image" width="160" height="80" style="margin-top: var(--space-4)" />
           }
           <div class="row" style="margin-top: var(--space-3)">
             @for (t of tiers; track t) {
               @if (tierImage(f, t); as timg) {
                 <figure style="margin: 0; text-align: center">
-                  <img class="medal-img" [src]="timg" alt="" width="64" height="32" />
+                  <img class="medal-img" [src]="timg" [style.--medal-scale]="f.imageScale / 100" alt="" width="64" height="32" />
                   <figcaption class="small muted">{{ tierLabels[t] }}</figcaption>
                 </figure>
               }

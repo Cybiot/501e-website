@@ -105,6 +105,12 @@ legend {
 .pending__body p {
   margin: var(--space-1) 0;
 }
+.reason-edit {
+  margin: var(--space-2) 0;
+}
+.reason-edit .row {
+  margin-top: var(--space-2);
+}
 .discord-preview {
   background: #313338;
   border-radius: var(--radius);

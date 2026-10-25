@@ -14,6 +14,13 @@ export interface DiscordRole {
   managed: boolean;
 }
 
+export interface DiscordChannel {
+  id: string;
+  name: string;
+  /** Catégorie Discord du salon (null : hors catégorie). */
+  category: string | null;
+}
+
 export interface DiscordEmbed {
   title?: string;
   description?: string;
@@ -42,6 +49,8 @@ export interface DiscordGateway {
   getMember(discordId: string): Promise<GuildMemberInfo | null>;
   listMembers(): Promise<GuildMemberInfo[]>;
   listRoles(): Promise<DiscordRole[]>;
+  /** Salons textuels du serveur (candidats pour le salon d'annonce), dans l'ordre de Discord. */
+  listTextChannels(): Promise<DiscordChannel[]>;
   /** Ajoute le rôle de grade `addRoleId` puis retire `removeRoleIds` (rôles de grade configurés uniquement). */
   setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]): Promise<void>;
   /** Crée un rôle sans aucune permission (rôle de médaille). Retourne son identifiant. */

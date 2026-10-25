@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -25,7 +25,7 @@ const REASON_MAX = 200;
 @Component({
   selector: 'app-awards-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, RouterLink, IconComponent, AvatarComponent],
+  imports: [DatePipe, NgTemplateOutlet, FormsModule, RouterLink, IconComponent, AvatarComponent],
   templateUrl: './awards.page.html',
   styleUrl: './admin.css',
 })
@@ -161,6 +161,34 @@ export class AwardsPage {
       await this.refresh();
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.revoke(a));
+    }
+  }
+
+  // --- Modification du motif d'une attribution ---
+
+  /** Motif en cours de modification (une attribution à la fois). */
+  protected readonly editingReason = signal<{ id: string; text: string } | null>(null);
+  protected readonly savingReason = signal(false);
+
+  protected editReason(a: AdminAward) {
+    this.editingReason.set({ id: a.id, text: a.reason });
+  }
+
+  protected async saveReason(a: AdminAward) {
+    const e = this.editingReason();
+    if (!e || e.id !== a.id) return;
+    this.savingReason.set(true);
+    try {
+      const updated = await this.api.patch<AdminAward>(`/admin/awards/${a.id}`, { reason: e.text });
+      const replace = (list: AdminAward[] | null) => list?.map((x) => (x.id === a.id ? updated : x)) ?? list;
+      this.pending.update(replace);
+      this.unawardAwards.update(replace);
+      this.editingReason.set(null);
+      this.toast.success('Motif modifié.');
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    } finally {
+      this.savingReason.set(false);
     }
   }
 

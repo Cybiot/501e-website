@@ -48,8 +48,22 @@
     <p class="small muted">Ces rôles sont fixés par la configuration du serveur et ne sont pas modifiables ici.</p>
     <div class="admin-grid">
       <div class="field">
-        <label for="s-channel">ID du salon d'annonce des médailles</label>
-        <input id="s-channel" class="input mono" [(ngModel)]="f.announceChannelId" name="announceChannelId" />
+        <label for="s-channel">Salon d'annonce des médailles et promotions</label>
+        @if (channels(); as chans) {
+          <select id="s-channel" class="select" [(ngModel)]="f.announceChannelId" name="announceChannelId">
+            <option value="">— Aucun (annonces désactivées) —</option>
+            @for (c of chans; track c.id) {
+              <option [value]="c.id">#{{ c.name }}{{ c.category ? ' (' + c.category + ')' : '' }}</option>
+            }
+            @if (f.announceChannelId && !chans.some(x => x.id === f.announceChannelId)) {
+              <option [value]="f.announceChannelId">{{ f.announceChannelId }} (introuvable)</option>
+            }
+          </select>
+          <span class="field__hint">Le bot doit pouvoir voir le salon, y écrire et y intégrer des liens.</span>
+        } @else {
+          <input id="s-channel" class="input mono" [(ngModel)]="f.announceChannelId" name="announceChannelId" placeholder="ID du salon" />
+          <span class="field__hint">Liste des salons indisponible : saisis l'ID du salon.</span>
+        }
       </div>
       <div class="field">
         <label for="s-invite">Lien d'invitation Discord (bouton « Rejoindre la 501e »)</label>
@@ -76,7 +90,7 @@
 
   <section class="card" style="margin-top: var(--space-5)" aria-labelledby="ranks-title">
     <h2 id="ranks-title" class="card-title">Grades ↔ rôles Discord</h2>
-    <p class="small muted">Le grade affiché est le rôle de plus haut « ordre » détenu par le membre.</p>
+    <p class="small muted">Le grade affiché est le rôle de plus haut « ordre » détenu par le membre. Exception : un grade de la branche « Vétérans » l'emporte toujours, et son rôle Discord donne l'accès membre même sans le rôle « 501e ».</p>
     <div class="table-wrap">
       <table class="table table--stack">
         <thead><tr><th>Ordre</th><th>Nom</th><th>Abrév.</th><th>Branche</th><th>Rôle Discord</th><th>Membres</th><th></th></tr></thead>

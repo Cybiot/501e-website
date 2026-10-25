@@ -230,6 +230,8 @@ model Medal {
   imageBronzeUrl String?
   imageSilverUrl String?
   imageGoldUrl   String?
+  /// Échelle d'affichage de l'image (en %, 100 : taille normale), appliquée partout où la médaille apparaît.
+  imageScale     Int      @default(100)
   category       String
   order          Int      @default(0)
   isActive       Boolean  @default(true)

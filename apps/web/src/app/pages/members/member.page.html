@@ -80,7 +80,7 @@
                         [attr.aria-controls]="'medal-' + r.medal.id"
                         (click)="toggle(r.medal.id)"
                       >
-                        <img class="medal-img" [src]="r.medal.imageUrl" alt="" width="72" height="36" />
+                        <img class="medal-img" [src]="r.medal.imageUrl" [style.--medal-scale]="r.medal.imageScale / 100" alt="" width="72" height="36" />
                         <span class="ribbon__name">{{ label(r.medal) }}</span>
                         @if (r.awards.length > 1) {
                           <span class="badge badge--gold">×{{ r.awards.length }}</span>

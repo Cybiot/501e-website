@@ -49,7 +49,7 @@
         @for (m of activeMedals(); track m.id) {
           <label class="medal-option" [class.selected]="selectedMedalId() === m.id">
             <input type="radio" name="medal" class="sr-only" [value]="m.id" [checked]="selectedMedalId() === m.id" (change)="pickMedal(m.id)" />
-            <img class="medal-img" [src]="m.imageUrl" alt="" width="64" height="32" />
+            <img class="medal-img" [src]="m.imageUrl" [style.--medal-scale]="m.imageScale / 100" alt="" width="64" height="32" />
             <span>{{ m.name }}</span>
           </label>
         } @empty {
@@ -62,13 +62,13 @@
           <div class="medal-pick" role="radiogroup" aria-label="Palier" style="margin-top: var(--space-3)">
             <label class="medal-option" [class.selected]="selectedTier() === null">
               <input type="radio" name="tier" class="sr-only" [checked]="selectedTier() === null" (change)="selectedTier.set(null); resetKey()" />
-              <img class="medal-img" [src]="sm.imageUrl" alt="" width="64" height="32" />
+              <img class="medal-img" [src]="sm.imageUrl" [style.--medal-scale]="sm.imageScale / 100" alt="" width="64" height="32" />
               <span>Sans palier</span>
             </label>
             @for (t of tiers; track t) {
               <label class="medal-option" [class.selected]="selectedTier() === t">
                 <input type="radio" name="tier" class="sr-only" [checked]="selectedTier() === t" (change)="selectedTier.set(t); resetKey()" />
-                <img class="medal-img" [src]="images[t]" alt="" width="64" height="32" />
+                <img class="medal-img" [src]="images[t]" [style.--medal-scale]="sm.imageScale / 100" alt="" width="64" height="32" />
                 <span>{{ tierLabels[t] }}</span>
               </label>
             }
@@ -149,10 +149,10 @@
         }
         @for (a of pending(); track a.id) {
           <li>
-            <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="48" height="24" />
+            <img class="medal-img" [src]="a.medal.imageUrl" [style.--medal-scale]="a.medal.imageScale / 100" alt="" width="48" height="24" />
             <div class="pending__body">
               <strong>{{ a.member.displayName }}</strong> <span class="muted small">· {{ label(a.medal) }}</span>
-              <p class="small muted">{{ a.reason }}</p>
+              <ng-container *ngTemplateOutlet="reasonBlock; context: { $implicit: a }" />
               <span class="small muted mono">{{ a.awardedAt | date: 'dd/MM/yyyy HH:mm' }}{{ a.awardedBy ? ' · par ' + a.awardedBy.displayName : '' }}</span>
             </div>
             <button type="button" class="btn btn--danger btn--sm" (click)="revoke(a)" [attr.aria-label]="'Supprimer l’attribution à ' + a.member.displayName">
@@ -170,8 +170,8 @@
 </div>
 
 <section class="card" style="margin-top: var(--space-5)" aria-labelledby="unaward-title">
-  <h2 id="unaward-title" class="card-title">Désattribuer une médaille</h2>
-  <p class="small muted">Retire une médaille déjà annoncée : elle disparaît du site, sans annonce sur Discord.</p>
+  <h2 id="unaward-title" class="card-title">Médailles d'un membre</h2>
+  <p class="small muted">Modifie le motif d'une médaille déjà annoncée, ou désattribue-la : elle disparaît alors du site, sans annonce sur Discord.</p>
   <div class="field combo" style="max-width: 420px">
     <label for="unaward-member">Membre</label>
     <div class="input-icon">
@@ -206,10 +206,10 @@
       <ul class="pending">
         @for (a of list; track a.id) {
           <li>
-            <img class="medal-img" [src]="a.medal.imageUrl" alt="" width="48" height="24" />
+            <img class="medal-img" [src]="a.medal.imageUrl" [style.--medal-scale]="a.medal.imageScale / 100" alt="" width="48" height="24" />
             <div class="pending__body">
               <strong>{{ label(a.medal) }}</strong>
-              <p class="small muted">{{ a.reason }}</p>
+              <ng-container *ngTemplateOutlet="reasonBlock; context: { $implicit: a }" />
               <span class="small muted mono">Annoncée le {{ a.announcedAt | date: 'dd/MM/yyyy' }}</span>
             </div>
             <button type="button" class="btn btn--danger btn--sm" (click)="unaward(a)" [attr.aria-label]="'Désattribuer ' + a.medal.name">
@@ -270,7 +270,13 @@
     <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="preview-title" (click)="$event.stopPropagation()">
       <h2 id="preview-title">Aperçu de l'annonce</h2>
       <p class="small muted">
-        {{ p.promotionsCount }} promotion(s) · {{ p.awardsCount }} décoration(s) · {{ p.messages.length }} message(s) · salon <span class="mono">{{ p.channelId || 'non configuré' }}</span>
+        {{ p.promotionsCount }} promotion(s) · {{ p.awardsCount }} décoration(s) · {{ p.messages.length }} message(s) · salon
+        @if (p.channelName) {
+          <strong>#{{ p.channelName }}</strong>
+        } @else {
+          <span class="mono">{{ p.channelId || 'non configuré' }}</span>
+        }
+        · <a routerLink="/admin/parametres">changer</a>
       </p>
       <div class="discord-preview">
         @for (msg of p.messages; track $index) {
@@ -303,3 +309,44 @@
     </div>
   </div>
 }
+
+<!-- Motif d'une attribution, modifiable sur place. -->
+<ng-template #reasonBlock let-a>
+  @if (editingReason(); as e) {
+    @if (e.id === a.id) {
+      <form class="reason-edit" (submit)="$event.preventDefault(); saveReason(a)">
+        <textarea
+          class="textarea"
+          rows="3"
+          [maxLength]="reasonMax"
+          [ngModel]="e.text"
+          (ngModelChange)="editingReason.set({ id: a.id, text: $event })"
+          name="reason"
+          [attr.aria-label]="'Motif : ' + label(a.medal) + ' — ' + a.member.displayName"
+        ></textarea>
+        <div class="row">
+          <span class="field__hint" style="flex: 1">
+            {{ e.text.length }} / {{ reasonMax }}{{ a.announcedAt ? ' · Le message déjà publié sur Discord ne change pas.' : '' }}
+          </span>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="editingReason.set(null)">Annuler</button>
+          <button type="submit" class="btn btn--primary btn--sm" [disabled]="savingReason() || e.text.trim().length < 3">
+            <app-icon [name]="savingReason() ? 'loader' : 'check'" [class.spin]="savingReason()" [size]="14" /> Enregistrer
+          </button>
+        </div>
+      </form>
+    } @else {
+      <ng-container *ngTemplateOutlet="reasonText; context: { $implicit: a }" />
+    }
+  } @else {
+    <ng-container *ngTemplateOutlet="reasonText; context: { $implicit: a }" />
+  }
+</ng-template>
+
+<ng-template #reasonText let-a>
+  <p class="small muted">
+    {{ a.reason }}
+    <button type="button" class="btn btn--ghost btn--sm" (click)="editReason(a)" [attr.aria-label]="'Modifier le motif : ' + label(a.medal) + ' — ' + a.member.displayName">
+      <app-icon name="pencil" [size]="14" /> Modifier
+    </button>
+  </p>
+</ng-template>

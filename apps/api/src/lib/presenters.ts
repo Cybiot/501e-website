@@ -53,13 +53,14 @@ export function medalImageFor(m: MedalImages, tier: MedalTier | null | undefined
 const tierRank = (t: MedalTier | null) => (t ? MEDAL_TIERS.indexOf(t) : -1);
 
 export const presentMedal = (
-  m: { id: string; name: string; description: string; category: string } & MedalImages,
+  m: { id: string; name: string; description: string; category: string; imageScale: number } & MedalImages,
   tier: MedalTier | null = null,
 ) => ({
   id: m.id,
   name: m.name,
   description: m.description,
   imageUrl: medalImageFor(m, tier),
+  imageScale: m.imageScale,
   category: m.category,
   tiered: isTiered(m),
   tier: isTiered(m) ? tier : null,

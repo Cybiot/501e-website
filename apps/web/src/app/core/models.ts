@@ -42,6 +42,8 @@ export interface Medal {
   description: string;
   /** Image correspondant au palier `tier` (image de base sans palier). */
   imageUrl: string;
+  /** Échelle d'affichage de l'image, en % (100 : taille normale). */
+  imageScale: number;
   category: string;
   /** La médaille a-t-elle des paliers (bronze, argent, or) ? */
   tiered?: boolean;
@@ -212,6 +214,12 @@ export interface DiscordRole {
   managed: boolean;
 }
 
+export interface DiscordChannel {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
 export interface DiscordEmbed {
   title?: string;
   description?: string;
@@ -221,6 +229,7 @@ export interface DiscordEmbed {
 
 export interface AnnouncementPreview {
   channelId: string;
+  channelName: string | null;
   awardsCount: number;
   promotionsCount: number;
   names: Record<string, string>;

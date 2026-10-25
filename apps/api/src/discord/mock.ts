@@ -10,6 +10,7 @@ import {
 import { getSettings } from '../lib/settings.js';
 import {
   DiscordError,
+  type DiscordChannel,
   type DiscordGateway,
   type DiscordMessagePayload,
   type DiscordRole,
@@ -73,6 +74,15 @@ export class MockDiscordGateway implements DiscordGateway {
       ...MOCK_PLATOON_ROLES.map((r) => ({ id: r.id, name: r.name, color: 0x8a6a4f })),
     ].map((r) => ({ ...r, position: position--, managed: false }));
     return base.filter((r, i) => base.findIndex((x) => x.id === r.id) === i);
+  }
+
+  async listTextChannels(): Promise<DiscordChannel[]> {
+    this.maybeFail();
+    return [
+      { id: 'mock-channel-general', name: 'général', category: null },
+      { id: 'mock-channel-annonces', name: 'annonces', category: '501e' },
+      { id: 'mock-channel-medailles', name: 'médailles', category: '501e' },
+    ];
   }
 
   async setRankRole(discordId: string, addRoleId: string, removeRoleIds: string[]) {

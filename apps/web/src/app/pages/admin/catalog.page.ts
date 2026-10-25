@@ -14,6 +14,8 @@ interface MedalForm {
   description: string;
   category: string;
   order: number;
+  /** Échelle d'affichage de l'image, en %. */
+  imageScale: number;
   repeatable: boolean;
   isActive: boolean;
   currentImageUrl: string | null;
@@ -33,6 +35,7 @@ const empty = (): MedalForm => ({
   description: '',
   category: '',
   order: 0,
+  imageScale: 100,
   repeatable: true,
   isActive: true,
   currentImageUrl: null,
@@ -67,6 +70,8 @@ export class CatalogPage {
   protected readonly importing = signal(false);
   protected readonly roles = signal<DiscordRole[]>([]);
   protected readonly newRole = NEW_ROLE;
+  /** Bornes de l'échelle d'image (cf. API). */
+  protected readonly scale = { min: 50, max: 300 };
   /** Récipiendaires de la médaille ouverte (null : liste en cours de chargement). */
   protected readonly recipients = signal<{ medal: AdminMedal; items: AdminAward[] | null } | null>(null);
 
@@ -82,7 +87,7 @@ export class CatalogPage {
       rank: { id: 'r', name: 'Private First Class', abbreviation: 'Pfc.', branch: 'enlisted', order: 20 },
       tagline: 'Aperçu de la médaille sur une carte membre.',
       responsibilities: [],
-      medals: img ? [{ medal: { id: 'm', name: f.name || 'Nouvelle médaille', description: f.description, imageUrl: img, category: f.category }, count: 1 }] : [],
+      medals: img ? [{ medal: { id: 'm', name: f.name || 'Nouvelle médaille', description: f.description, imageUrl: img, imageScale: f.imageScale, category: f.category }, count: 1 }] : [],
       medalsTotal: img ? 1 : 0,
       joinedAt: null,
       company: null,
@@ -133,6 +138,7 @@ export class CatalogPage {
       description: m.description,
       category: m.category,
       order: m.order,
+      imageScale: m.imageScale,
       repeatable: m.repeatable,
       isActive: m.isActive,
       currentImageUrl: m.imageUrl,
@@ -193,6 +199,7 @@ export class CatalogPage {
     form.append('description', f.description);
     form.append('category', f.category);
     form.append('order', String(f.order));
+    form.append('imageScale', String(f.imageScale));
     form.append('repeatable', String(f.repeatable));
     form.append('isActive', String(f.isActive));
     if (f.discordRoleId !== NEW_ROLE) form.append('discordRoleId', f.discordRoleId ?? '');

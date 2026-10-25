@@ -61,13 +61,21 @@ export async function discordFailure(err: unknown, action: string, req: Paramete
 const storedKeyOf = (imageUrl: string) =>
   imageUrl.startsWith('/api/files/') ? imageUrl.slice('/api/files/'.length) : null;
 
-// --- Rôles Discord (listes déroulantes) ---------------------------------------------------------
+// --- Rôles et salons Discord (listes déroulantes) -----------------------------------------------
 
 medalsAdminRouter.get('/discord/roles', async (req, res) => {
   try {
     res.json(await discord().listRoles());
   } catch (err) {
     throw await discordFailure(err, 'list_roles', req);
+  }
+});
+
+medalsAdminRouter.get('/discord/channels', async (req, res) => {
+  try {
+    res.json(await discord().listTextChannels());
+  } catch (err) {
+    throw await discordFailure(err, 'list_channels', req);
   }
 });
 
@@ -98,6 +106,8 @@ medalsAdminRouter.get('/medals', async (_req, res) => {
   });
 });
 
+const MEDAL_SCALE = { min: 50, max: 300 } as const;
+
 const boolField = z.preprocess((v) => (typeof v === 'string' ? v === 'true' : v), z.boolean());
 
 const roleField = z
@@ -107,15 +117,19 @@ const roleField = z
   .optional()
   .transform((v) => (v === undefined ? undefined : v || null));
 
-const MedalFields = z.object({
+// Sans valeurs par défaut : en Zod 4, un .default() s'applique même sous .partial(),
+// ce qui écraserait les champs absents d'un PATCH (ex. l'ordre en (dés)activant une médaille).
+const MedalPatch = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().min(2).max(500),
   category: z.string().trim().min(2).max(40),
-  order: z.coerce.number().int().min(0).max(9999).default(0),
-  repeatable: boolField.default(true),
-  isActive: boolField.default(true),
+  order: z.coerce.number().int().min(0).max(9999),
+  /** Échelle d'affichage de l'image, en % (50 à 300). */
+  imageScale: z.coerce.number().int().min(MEDAL_SCALE.min).max(MEDAL_SCALE.max),
+  repeatable: boolField,
+  isActive: boolField,
   /** Retire les images de palier : la médaille redevient sans palier. */
-  removeTiers: boolField.default(false),
+  removeTiers: boolField,
   /**
    * Rôle Discord existant associé à la médaille ; vide : aucun rôle. Absent à la création : un
    * rôle sans permission est créé au nom de la médaille ; absent en modification : inchangé.
@@ -125,6 +139,13 @@ const MedalFields = z.object({
   discordRoleBronzeId: roleField,
   discordRoleSilverId: roleField,
   discordRoleGoldId: roleField,
+});
+const MedalFields = MedalPatch.extend({
+  order: MedalPatch.shape.order.default(0),
+  imageScale: MedalPatch.shape.imageScale.default(100),
+  repeatable: MedalPatch.shape.repeatable.default(true),
+  isActive: MedalPatch.shape.isActive.default(true),
+  removeTiers: MedalPatch.shape.removeTiers.default(false),
 });
 
 /**
@@ -197,6 +218,7 @@ medalsAdminRouter.post('/medals', medalUpload, async (req, res) => {
       description: body.description,
       category: body.category,
       order: body.order,
+      imageScale: body.imageScale,
       repeatable: body.repeatable,
       isActive: body.isActive,
       imageUrl: stored.imageUrl!,
@@ -213,7 +235,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
   const medal = await prisma.medal.findUnique({ where: { id } });
   if (!medal) throw notFound('Médaille introuvable.');
-  const body = parse(MedalFields.partial(), req.body);
+  const body = parse(MedalPatch.partial(), req.body);
   // Paliers : retirés tous ensemble, ou remplacés image par image (les trois restent renseignées).
   const tiersAfter = body.removeTiers
     ? 0
@@ -238,6 +260,7 @@ medalsAdminRouter.patch('/medals/:id', medalUpload, async (req, res) => {
       description: body.description,
       category: body.category,
       order: body.order,
+      imageScale: body.imageScale,
       repeatable: body.repeatable,
       isActive: body.isActive,
       ...roles,
@@ -314,10 +337,12 @@ medalsAdminRouter.get('/members/search', async (req, res) => {
   );
 });
 
+const awardReason = z.string().trim().min(3, 'Le motif est obligatoire.').max(200, '200 caractères maximum.');
+
 const AwardBody = z.object({
   userId: z.string().min(1).max(40),
   medalId: z.string().min(1).max(40),
-  reason: z.string().trim().min(3, 'Le motif est obligatoire.').max(200, '200 caractères maximum.'),
+  reason: awardReason,
   /** Palier, pour une médaille à paliers ; absent ou null : image de base. */
   tier: z.enum(['bronze', 'silver', 'gold']).nullish(),
   idempotencyKey: z.string().min(8).max(64),
@@ -444,6 +469,28 @@ medalsAdminRouter.get('/awards', async (req, res) => {
 });
 
 /**
+ * Modification du motif d'une attribution (en attente ou déjà annoncée). Le message déjà publié
+ * sur Discord n'est pas modifié : le bot ne fait que poster.
+ */
+medalsAdminRouter.patch('/awards/:id', async (req, res) => {
+  const id = parse(z.string().min(1), req.params.id);
+  const { reason } = parse(z.object({ reason: awardReason }), req.body);
+  const award = await prisma.medalAward.findUnique({ where: { id }, include: { medal: true } });
+  if (!award || award.revokedAt) throw notFound('Attribution introuvable.');
+  const updated = await prisma.medalAward.update({ where: { id }, data: { reason }, include: awardInclude });
+  if (reason !== award.reason) {
+    await audit({
+      action: 'medal.award_updated',
+      req,
+      targetType: 'user',
+      targetId: award.userId,
+      metadata: { awardId: id, medal: award.medal.name, tier: award.tier, before: award.reason, after: reason },
+    });
+  }
+  res.json(presentAward(updated));
+});
+
+/**
  * Retrait d'une attribution. Pas encore annoncée (liste « À annoncer ») : elle est supprimée,
  * l'attribution n'ayant jamais été officielle. Déjà annoncée : désattribution, la médaille
  * disparaît du site mais l'attribution reste dans l'historique (sans annonce Discord).
@@ -536,11 +583,17 @@ async function pendingForAnnouncement() {
 }
 
 medalsAdminRouter.get('/announcements/preview', async (_req, res) => {
-  const [pending, settings] = await Promise.all([pendingForAnnouncement(), getSettings()]);
+  const [pending, settings, channels] = await Promise.all([
+    pendingForAnnouncement(),
+    getSettings(),
+    // Nom du salon pour l'aperçu uniquement : une panne Discord ne bloque pas l'aperçu.
+    discord().listTextChannels().catch(() => []),
+  ]);
   const messages = buildAnnouncementMessages(pending, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
   const users = [...pending.awards, ...pending.promotions].map((x) => x.user);
   res.json({
     channelId: settings.announceChannelId,
+    channelName: channels.find((c) => c.id === settings.announceChannelId)?.name ?? null,
     awardsCount: pending.awards.length,
     promotionsCount: pending.promotions.length,
     // Pour l'aperçu : on remplace les mentions par les pseudos.

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api, ApiError } from '../../core/api.service';
-import { AdminCompany, AdminPlatoon, AdminRank, AdminResponsibility, AppSettings, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
+import { AdminCompany, AdminPlatoon, AdminRank, AdminResponsibility, AppSettings, DiscordChannel, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -29,6 +29,8 @@ export class SettingsPage {
 
   protected readonly data = signal<SettingsResponse | null>(null);
   protected readonly roles = signal<DiscordRole[]>([]);
+  /** Salons textuels du serveur (null : liste indisponible, saisie manuelle de l'ID). */
+  protected readonly channels = signal<DiscordChannel[] | null>(null);
   protected form: AppSettings | null = null;
   protected readonly saving = signal(false);
   protected readonly checks = signal<{ ok: boolean; checks: { label: string; ok: boolean; detail?: string }[] } | null>(null);
@@ -58,6 +60,7 @@ export class SettingsPage {
   constructor() {
     void this.load();
     this.api.get<DiscordRole[]>('/admin/discord/roles').then((r) => this.roles.set(r)).catch(() => undefined);
+    this.api.get<DiscordChannel[]>('/admin/discord/channels').then((c) => this.channels.set(c)).catch(() => undefined);
   }
 
   protected async load() {
