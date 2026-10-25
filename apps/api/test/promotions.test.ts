@@ -82,8 +82,10 @@ describe('Promotions détectées par la synchronisation et annoncées', () => {
     expect(res.body.promotionsCount).toBe(1);
     const [sent] = mockDiscord().sentMessages;
     expect(sent!.channelId).toBe('chan-annonces');
-    expect(sent!.payload.embeds[0]!.title).toBe('⬆️ Promotions');
-    expect(sent!.payload.embeds[0]!.description).toContain('Private → **Private First Class**');
+    expect(sent!.payload.content).toBe('@here\n★★★ PROMOTION ★★★');
+    expect(sent!.payload.mentionHere).toBe(true);
+    expect(sent!.payload.embeds[0]!.title).toBe('Garde à vous !');
+    expect(sent!.payload.embeds[0]!.description).toContain('pour sa promotion au grade de **Private First Class**.');
 
     expect((await a.get('/api/admin/promotions/pending')).body).toHaveLength(0);
     expect((await a.get('/api/admin/announcements')).body[0].promotions).toEqual([

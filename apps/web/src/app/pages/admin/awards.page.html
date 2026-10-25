@@ -287,10 +287,15 @@
             }
             @for (e of msg.embeds; track $index) {
               <div class="discord-embed" [style.border-left-color]="color(e.color)">
-                <strong>{{ e.title }}</strong>
-                <p>{{ render(e.description) }}</p>
-                @if (e.footer) {
-                  <small>{{ e.footer.text }}</small>
+                <div class="discord-embed__body">
+                  <strong>{{ e.title }}</strong>
+                  <p>{{ render(e.description) }}</p>
+                  @if (e.footer) {
+                    <small>{{ e.footer.text }}</small>
+                  }
+                </div>
+                @if (e.thumbnail) {
+                  <img class="discord-embed__thumb" [src]="e.thumbnail.url" alt="" width="80" height="80" />
                 }
               </div>
             }

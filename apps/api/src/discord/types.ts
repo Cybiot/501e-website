@@ -35,6 +35,8 @@ export interface DiscordMessagePayload {
   embeds: DiscordEmbed[];
   /** Utilisateurs autorisés à être notifiés par la mention (jamais @everyone). */
   mentionUserIds: string[];
+  /** Autorise la notification @here du contenu (premier message d'une annonce, si activé). */
+  mentionHere?: boolean;
 }
 
 /**

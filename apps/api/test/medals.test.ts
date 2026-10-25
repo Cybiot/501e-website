@@ -258,9 +258,12 @@ describe('Attribution de médailles et annonce Discord', () => {
     const res = await a.post('/api/admin/announcements', {});
     expect(res.status).toBe(201);
     expect(res.body.awardsCount).toBe(2);
-    expect(mockDiscord().sentMessages).toHaveLength(1);
-    expect(mockDiscord().sentMessages[0]!.channelId).toBe('chan-annonces');
-    expect(mockDiscord().sentMessages[0]!.payload.mentionUserIds).toEqual([member.discordId]);
+    // Un message par attribution, @here seulement sur le premier.
+    const sent = mockDiscord().sentMessages;
+    expect(sent).toHaveLength(2);
+    expect(sent[0]!.channelId).toBe('chan-annonces');
+    expect(sent.map((m) => m.payload.content)).toEqual(['@here\n★★★ MEDAILLE ★★★', '★★★ MEDAILLE ★★★']);
+    expect(sent.map((m) => !!m.payload.mentionHere)).toEqual([true, false]);
 
     expect((await a.get('/api/admin/awards/pending')).body).toHaveLength(0);
     const again = await a.post('/api/admin/announcements', {});
@@ -343,31 +346,68 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(await prisma.medalAward.count()).toBe(0);
   });
 
-  it('mentionne le palier dans l’annonce Discord', () => {
+  it('annonce une médaille avec son palier, son motif et son image', () => {
     const [message] = buildAnnouncementMessages(
-      { awards: [{ id: 'a1', reason: 'Assaut.', tier: 'gold', awardedAt: new Date(), user: { discordId: '1', displayName: 'Winters' }, medal: { id: 'm', name: 'Silver Star', order: 0 } }] },
-      { mentions: false },
+      {
+        awards: [
+          {
+            id: 'a1',
+            reason: 'Assaut.',
+            tier: 'gold',
+            awardedAt: new Date(),
+            user: { discordId: '1', displayName: 'Winters' },
+            medal: { id: 'm', name: 'Silver Star', order: 0, imageUrl: '/medailles/ss.png', imageBronzeUrl: '/b.png', imageSilverUrl: '/s.png', imageGoldUrl: '/medailles/ss-or.png' },
+          },
+        ],
+      },
+      { mentions: true, publicUrl: 'https://501e.example/' },
     );
-    expect(message!.embeds[0]!.description).toBe('• **Winters** (Or) — Assaut.');
+    expect(message!.content).toBe('★★★ MEDAILLE ★★★');
+    expect(message!.embeds[0]).toEqual({
+      title: 'Garde à vous !',
+      description: [
+        'Félicitations au <@1> pour avoir été décoré de : **Silver Star** (Or)',
+        '',
+        '**Motif :** Assaut.',
+        '',
+        '⚠️ Voici le logo que vous pouvez mettre sur votre image de profil Discord.',
+      ].join('\n'),
+      color: expect.any(Number),
+      thumbnail: { url: 'https://501e.example/medailles/ss-or.png' },
+    });
   });
 
-  it('découpe les annonces volumineuses selon les limites Discord', () => {
-    const awards = Array.from({ length: 400 }, (_, i) => ({
-      id: `a${i}`,
-      reason: 'Motif suffisamment long pour remplir rapidement la description de l’embed Discord. '.repeat(2),
-      awardedAt: new Date(),
-      user: { discordId: `${100000 + i}`, displayName: `Membre ${i}` },
-      medal: { id: `m${i % 12}`, name: `Médaille ${i % 12}`, order: i % 12 },
-    }));
-    const messages = buildAnnouncementMessages({ awards }, { mentions: true });
-    expect(messages.length).toBeGreaterThan(1);
-    for (const m of messages) {
-      expect(m.embeds.length).toBeLessThanOrEqual(DISCORD_LIMITS.embedsPerMessage);
-      const total = m.embeds.reduce((n, e) => n + (e.title?.length ?? 0) + (e.description?.length ?? 0) + (e.footer?.text.length ?? 0), 0);
-      expect(total).toBeLessThanOrEqual(DISCORD_LIMITS.embedTotalChars);
-      for (const e of m.embeds) expect(e.description!.length).toBeLessThanOrEqual(DISCORD_LIMITS.embedDescription);
-      expect((m.content ?? '').length).toBeLessThanOrEqual(DISCORD_LIMITS.content);
-    }
-    expect(messages.flatMap((m) => m.awardIds)).toHaveLength(400);
+  it('publie les promotions avant les médailles, un message par élément', () => {
+    const user = { discordId: '1', displayName: 'Clark' };
+    const messages = buildAnnouncementMessages(
+      {
+        awards: [{ id: 'a1', reason: 'X.', awardedAt: new Date(), user, medal: { id: 'm', name: 'Parachutist Badge', order: 0, imageUrl: '/medailles/p.png' } }],
+        promotions: [
+          { id: 'p1', promotedAt: new Date(), user, toRank: { name: 'Private First Class', order: 20, iconUrl: '/insignes/pfc.svg' } },
+          { id: 'p2', promotedAt: new Date(), user, toRank: { name: 'Sergeant', order: 50, iconUrl: null } },
+        ],
+      },
+      { mentions: false, here: true, publicUrl: 'https://501e.example' },
+    );
+    expect(messages.map((m) => [m.content, m.promotionIds, m.awardIds])).toEqual([
+      ['@here\n★★★ PROMOTION ★★★', ['p2'], []],
+      ['★★★ PROMOTION ★★★', ['p1'], []],
+      ['★★★ MEDAILLE ★★★', [], ['a1']],
+    ]);
+    // Sans image : ni vignette ni ligne sur le logo. Insigne SVG : sa copie PNG (Discord n'affiche pas le SVG).
+    expect(messages[0]!.embeds[0]!.thumbnail).toBeUndefined();
+    expect(messages[0]!.embeds[0]!.description).toBe('Félicitations au **Clark** pour sa promotion au grade de **Sergeant**.');
+    expect(messages[1]!.embeds[0]!.thumbnail).toEqual({ url: 'https://501e.example/insignes/pfc.png' });
+    expect(messages[1]!.embeds[0]!.description).toContain('⚠️ Voici le logo que vous pouvez mettre en image de profil Discord.');
+  });
+
+  it('respecte les limites Discord même avec un motif très long', () => {
+    const [m] = buildAnnouncementMessages(
+      { awards: [{ id: 'a', reason: 'x'.repeat(5000), awardedAt: new Date(), user: { discordId: '1', displayName: 'A' }, medal: { id: 'm', name: 'M', order: 0, imageUrl: '/m.png' } }] },
+      { mentions: true, here: true },
+    );
+    expect(m!.embeds[0]!.description!.length).toBeLessThanOrEqual(DISCORD_LIMITS.embedDescription);
+    // Sans URL publique, l'image relative ne peut pas être envoyée à Discord.
+    expect(m!.embeds[0]!.thumbnail).toBeUndefined();
   });
 });

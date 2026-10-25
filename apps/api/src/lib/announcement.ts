@@ -1,5 +1,6 @@
 import type { MedalTier } from '@prisma/client';
-import type { DiscordEmbed, DiscordMessagePayload } from '../discord/types.js';
+import type { DiscordMessagePayload } from '../discord/types.js';
+import { medalImageFor } from './presenters.js';
 
 /** Limites de l'API Discord pour les messages. */
 export const DISCORD_LIMITS = {
@@ -17,15 +18,22 @@ export interface AnnounceableAward {
   tier?: MedalTier | null;
   awardedAt: Date;
   user: { discordId: string; displayName: string };
-  medal: { id: string; name: string; order: number };
+  medal: {
+    id: string;
+    name: string;
+    order: number;
+    imageUrl: string;
+    imageBronzeUrl?: string | null;
+    imageSilverUrl?: string | null;
+    imageGoldUrl?: string | null;
+  };
 }
 
 export interface AnnounceablePromotion {
   id: string;
   promotedAt: Date;
   user: { discordId: string; displayName: string };
-  fromRank: { name: string } | null;
-  toRank: { name: string; order: number };
+  toRank: { name: string; order: number; iconUrl?: string | null };
 }
 
 export interface AnnouncementMessage extends DiscordMessagePayload {
@@ -34,146 +42,91 @@ export interface AnnouncementMessage extends DiscordMessagePayload {
   promotionIds: string[];
 }
 
-const GOLD = 0xc9a24b;
-const OLIVE = 0x6b7f3a;
+const MEDAL_COLOR = 0xf1c40f;
+const PROMOTION_COLOR = 0xe2a81c;
 
 export const TIER_LABELS: Record<MedalTier, string> = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' };
 
-const embedSize = (e: DiscordEmbed) =>
-  (e.title?.length ?? 0) + (e.description?.length ?? 0) + (e.footer?.text.length ?? 0);
+const MAX_REASON = 1000;
 
-const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
-
-/** Une ligne d'annonce, rattachée à une attribution ou à une promotion. */
-interface Entry {
-  kind: 'award' | 'promotion';
-  id: string;
-  userId: string;
-  line: string;
+/**
+ * URL d'image utilisable par Discord : absolue (Discord la télécharge depuis le site public) et
+ * jamais en SVG, que Discord n'affiche pas (les insignes ont une copie PNG à côté du SVG).
+ */
+export function discordImageUrl(url: string | null | undefined, publicUrl: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const png = url.replace(/\.svg$/i, '.png');
+  if (/^https?:\/\//i.test(png)) return png;
+  if (!publicUrl) return undefined;
+  return `${publicUrl.replace(/\/+$/, '')}/${png.replace(/^\/+/, '')}`;
 }
 
 /**
- * Construit l'annonce groupée : les promotions (du plus haut grade au plus bas), puis les
- * médailles regroupées par médaille. Le tout est découpé automatiquement en plusieurs
- * embeds/messages selon les limites Discord.
+ * Construit l'annonce : un message par promotion (du plus haut grade au plus bas), puis un
+ * message par médaille (dans l'ordre du catalogue). Chaque message porte un bandeau
+ * « ★★★ PROMOTION ★★★ » ou « ★★★ MEDAILLE ★★★ » et un embed « Garde à vous ! » avec l'image
+ * en vignette. Le premier message commence par @here si `here` est activé.
  */
 export function buildAnnouncementMessages(
   items: { awards: AnnounceableAward[]; promotions?: AnnounceablePromotion[] },
-  opts: { mentions: boolean; siteUrl?: string },
+  opts: { mentions: boolean; here?: boolean; publicUrl?: string },
 ): AnnouncementMessage[] {
-  const { awards } = items;
-  const promotions = items.promotions ?? [];
-  if (awards.length === 0 && promotions.length === 0) return [];
+  const promotions = [...(items.promotions ?? [])].sort(
+    (x, y) => y.toRank.order - x.toRank.order || x.promotedAt.getTime() - y.promotedAt.getTime(),
+  );
+  const awards = [...items.awards].sort((x, y) => x.medal.order - y.medal.order || x.awardedAt.getTime() - y.awardedAt.getTime());
   const who = (u: { discordId: string; displayName: string }) => (opts.mentions ? `<@${u.discordId}>` : `**${u.displayName}**`);
 
-  const sections: { title: string; color: number; entries: Entry[] }[] = [];
-  if (promotions.length) {
-    const sorted = [...promotions].sort((x, y) => y.toRank.order - x.toRank.order || x.promotedAt.getTime() - y.promotedAt.getTime());
-    sections.push({
-      title: '⬆️ Promotions',
-      color: OLIVE,
-      entries: sorted.map((p) => ({
-        kind: 'promotion',
-        id: p.id,
-        userId: p.user.discordId,
-        line: `• ${who(p.user)} — ${p.fromRank ? `${p.fromRank.name} → ` : ''}**${p.toRank.name}**`,
-      })),
-    });
-  }
-  const byMedal = new Map<string, AnnounceableAward[]>();
-  for (const a of [...awards].sort((x, y) => x.medal.order - y.medal.order || x.awardedAt.getTime() - y.awardedAt.getTime())) {
-    const list = byMedal.get(a.medal.id) ?? [];
-    list.push(a);
-    byMedal.set(a.medal.id, list);
-  }
-  for (const list of byMedal.values()) {
-    sections.push({
-      title: `🎖️ ${list[0]!.medal.name}`,
-      color: GOLD,
-      entries: list.map((a) => ({
-        kind: 'award',
-        id: a.id,
-        userId: a.user.discordId,
-        line: `• ${who(a.user)}${a.tier ? ` (${TIER_LABELS[a.tier]})` : ''} — ${a.reason}`,
-      })),
-    });
-  }
-
-  // 1. Un ou plusieurs embeds par section (description ≤ 4096 caractères).
-  const embeds: { embed: DiscordEmbed; entries: Entry[] }[] = [];
-  for (const section of sections) {
-    let lines: string[] = [];
-    let entries: Entry[] = [];
-    let part = 1;
-    const flush = () => {
-      if (!lines.length) return;
-      const title = `${section.title}${part > 1 ? ` (suite ${part})` : ''}`.slice(0, DISCORD_LIMITS.embedTitle);
-      embeds.push({ embed: { title, description: lines.join('\n'), color: section.color }, entries });
-      lines = [];
-      entries = [];
-      part++;
-    };
-    for (const e of section.entries) {
-      const line = e.line.slice(0, 1000);
-      const currentLength = lines.reduce((n, l) => n + l.length + 1, 0);
-      if (currentLength + line.length + 1 > DISCORD_LIMITS.embedDescription) flush();
-      lines.push(line);
-      entries.push(e);
-    }
-    flush();
-  }
-
-  const heading =
-    awards.length && promotions.length
-      ? '**📣 Promotions et décorations — 501e**'
-      : promotions.length
-        ? '**📣 Promotions — 501e**'
-        : '**📣 Nouvelles décorations — 501e**';
-
-  // 2. Regroupement des embeds en messages (≤ 10 embeds et ≤ 6000 caractères par message).
   const messages: AnnouncementMessage[] = [];
-  let current: typeof embeds = [];
-  let size = 0;
-  const pushMessage = () => {
-    if (!current.length) return;
-    const entries = current.flatMap((e) => e.entries);
-    const userIds = [...new Set(entries.map((e) => e.userId))];
-    const isFirst = messages.length === 0;
-    let content = isFirst ? heading : '';
-    if (opts.mentions) {
-      // Les mentions dans un embed ne notifient pas : on les place aussi dans le contenu.
-      const mentionLine = `Félicitations à ${userIds.map((id) => `<@${id}>`).join(' ')} !`;
-      const joined = content ? `${content}\n${mentionLine}` : mentionLine;
-      content = joined.length <= DISCORD_LIMITS.content ? joined : content;
-    }
+  const push = (
+    banner: string,
+    color: number,
+    lines: string[],
+    image: string | undefined,
+    logoHint: string,
+    ids: { awardIds?: string[]; promotionIds?: string[] },
+  ) => {
+    const description = [...lines, ...(image ? ['', `⚠️ ${logoHint}`] : [])].join('\n');
     messages.push({
-      content: content || undefined,
-      embeds: current.map((e) => e.embed),
-      mentionUserIds: opts.mentions ? userIds : [],
-      awardIds: entries.filter((e) => e.kind === 'award').map((e) => e.id),
-      promotionIds: entries.filter((e) => e.kind === 'promotion').map((e) => e.id),
+      content: banner,
+      embeds: [{ title: 'Garde à vous !', description, color, ...(image ? { thumbnail: { url: image } } : {}) }],
+      mentionUserIds: [],
+      awardIds: ids.awardIds ?? [],
+      promotionIds: ids.promotionIds ?? [],
     });
-    current = [];
-    size = 0;
   };
-  for (const e of embeds) {
-    const s = embedSize(e.embed);
-    if (current.length >= DISCORD_LIMITS.embedsPerMessage || size + s > DISCORD_LIMITS.embedTotalChars) pushMessage();
-    current.push(e);
-    size += s;
-  }
-  pushMessage();
 
-  // Pied de page sur le dernier embed du dernier message.
-  const last = messages[messages.length - 1]!;
-  const lastEmbed = last.embeds[last.embeds.length - 1]!;
-  const counts = [promotions.length ? plural(promotions.length, 'promotion') : '', awards.length ? plural(awards.length, 'décoration') : '']
-    .filter(Boolean)
-    .join(' · ');
-  const footer = `${counts}${opts.siteUrl ? ` · ${opts.siteUrl}` : ''}`;
-  if (embedSize(lastEmbed) + footer.length <= DISCORD_LIMITS.embedTotalChars) {
-    lastEmbed.footer = { text: footer };
-    lastEmbed.timestamp = new Date().toISOString();
+  for (const p of promotions) {
+    push(
+      '★★★ PROMOTION ★★★',
+      PROMOTION_COLOR,
+      [`Félicitations au ${who(p.user)} pour sa promotion au grade de **${p.toRank.name}**.`],
+      discordImageUrl(p.toRank.iconUrl, opts.publicUrl),
+      'Voici le logo que vous pouvez mettre en image de profil Discord.',
+      { promotionIds: [p.id] },
+    );
+  }
+  for (const a of awards) {
+    const reason = a.reason.trim();
+    push(
+      '★★★ MEDAILLE ★★★',
+      MEDAL_COLOR,
+      [
+        `Félicitations au ${who(a.user)} pour avoir été décoré de : **${a.medal.name}**${a.tier ? ` (${TIER_LABELS[a.tier]})` : ''}`,
+        ...(reason ? ['', `**Motif :** ${reason.length > MAX_REASON ? `${reason.slice(0, MAX_REASON - 1)}…` : reason}`] : []),
+      ],
+      discordImageUrl(
+        medalImageFor({ imageBronzeUrl: null, imageSilverUrl: null, imageGoldUrl: null, ...a.medal }, a.tier),
+        opts.publicUrl,
+      ),
+      'Voici le logo que vous pouvez mettre sur votre image de profil Discord.',
+      { awardIds: [a.id] },
+    );
+  }
+
+  if (opts.here && messages[0]) {
+    messages[0].content = `@here\n${messages[0].content}`;
+    messages[0].mentionHere = true;
   }
   return messages;
 }

@@ -12,6 +12,8 @@ export const SettingsSchema = z.object({
   inviteUrl: z.union([z.url(), z.literal('')]),
   /** Mentionner (@membre) les récipiendaires dans l'annonce Discord. */
   announceMentions: z.boolean(),
+  /** Notifier le salon (@here) au début de chaque annonce Discord. */
+  announceHere: z.boolean(),
   consentVersion: z.string().min(1).max(40),
   consentText: z.string().min(1).max(5000),
 });
@@ -32,6 +34,7 @@ function defaults(): AppSettings {
       config.DISCORD_ANNOUNCE_CHANNEL_ID || (isMockDiscord ? 'mock-channel-annonces' : ''),
     inviteUrl: config.DISCORD_INVITE_URL,
     announceMentions: true,
+    announceHere: true,
     consentVersion: '2026-09-v1',
     consentText: DEFAULT_CONSENT_TEXT,
   };

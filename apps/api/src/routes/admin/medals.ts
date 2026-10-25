@@ -14,7 +14,7 @@ import { logger } from '../../lib/logger.js';
 import { importMedalsFromRoles } from '../../lib/medal-import.js';
 import { notifyAdmins } from '../../lib/notify.js';
 import { avatarOf, isTiered, officialAward, presentMedal, presentRank } from '../../lib/presenters.js';
-import { getSettings } from '../../lib/settings.js';
+import { getSettings, type AppSettings } from '../../lib/settings.js';
 import { deleteFile, fileUrl, storeMedalImage } from '../../lib/storage.js';
 import { parse } from '../../lib/validate.js';
 
@@ -582,6 +582,12 @@ async function pendingForAnnouncement() {
   return { awards, promotions };
 }
 
+const announceOptions = (settings: AppSettings) => ({
+  mentions: settings.announceMentions,
+  here: settings.announceHere,
+  publicUrl: config.PUBLIC_URL,
+});
+
 medalsAdminRouter.get('/announcements/preview', async (_req, res) => {
   const [pending, settings, channels] = await Promise.all([
     pendingForAnnouncement(),
@@ -589,7 +595,7 @@ medalsAdminRouter.get('/announcements/preview', async (_req, res) => {
     // Nom du salon pour l'aperçu uniquement : une panne Discord ne bloque pas l'aperçu.
     discord().listTextChannels().catch(() => []),
   ]);
-  const messages = buildAnnouncementMessages(pending, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
+  const messages = buildAnnouncementMessages(pending, announceOptions(settings));
   const users = [...pending.awards, ...pending.promotions].map((x) => x.user);
   res.json({
     channelId: settings.announceChannelId,
@@ -614,7 +620,7 @@ medalsAdminRouter.post('/announcements', async (req, res) => {
     }
     if (!settings.announceChannelId) throw badRequest("Aucun salon d'annonce configuré (Admin > Paramètres).");
 
-    const messages = buildAnnouncementMessages(pending, { mentions: settings.announceMentions, siteUrl: config.PUBLIC_URL });
+    const messages = buildAnnouncementMessages(pending, announceOptions(settings));
     const sentIds: string[] = [];
     const announcedAwardIds: string[] = [];
     const announcedPromotionIds: string[] = [];

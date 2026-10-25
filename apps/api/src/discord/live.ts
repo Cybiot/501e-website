@@ -41,6 +41,7 @@ async function announceChannel() {
 
 const ADMINISTRATOR = 1n << 3n;
 const MANAGE_ROLES = 1n << 28n;
+const MENTION_EVERYONE = 1n << 17n;
 
 /**
  * Permissions de serveur dont le bot n'a pas besoin (et qui lui permettraient d'agir sur Discord).
@@ -146,8 +147,9 @@ export class LiveDiscordGateway implements DiscordGateway {
       body: {
         content: payload.content,
         embeds: payload.embeds,
-        // Seules les personnes annoncées peuvent être notifiées (jamais @everyone ni de rôle).
-        allowed_mentions: { parse: [], users: payload.mentionUserIds.slice(0, 100) },
+        // Seules les personnes annoncées (et @here si demandé) peuvent être notifiées. Discord
+        // range @here sous « everyone » : le contenu étant construit par le site, seul @here y figure.
+        allowed_mentions: { parse: payload.mentionHere ? ['everyone'] : [], users: payload.mentionUserIds.slice(0, 100) },
       },
     });
     if (!msg) throw new DiscordError('Envoi du message impossible');
@@ -173,7 +175,8 @@ export class LiveDiscordGateway implements DiscordGateway {
     const position = new Map((roles ?? []).map((r) => [r.id, r.position]));
     const above = ranks.filter((r) => (position.get(r.discordRoleId!) ?? 0) >= top).map((r) => r.name);
     const manageRoles = (perms & (MANAGE_ROLES | ADMINISTRATOR)) !== 0n;
-    return { extra, manageRoles, above };
+    const mentionEveryone = (perms & (MENTION_EVERYONE | ADMINISTRATOR)) !== 0n;
+    return { extra, manageRoles, above, mentionEveryone };
   }
 
   async checkIntegration() {
@@ -216,7 +219,7 @@ export class LiveDiscordGateway implements DiscordGateway {
       checks.push({ label: "Salon d'annonce accessible", ok: false, detail: (err as Error).message });
     }
     try {
-      const { extra, manageRoles, above } = await this.permissionAudit(me!.id);
+      const { extra, manageRoles, above, mentionEveryone } = await this.permissionAudit(me!.id);
       checks.push({
         label: 'Gestion des rôles de grade',
         ok: manageRoles && above.length === 0,
@@ -226,6 +229,15 @@ export class LiveDiscordGateway implements DiscordGateway {
             ? `Place le rôle du bot au-dessus de : ${above.join(', ')}`
             : 'Promotions et rétrogradations possibles',
       });
+      if ((await getSettings()).announceHere) {
+        checks.push({
+          label: 'Notification @here des annonces',
+          ok: mentionEveryone,
+          detail: mentionEveryone
+            ? '@here notifie le salon'
+            : 'Donne la permission « Mentionner @everyone, @here et tous les rôles » au rôle du bot (ou désactive @here dans les paramètres)',
+        });
+      }
       checks.push({
         label: 'Aucune permission superflue',
         ok: extra.length === 0,

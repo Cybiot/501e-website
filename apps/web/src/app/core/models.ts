@@ -224,6 +224,7 @@ export interface DiscordEmbed {
   title?: string;
   description?: string;
   color?: number;
+  thumbnail?: { url: string };
   footer?: { text: string };
 }
 
@@ -305,6 +306,7 @@ export interface AppSettings {
   announceChannelId: string;
   inviteUrl: string;
   announceMentions: boolean;
+  announceHere: boolean;
   consentVersion: string;
   consentText: string;
 }

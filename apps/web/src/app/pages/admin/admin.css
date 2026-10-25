@@ -139,6 +139,7 @@ legend {
 }
 .discord-msg__content {
   margin: 0 0 var(--space-2);
+  white-space: pre-line;
 }
 .discord-embed {
   background: #2b2d31;
@@ -147,6 +148,21 @@ legend {
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-2);
   max-width: 520px;
+}
+.discord-embed {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+.discord-embed__body {
+  flex: 1;
+  min-width: 0;
+}
+.discord-embed__thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .discord-embed p {
   white-space: pre-line;

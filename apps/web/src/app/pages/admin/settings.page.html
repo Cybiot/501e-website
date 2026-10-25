@@ -70,9 +70,13 @@
         <input id="s-invite" class="input" type="url" [(ngModel)]="f.inviteUrl" name="inviteUrl" placeholder="https://discord.gg/…" />
       </div>
     </div>
-    <label class="switch" style="margin-bottom: var(--space-5)">
+    <label class="switch" style="margin-bottom: var(--space-3)">
       <input type="checkbox" role="switch" [(ngModel)]="f.announceMentions" name="announceMentions" />
       Mentionner les récipiendaires (&#64;membre) dans les annonces
+    </label>
+    <label class="switch" style="margin-bottom: var(--space-5)">
+      <input type="checkbox" role="switch" [(ngModel)]="f.announceHere" name="announceHere" />
+      Notifier le salon (&#64;here) au début de chaque annonce
     </label>
 
     <h3 class="card-title">Texte de consentement RGPD</h3>
