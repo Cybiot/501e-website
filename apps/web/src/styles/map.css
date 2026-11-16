@@ -33,6 +33,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 20%; /* visage des portraits 3:4 */
 }
 .map-pin span {
   color: var(--text);

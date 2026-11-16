@@ -300,6 +300,20 @@ legend {
   align-self: start;
 }
 
+/* --- Tableaux éditables ----------------------------------------------------
+   Cellules centrées verticalement : champs, compteurs et boutons sur une même ligne. */
+.table--stack td {
+  vertical-align: middle;
+}
+/* Boutons Enregistrer / Supprimer / Ajouter : colonne au plus juste, boutons côte à côte. */
+.table__actions {
+  width: 1%;
+  white-space: nowrap;
+}
+.table__actions .btn + .btn {
+  margin-left: var(--space-2);
+}
+
 /* --- Tableaux éditables sur mobile ---------------------------------------
    Sous 720px, chaque ligne devient une carte : champs pleine largeur, libellé
    tiré de data-label (l'en-tête du tableau est masqué). */
@@ -348,6 +362,10 @@ legend {
     align-items: flex-end;
     gap: var(--space-2);
     grid-column: -2 / -1;
+    width: auto;
+  }
+  .table__actions .btn + .btn {
+    margin-left: 0;
   }
   /* Les largeurs fixes en ligne (ordre, abréviation) ne valent que pour le tableau large. */
   .table--stack .input,

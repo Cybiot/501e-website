@@ -681,6 +681,8 @@
 .avatar {
   border-radius: 50%;
   object-fit: cover;
+  /* Images perso en 3:4 : on garde le haut (visage) plutôt que le centre. Sans effet sur un avatar carré. */
+  object-position: 50% 20%;
   background: var(--surface-3);
   flex-shrink: 0;
 }

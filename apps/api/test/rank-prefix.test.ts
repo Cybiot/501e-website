@@ -27,6 +27,9 @@ describe('Préfixe de grade dans le pseudo Discord', () => {
     ['1/Sgt. Lipton', 'Lipton'],
     ['Lt.Col. Strayer', 'Strayer'],
     ['Col. Sink', 'Sink'],
+    ['T/5./Aum. Gaëtan Breizh', 'Gaëtan Breizh'],
+    ['Sfc./Aum. Walter Kloux', 'Walter Kloux'],
+    ['Sfc/Aum Walter Kloux', 'Walter Kloux'],
   ])('retire le grade de « %s »', (name, expected) => {
     expect(stripRankPrefix(name)).toBe(expected);
   });
@@ -35,6 +38,7 @@ describe('Préfixe de grade dans le pseudo Discord', () => {
     ['Colin Dupont'], // « Col » sans séparateur : ce n'est pas un grade
     ['Pvt.'], // pseudo réduit au grade : on le garde tel quel
     ['Walter Sfc. Kloux'],
+    ['T/5./Aum.'], // grade + qualification sans nom : gardé tel quel
   ])('laisse « %s » intact', (name) => {
     expect(stripRankPrefix(name)).toBe(name);
   });

@@ -4,6 +4,7 @@ import { Api, ApiError } from '../../core/api.service';
 import { AdminCompany, AdminPlatoon, AdminRank, AdminResponsibility, AppSettings, DiscordChannel, DiscordRole, RANK_BRANCHES, RankBranch, ResponsibilityKind } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { IconComponent } from '../../shared/icon.component';
+import { ValueTitleDirective } from '../../shared/value-title.directive';
 
 interface SettingsResponse {
   discordMode: 'mock' | 'live';
@@ -19,7 +20,7 @@ interface SettingsResponse {
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, IconComponent, ValueTitleDirective],
   templateUrl: './settings.page.html',
   styleUrl: './admin.css',
 })
