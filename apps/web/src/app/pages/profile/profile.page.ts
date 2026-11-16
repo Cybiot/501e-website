@@ -145,6 +145,15 @@ export class ProfilePage {
     }
   }
 
+  protected async dismissLocationRemoval() {
+    try {
+      await this.api.delete('/me/location-removal');
+      this.profile.update((p) => (p ? { ...p, locationRemoval: null } : p));
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    }
+  }
+
   protected async exportData() {
     try {
       const data = await this.api.get<unknown>('/me/export');

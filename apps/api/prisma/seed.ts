@@ -130,7 +130,7 @@ async function main() {
   const ranks = await Promise.all(
     RANKS.map(([slug, name, abbreviation, branch], i) =>
       prisma.rank.create({
-        data: { name, abbreviation, branch, order: (i + 1) * 10, discordRoleId: MOCK_RANK_ROLES[i]!.id, iconUrl: `/insignes/${slug}.svg` },
+        data: { name, abbreviation, branch, order: (i + 1) * 10, discordRoleId: MOCK_RANK_ROLES[i]!.id, iconUrl: slug === 'pvt' ? '/insignes/pvt.svg' : `/insignes/501e_${slug}.png` },
       }),
     ),
   );

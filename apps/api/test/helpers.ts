@@ -1,3 +1,4 @@
+import http from 'node:http';
 import request from 'supertest';
 import type { UserStatus } from '@prisma/client';
 import { createApp } from '../src/app.js';
@@ -6,7 +7,20 @@ import { discord } from '../src/discord/index.js';
 import type { MockDiscordGateway } from '../src/discord/mock.js';
 import { invalidateSettingsCache } from '../src/lib/settings.js';
 
-export const app = createApp();
+/**
+ * Serveur unique pour toute la suite, joint par des connexions keep-alive. Par défaut, supertest
+ * démarre un serveur par requête et superagent ouvre une connexion neuve à chaque fois
+ * (`agent: false`) : sur certains postes Windows, une partie de ces connexions locales est
+ * coupée (« read ECONNRESET » aléatoire). Réutiliser les connexions supprime le problème.
+ */
+export const app = createApp().listen(0).unref();
+const keepAlive = new http.Agent({ keepAlive: true });
+const httpRequest = http.request;
+Object.assign(http, {
+  request: (options: http.RequestOptions, callback?: (res: http.IncomingMessage) => void) =>
+    httpRequest(options.agent === false ? { ...options, agent: keepAlive } : options, callback),
+});
+
 export const mockDiscord = () => discord() as MockDiscordGateway;
 
 /** Vide toutes les tables entre deux tests. */

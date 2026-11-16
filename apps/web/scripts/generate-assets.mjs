@@ -1,11 +1,11 @@
 /**
- * Génère les visuels du site : placeholders originaux libres de droits (insignes des 17 grades,
- * fonds du hero), médailles officielles (assets/medailles) redimensionnées pour le web et
+ * Génère les visuels du site : insignes de grade officiels (assets/insignes) et placeholder du Pvt,
+ * fonds du hero, médailles officielles (assets/medailles) redimensionnées pour le web et
  * déclinaisons du logo officiel (assets/logo/501e.png) : tailles web, favicons, icônes du
  * manifeste et image Open Graph.
  * Usage : node apps/web/scripts/generate-assets.mjs
  */
-import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -46,38 +46,26 @@ for (const file of readdirSync(companySrc).filter((f) => f.endsWith('.png'))) {
   }
 }
 
-// --- Insignes de grade (un fichier par grade, nommé par son slug) -----------------------------
-const GOLD = 'fill="#c9a24b" stroke="#12150f" stroke-width="1.2"';
-const chev = (y) => `<path d="M8 ${y + 9} L32 ${y} L56 ${y + 9} L56 ${y + 14} L32 ${y + 5} L8 ${y + 14}Z" ${GOLD}/>`;
-const rock = (y) => `<path d="M8 ${y} Q32 ${y + 10} 56 ${y} L56 ${y + 5} Q32 ${y + 15} 8 ${y + 5}Z" ${GOLD}/>`;
-const tech = (y) => `<path d="M24 ${y} h16 v4 h-6 v10 h-4 v-10 h-6z" ${GOLD}/>`; // « T » des techniciens
-const lozenge = (y) => `<path d="M32 ${y} l5 6 l-5 6 l-5 -6z" ${GOLD}/>`;
-const bar = (x, color) => `<rect x="${x}" y="14" width="10" height="36" rx="2" fill="${color}" stroke="#12150f" stroke-width="1.5"/>`;
-const leaf = (color, vein) =>
-  `<path d="M32 8 C44 16 48 28 44 40 C41 48 36 52 32 58 C28 52 23 48 20 40 C16 28 20 16 32 8Z" fill="${color}" stroke="#12150f" stroke-width="1.5"/><path d="M32 12 V56 M32 24 L40 20 M32 32 L42 28 M32 40 L40 38 M32 24 L24 20 M32 32 L22 28 M32 40 L24 38" stroke="${vein}" stroke-width="1.4" fill="none"/>`;
-const eagle = `<path d="M6 24 C14 16 24 18 29 25 L32 20 L35 25 C40 18 50 16 58 24 C52 30 45 33 38 33 L36 44 L41 54 L32 49 L23 54 L28 44 L26 33 C19 33 12 30 6 24Z" fill="#d7dbe0" stroke="#12150f" stroke-width="1.5"/><circle cx="32" cy="16" r="4.5" fill="#d7dbe0" stroke="#12150f" stroke-width="1.5"/><path d="M28 36 h8 M28 40 h8" stroke="#12150f" stroke-width="1.2"/>`;
-const insignia = {
-  pvt: `<path d="M8 33 L32 24 L56 33 L56 38 L32 29 L8 38Z" fill="none" stroke="#c9a24b" stroke-width="1.5" stroke-dasharray="3 2"/>`,
-  pfc: chev(24),
-  cpl: chev(19) + chev(27),
-  t5: chev(12) + chev(20) + tech(40),
-  t4: chev(8) + chev(16) + chev(24) + tech(44),
-  t3: chev(2) + chev(10) + chev(18) + tech(35) + rock(51),
-  sgt: chev(15) + chev(23) + chev(31),
-  ssgt: chev(8) + chev(16) + chev(24) + rock(44),
-  sfc: chev(4) + chev(12) + chev(20) + rock(38) + rock(46),
-  '1sgt': chev(0) + chev(8) + chev(16) + lozenge(22) + rock(35) + rock(43) + rock(51),
-  msgt: chev(0) + chev(8) + chev(16) + rock(35) + rock(43) + rock(51),
-  '2lt': bar(27, '#d4a93c'),
-  '1lt': bar(27, '#d7dbe0'),
-  cpt: bar(19, '#d7dbe0') + bar(35, '#d7dbe0'),
-  mjr: leaf('#d4a93c', '#8a6a1c'),
-  ltcol: leaf('#d7dbe0', '#8a8f96'),
-  col: eagle,
-};
-for (const [slug, shape] of Object.entries(insignia)) {
-  write(`insignes/${slug}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">${shape}</svg>`);
+// --- Insignes de grade : images officielles de la communauté (assets/insignes, nommées par slug) --
+// Publiées en PNG (Discord n'affiche ni SVG ni toujours le webp), réduites pour un affichage
+// de 16 à 48 px sur le site ; l'original est publié à côté (_hd) pour Discord.
+// Le cadrage carré d'origine est conservé pour garder l'échelle entre grades.
+const insigniaSrc = join(root, 'assets', 'insignes');
+for (const file of readdirSync(insigniaSrc).filter((f) => f.endsWith('.png'))) {
+  write(
+    `insignes/501e_${file}`,
+    await sharp(join(insigniaSrc, file))
+      .resize(128, 128, { fit: 'contain', background: '#00000000', withoutEnlargement: true })
+      .png({ compressionLevel: 9 })
+      .toBuffer(),
+  );
+  // Original intact (1096 px) pour les annonces Discord, à mettre en image de profil.
+  copyFileSync(join(insigniaSrc, file), join(out, 'insignes', `501e_${file.replace(/\.png$/, '_hd.png')}`));
 }
+
+// Pvt : pas encore d'insigne officiel, placeholder (chevron en pointillés ; copie PNG pvt.png pour Discord).
+const pvt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><path d="M8 33 L32 24 L56 33 L56 38 L32 29 L8 38Z" fill="none" stroke="#c9a24b" stroke-width="1.5" stroke-dasharray="3 2"/></svg>`;
+write('insignes/pvt.svg', pvt);
 
 // --- Fond topographique du hero ----------------------------------------------------------------
 let rings = '';

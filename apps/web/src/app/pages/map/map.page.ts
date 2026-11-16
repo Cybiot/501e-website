@@ -50,6 +50,12 @@ export class MapPage {
 
   protected memberQuery = '';
 
+  /** Admin : ville en cours de retrait (fenêtre du motif). */
+  private readonly auth = inject(AuthService);
+  protected readonly removal = signal<{ member: MapMember; location: MapMember['locations'][number] } | null>(null);
+  protected removalReason = '';
+  protected readonly removing = signal(false);
+
   // Ajout de ville
   protected cityQuery = '';
   protected readonly suggestions = signal<CitySuggestion[]>([]);
@@ -85,7 +91,7 @@ export class MapPage {
   constructor() {
     inject(SeoService).set({ title: 'Carte des membres', path: '/carte', noindex: true });
     if (!this.browser) return;
-    const auth = inject(AuthService);
+    const auth = this.auth;
     let started = false;
     afterNextRender(() => {
       // La carte attend que le consentement RGPD éventuel soit validé.
@@ -170,7 +176,8 @@ export class MapPage {
   }
 
   /** Mini-carte membre : construite en DOM (textContent) pour éviter toute injection HTML. */
-  private popupFor(m: MapMember, city: string) {
+  private popupFor(m: MapMember, loc: MapMember['locations'][number]) {
+    const city = loc.cityLabel;
     const root = document.createElement('div');
     root.className = 'map-popup';
     const name = document.createElement('strong');
@@ -195,6 +202,18 @@ export class MapPage {
       void this.router.navigate(['/membres', m.id]);
     });
     root.appendChild(link);
+    if (this.auth.isAdmin()) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'map-popup__remove';
+      remove.textContent = 'Retirer cette ville de la carte';
+      remove.addEventListener('click', () => {
+        this.map?.closePopup();
+        this.removalReason = '';
+        this.removal.set({ member: m, location: loc });
+      });
+      root.appendChild(remove);
+    }
     return root;
   }
 
@@ -206,7 +225,7 @@ export class MapPage {
       const list: Leaflet.Marker[] = [];
       for (const loc of m.locations) {
         const marker = this.L.marker([loc.lat, loc.lng], { icon: this.markerIcon(m), title: m.displayName, alt: m.displayName, keyboard: true });
-        marker.bindPopup(() => this.popupFor(m, loc.cityLabel), { closeButton: true, maxWidth: 260 });
+        marker.bindPopup(() => this.popupFor(m, loc), { closeButton: true, maxWidth: 260 });
         list.push(marker);
       }
       this.markers.set(m.id, list);
@@ -298,6 +317,25 @@ export class MapPage {
       await this.reloadMembers();
     } catch (err) {
       this.toast.error((err as ApiError).message, () => void this.removeCity(l));
+    }
+  }
+
+  /** Admin : retire une ville jugée problématique ; le membre voit le motif dans son profil. */
+  protected async confirmRemoval() {
+    const r = this.removal();
+    const reason = this.removalReason.trim();
+    if (!r || reason.length < 3) return;
+    this.removing.set(true);
+    try {
+      await this.api.delete(`/admin/locations/${r.location.id}`, { reason });
+      this.removal.set(null);
+      this.myCities.update((c) => c.filter((x) => x.id !== r.location.id));
+      this.toast.success(`${r.location.cityLabel} (${r.member.displayName}) retirée de la carte.`);
+      await this.reloadMembers();
+    } catch (err) {
+      this.toast.error((err as ApiError).message);
+    } finally {
+      this.removing.set(false);
     }
   }
 

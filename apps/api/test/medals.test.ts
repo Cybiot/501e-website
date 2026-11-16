@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../src/db.js';
-import { buildAnnouncementMessages, DISCORD_LIMITS } from '../src/lib/announcement.js';
+import { buildAnnouncementMessages, DISCORD_LIMITS, discordImageUrl } from '../src/lib/announcement.js';
 import { createMedal, createUser, loginAs, mockDiscord, resetDb } from './helpers.js';
 
 describe('Attribution de médailles et annonce Discord', () => {
@@ -81,6 +81,15 @@ describe('Attribution de médailles et annonce Discord', () => {
     await a.post('/api/admin/announcements', {});
     const card = await a.get(`/api/members/${member.id}`);
     expect(card.body.medals).toEqual([expect.objectContaining({ medal: expect.objectContaining({ imageScale: 75 }) })]);
+
+    // Les médailles suivent l'ordre du catalogue, pas celui d'obtention : obtenue après mais placée avant.
+    const earlier = await postMedal(a, 'Avant au catalogue').field({ order: '3' });
+    await a.post('/api/admin/awards', { userId: member.id, medalId: earlier.body.id, reason: 'Motif.', idempotencyKey: randomUUID() });
+    await a.post('/api/admin/announcements', {});
+    const detail = await a.get(`/api/members/${member.id}`);
+    const expected = ['Avant au catalogue', 'Grande étoile'];
+    expect(detail.body.medals.map((m: { medal: { name: string } }) => m.medal.name)).toEqual(expected);
+    expect(detail.body.awards.map((w: { medal: { name: string } }) => w.medal.name)).toEqual(expected);
   });
 
   it("modifie le motif d'une attribution, même annoncée, et journalise l'ancien motif", async () => {
@@ -399,6 +408,15 @@ describe('Attribution de médailles et annonce Discord', () => {
     expect(messages[0]!.embeds[0]!.description).toBe('Félicitations au **Clark** pour sa promotion au grade de **Sergeant**.');
     expect(messages[1]!.embeds[0]!.thumbnail).toEqual({ url: 'https://501e.example/insignes/pfc.png' });
     expect(messages[1]!.embeds[0]!.description).toContain('⚠️ Voici le logo que vous pouvez mettre en image de profil Discord.');
+  });
+
+  it("envoie à Discord l'original pleine taille des insignes officiels", () => {
+    const url = (iconUrl: string | null) => discordImageUrl(iconUrl, 'https://501e.example/');
+    expect(url('/insignes/501e_sgt.png')).toBe('https://501e.example/insignes/501e_sgt_hd.png');
+    expect(url('/insignes/501e_sgt_hd.png')).toBe('https://501e.example/insignes/501e_sgt_hd.png');
+    expect(url('/insignes/pvt.svg')).toBe('https://501e.example/insignes/pvt.png');
+    expect(url('/medailles/p.png')).toBe('https://501e.example/medailles/p.png');
+    expect(url(null)).toBeUndefined();
   });
 
   it('respecte les limites Discord même avec un motif très long', () => {

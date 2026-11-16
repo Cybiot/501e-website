@@ -52,10 +52,12 @@ const MAX_REASON = 1000;
 /**
  * URL d'image utilisable par Discord : absolue (Discord la télécharge depuis le site public) et
  * jamais en SVG, que Discord n'affiche pas (les insignes ont une copie PNG à côté du SVG).
+ * Les insignes officiels (501e_*.png, réduits pour le site) passent à leur original pleine
+ * taille (_hd), que les membres peuvent mettre en image de profil.
  */
 export function discordImageUrl(url: string | null | undefined, publicUrl: string | undefined): string | undefined {
   if (!url) return undefined;
-  const png = url.replace(/\.svg$/i, '.png');
+  const png = url.replace(/\.svg$/i, '.png').replace(/(\/insignes\/501e_[^/]+?)(?<!_hd)\.png$/i, '$1_hd.png');
   if (/^https?:\/\//i.test(png)) return png;
   if (!publicUrl) return undefined;
   return `${publicUrl.replace(/\/+$/, '')}/${png.replace(/^\/+/, '')}`;

@@ -188,7 +188,13 @@ model Profile {
   taglineRejectionReason String?   @db.VarChar(300)
   taglineReviewedAt      DateTime?
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Dernière ville retirée de la carte par un admin, avec le motif montré au membre
+  /// (effacé quand le membre ajoute une ville ou ferme l'avertissement).
+  locationRemovedCity   String?   @db.VarChar(200)
+  locationRemovalReason String?   @db.VarChar(300)
+  locationRemovedAt     DateTime?
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   customImage  CustomImage? @relation("ApprovedImage", fields: [customImageId], references: [id], onDelete: SetNull)
   pendingImage CustomImage? @relation("PendingImage", fields: [pendingImageId], references: [id], onDelete: SetNull)
 

@@ -154,6 +154,15 @@
             </li>
           </ul>
           <h3 class="h3">Mes villes</h3>
+          @if (p.locationRemoval; as r) {
+            <div class="alert alert--danger" role="status">
+              <app-icon name="x-circle" [size]="18" />
+              <span>
+                <strong>{{ r.cityLabel ?? 'Une ville' }} retirée de la carte par un admin</strong> — {{ r.reason }}. Tu peux indiquer une autre ville.
+              </span>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="dismissLocationRemoval()" aria-label="Masquer cet avertissement"><app-icon name="x" [size]="14" /></button>
+            </div>
+          }
           @if (p.locations.length) {
             <ul class="cities">
               @for (l of p.locations; track l.id) {

@@ -17,6 +17,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'tagline.rejected': 'Phrase refusée',
   'location.added': 'Ville ajoutée',
   'location.deleted': 'Ville supprimée',
+  'location.removed': 'Ville retirée de la carte par un admin',
   'medal.created': 'Médaille créée',
   'medal.updated': 'Médaille modifiée',
   'medal.deleted': 'Médaille supprimée',

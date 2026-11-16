@@ -106,6 +106,22 @@
   font-weight: 700;
   color: var(--olive-text);
 }
+.map-popup__remove {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--danger);
+  text-align: left;
+  cursor: pointer;
+}
+.map-popup__remove:hover,
+.map-popup__remove:focus-visible {
+  text-decoration: underline;
+}
 .leaflet-control-zoom {
   border-radius: var(--radius-sm) !important;
   overflow: hidden;

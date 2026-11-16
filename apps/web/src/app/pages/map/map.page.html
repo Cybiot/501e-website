@@ -168,3 +168,46 @@
     }
   </div>
 </div>
+
+@if (removal(); as r) {
+  <div class="modal-backdrop" (click)="removal.set(null)">
+    <form
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="removal-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="removal.set(null)"
+      (submit)="$event.preventDefault(); confirmRemoval()"
+    >
+      <h2 id="removal-title">Retirer une ville de la carte</h2>
+      <p>
+        <strong>{{ r.location.cityLabel }}</strong> <span class="muted">· {{ r.location.country }}</span> — {{ r.member.displayName }}
+      </p>
+      <div class="field">
+        <label for="removal-reason">Motif (visible par le membre)</label>
+        <textarea
+          id="removal-reason"
+          class="textarea"
+          rows="3"
+          maxlength="300"
+          required
+          minlength="3"
+          placeholder="Ex. : ville fantaisiste, merci d'indiquer ta ville réelle"
+          [(ngModel)]="removalReason"
+          name="reason"
+        ></textarea>
+        <span class="field__hint">Le membre verra ce motif dans « Mon profil ». Il pourra indiquer une autre ville.</span>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="removal.set(null)">Annuler</button>
+        <button type="submit" class="btn btn--danger" [disabled]="removing() || removalReason.trim().length < 3">
+          @if (removing()) {
+            <app-icon name="loader" class="spin" [size]="16" />
+          }
+          Retirer la ville
+        </button>
+      </div>
+    </form>
+  </div>
+}

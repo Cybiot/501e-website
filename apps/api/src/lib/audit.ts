@@ -23,6 +23,7 @@ export type AuditAction =
   | 'tagline.rejected'
   | 'location.added'
   | 'location.deleted'
+  | 'location.removed'
   | 'medal.created'
   | 'medal.updated'
   | 'medal.deleted'

@@ -148,6 +148,8 @@ export interface MyProfile extends MemberDetail {
     rejected: { reason: string; reviewedAt: string | null } | null;
   };
   locations: Location[];
+  /** Dernière ville retirée de la carte par un admin (motif visible du membre). */
+  locationRemoval: { cityLabel: string | null; reason: string; removedAt: string | null } | null;
 }
 
 export interface ApiErrorBody {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { applyMemberInfo } from '../src/auth/sync.js';
+import { applyMemberInfo, reassignResponsibility } from '../src/auth/sync.js';
 import { prisma } from '../src/db.js';
 import { createUser, resetDb } from './helpers.js';
 
@@ -43,5 +43,25 @@ describe('Responsabilités attribuées par la branche du grade', () => {
     await sync(['role-sgt']);
     await sync([]);
     expect(await responsibilities()).toEqual([]);
+  });
+
+  it('corriger la configuration retire aussitôt la responsabilité aux recrues (TCRookie ≠ TCStaff)', async () => {
+    const pvt = await prisma.rank.create({ data: { name: 'Private', abbreviation: 'Pvt.', branch: 'toccoa', order: 10, discordRoleId: 'role-tcrookie' } });
+    // Mauvaise configuration : « Staff Toccoa » d'office pour la branche Toccoa Bootcamp.
+    const staff = await prisma.responsibility.create({
+      data: { name: 'Staff Toccoa', description: '', kind: 'pole', discordRoleId: 'role-tcstaff', rankBranch: 'toccoa' },
+    });
+    const [rookie, instructor] = await Promise.all([createUser('member'), createUser('member')]);
+    const sync = (u: typeof rookie, roles: string[]) =>
+      applyMemberInfo(u.discordId, { discordId: u.discordId, displayName: u.displayName, avatarUrl: null, roles: ['role-member', ...roles], joinedAt: null });
+    await sync(rookie, ['role-tcrookie']);
+    await sync(instructor, ['role-tcstaff']);
+    const holders = async () => (await prisma.userResponsibility.findMany({ where: { responsibilityId: staff.id } })).map((r) => r.userId);
+    expect((await holders()).sort()).toEqual([rookie.id, instructor.id].sort());
+
+    const updated = await prisma.responsibility.update({ where: { id: staff.id }, data: { rankBranch: null } });
+    await reassignResponsibility(updated);
+    expect(await holders()).toEqual([instructor.id]);
+    expect(pvt.branch).toBe('toccoa');
   });
 });

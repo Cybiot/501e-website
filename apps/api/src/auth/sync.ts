@@ -91,6 +91,25 @@ export async function applyMemberInfo(discordId: string, info: GuildMemberInfo |
 }
 
 /**
+ * Recalcule les titulaires d'une responsabilité après modification de sa configuration (rôle
+ * Discord, branche d'office), à partir de la copie locale des rôles et grades — même règle que
+ * `applyMemberInfo`. Sans cela, une erreur corrigée restait visible jusqu'à la synchronisation suivante.
+ */
+export async function reassignResponsibility(r: { id: string; discordRoleId: string | null; rankBranch: RankBranch | null }) {
+  const OR: Prisma.UserWhereInput[] = [
+    ...(r.discordRoleId ? [{ discordRoleIds: { has: r.discordRoleId } }] : []),
+    ...(r.rankBranch ? [{ rank: { branch: r.rankBranch } }] : []),
+  ];
+  const holders = OR.length
+    ? await prisma.user.findMany({ where: { deletedAt: null, OR }, select: { id: true } })
+    : [];
+  await prisma.$transaction([
+    prisma.userResponsibility.deleteMany({ where: { responsibilityId: r.id } }),
+    prisma.userResponsibility.createMany({ data: holders.map((u) => ({ userId: u.id, responsibilityId: r.id })) }),
+  ]);
+}
+
+/**
  * Changement de grade : une montée crée (ou met à jour) la promotion en attente d'annonce,
  * une descente l'annule. La comparaison part du grade d'avant la promotion en attente, pour
  * qu'une montée en deux temps (Pvt → Pfc → Cpl avant l'annonce) soit annoncée « Pvt → Cpl ».

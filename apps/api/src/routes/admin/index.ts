@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin } from '../../auth/guards.js';
 import { prisma } from '../../db.js';
+import { locationsAdminRouter } from './locations.js';
 import { medalsAdminRouter } from './medals.js';
 import { moderationAdminRouter } from './moderation.js';
 import { logsAdminRouter } from './logs.js';
@@ -46,6 +47,7 @@ adminRouter.get('/dashboard', async (_req, res) => {
 });
 
 adminRouter.use(medalsAdminRouter);
+adminRouter.use(locationsAdminRouter);
 adminRouter.use(moderationAdminRouter);
 adminRouter.use(ranksAdminRouter);
 adminRouter.use(logsAdminRouter);

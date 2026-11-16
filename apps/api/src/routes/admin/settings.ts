@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { Router } from 'express';
 import { z } from 'zod';
-import { syncAllMembers } from '../../auth/sync.js';
+import { reassignResponsibility, syncAllMembers } from '../../auth/sync.js';
 import { config } from '../../config.js';
 import { prisma } from '../../db.js';
 import { discord } from '../../discord/index.js';
@@ -138,6 +138,7 @@ settingsAdminRouter.delete('/ranks/:id', async (req, res) => {
 settingsAdminRouter.post('/responsibilities', async (req, res) => {
   const body = parse(ResponsibilityBody, req.body);
   const r = await prisma.responsibility.create({ data: body }).catch(uniqueGuard);
+  await reassignResponsibility(r);
   await audit({ action: 'settings.updated', req, targetType: 'responsibility', targetId: r.id, metadata: { created: body } });
   res.status(201).json(r);
 });
@@ -146,6 +147,7 @@ settingsAdminRouter.patch('/responsibilities/:id', async (req, res) => {
   const id = parse(z.string().min(1), req.params.id);
   const body = parse(ResponsibilityPatch.partial(), req.body);
   const r = await prisma.responsibility.update({ where: { id }, data: body }).catch(uniqueGuard);
+  if (body.discordRoleId !== undefined || body.rankBranch !== undefined) await reassignResponsibility(r);
   await audit({ action: 'settings.updated', req, targetType: 'responsibility', targetId: id, metadata: { updated: body } });
   res.json(r);
 });

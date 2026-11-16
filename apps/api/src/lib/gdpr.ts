@@ -47,6 +47,9 @@ export async function exportUserData(userId: string) {
       tagline: user.profile?.tagline ?? null,
       pendingTagline: user.profile?.pendingTagline ?? null,
       publicProfileEnabled: user.publicProfileEnabled,
+      locationRemoval: user.profile?.locationRemovalReason
+        ? { cityLabel: user.profile.locationRemovedCity, reason: user.profile.locationRemovalReason, removedAt: user.profile.locationRemovedAt }
+        : null,
     },
     consents: {
       current: {

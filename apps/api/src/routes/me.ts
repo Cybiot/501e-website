@@ -134,6 +134,9 @@ meRouter.get('/profile', async (req, res) => {
         : null,
     },
     locations: user.locations.map((l) => ({ id: l.id, cityLabel: l.cityLabel, country: l.country })),
+    locationRemoval: user.profile?.locationRemovalReason
+      ? { cityLabel: user.profile.locationRemovedCity, reason: user.profile.locationRemovalReason, removedAt: user.profile.locationRemovedAt }
+      : null,
     // Formations : module V2 (non livré en V1).
   });
 });
@@ -285,6 +288,8 @@ meRouter.get('/locations', async (req, res) => {
   res.json(locations.map((l) => ({ id: l.id, cityLabel: l.cityLabel, country: l.country, lat: l.lat, lng: l.lng })));
 });
 
+const clearedLocationRemoval = { locationRemovedCity: null, locationRemovalReason: null, locationRemovedAt: null };
+
 const LocationBody = z.object({
   cityLabel: z.string().trim().min(1).max(120),
   country: z.string().trim().min(1).max(80),
@@ -333,6 +338,8 @@ meRouter.post('/locations', async (req, res) => {
         },
       });
     }
+    // Une nouvelle ville efface l'avertissement d'une ville retirée par un admin.
+    await tx.profile.updateMany({ where: { userId }, data: clearedLocationRemoval });
     return tx.memberLocation.create({
       data: { userId, cityLabel: body.cityLabel, country: body.country, ...coords },
     });
@@ -346,6 +353,12 @@ meRouter.delete('/locations/:id', async (req, res) => {
   const { count } = await prisma.memberLocation.deleteMany({ where: { id, userId: req.user!.id } });
   if (!count) throw notFound('Ville introuvable.');
   await audit({ action: 'location.deleted', req, targetType: 'location', targetId: id });
+  res.status(204).end();
+});
+
+/** Le membre ferme l'avertissement d'une ville retirée par un admin. */
+meRouter.delete('/location-removal', async (req, res) => {
+  await prisma.profile.updateMany({ where: { userId: req.user!.id }, data: clearedLocationRemoval });
   res.status(204).end();
 });
 

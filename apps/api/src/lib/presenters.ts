@@ -20,7 +20,8 @@ export const memberInclude = {
   awards: {
     where: officialAward,
     include: { medal: true },
-    orderBy: { awardedAt: 'desc' },
+    // Ordre du catalogue des médailles ; plusieurs obtentions d'une même médaille : la plus récente d'abord.
+    orderBy: [{ medal: { order: 'asc' } }, { medal: { name: 'asc' } }, { awardedAt: 'desc' }],
   },
 } satisfies Prisma.UserInclude;
 
@@ -149,7 +150,7 @@ export function companyOf(roleIds: string[], rank: { branch: string } | null, co
 /** Carte membre (liste) : informations publiques uniquement. */
 export function presentMemberCard(u: MemberWithRelations, companies: CompanyIndex = []) {
   // Médailles regroupées : une entrée par médaille avec le nombre d'obtentions,
-  // affichée au palier le plus haut obtenu.
+  // affichée au palier le plus haut obtenu, dans l'ordre du catalogue (celui de `memberInclude`).
   const grouped = new Map<string, { medal: ReturnType<typeof presentMedal>; count: number }>();
   for (const a of u.awards) {
     const g = grouped.get(a.medalId);
@@ -159,7 +160,7 @@ export function presentMemberCard(u: MemberWithRelations, companies: CompanyInde
       if (tierRank(a.tier) > tierRank(g.medal.tier)) g.medal = presentMedal(a.medal, a.tier);
     }
   }
-  const medals = [...grouped.values()].sort((a, b) => a.medal.name.localeCompare(b.medal.name));
+  const medals = [...grouped.values()];
   return {
     id: u.id,
     displayName: stripRankPrefix(u.displayName),
